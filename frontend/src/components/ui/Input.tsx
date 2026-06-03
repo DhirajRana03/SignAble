@@ -11,9 +11,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       ref={ref}
       type={type}
       className={cn(
-        'flex h-10 w-full rounded-sm border border-border bg-paper px-3 py-2 text-sm text-ink',
-        'placeholder:text-ink-faint',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring',
+        'flex h-10 w-full rounded-md border border-border bg-paper-deep px-3.5 py-2 text-sm text-ink',
+        'placeholder:text-ink-mute',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-accent',
         'disabled:cursor-not-allowed disabled:opacity-60',
         'transition-colors',
         className,
@@ -31,9 +31,9 @@ export const Textarea = forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'flex min-h-[80px] w-full rounded-sm border border-border bg-paper px-3 py-2 text-sm text-ink',
-      'placeholder:text-ink-faint',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring',
+      'flex min-h-[80px] w-full rounded-md border border-border bg-paper-deep px-3.5 py-2.5 text-sm text-ink',
+      'placeholder:text-ink-mute',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-accent',
       'transition-colors resize-y',
       className,
     )}
@@ -49,7 +49,7 @@ export function Label({
 }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn('label-mono mb-1.5 block', className)}
+      className={cn('label-mono plain mb-1.5 block', className)}
       {...props}
     >
       {children}

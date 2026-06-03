@@ -1,33 +1,37 @@
 import type { Metadata } from 'next';
-import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono, Playfair_Display } from 'next/font/google';
 
 import { Providers } from './providers';
 import './globals.css';
 
-// Fraunces: high-contrast serif with optical sizing — gives the editorial / "legal document" feel
-const fontDisplay = Fraunces({
+// Playfair Display: high-contrast serif — matches definable.ai brand voice.
+const fontDisplay = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
-  axes: ['SOFT', 'WONK', 'opsz'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
 });
 
 const fontSans = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
 });
 
 const fontMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
+  weight: ['400', '500'],
 });
 
 export const metadata: Metadata = {
   title: 'SinAble — Sign documents with intent',
   description:
     'A modern electronic signature platform. Upload, route, sign, and seal.',
+  themeColor: '#D4623A',
 };
 
 export default function RootLayout({

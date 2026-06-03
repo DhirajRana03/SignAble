@@ -8,35 +8,44 @@ const config: Config = {
     container: {
       center: true,
       padding: '1.5rem',
-      screens: { '2xl': '1400px' },
+      screens: { '2xl': '1240px' },
     },
     extend: {
       fontFamily: {
-        // Editorial display serif + clean grotesque body.
-        // Loaded from Google Fonts via next/font in layout.tsx.
-        display: ['var(--font-display)', 'Georgia', 'serif'],
-        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-mono)', 'monospace'],
+        // Display: Playfair Display (matches definable.ai)
+        // Sans: Inter
+        // Mono: JetBrains Mono
+        display: ['var(--font-display)', 'Playfair Display', 'Georgia', 'serif'],
+        sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // Paper-and-ink palette. Warm off-white background, deep ink text.
+        // Surfaces
         paper: {
           DEFAULT: 'hsl(var(--paper))',
           dim: 'hsl(var(--paper-dim))',
           deep: 'hsl(var(--paper-deep))',
         },
+        // Ink (text + on-paper marks)
         ink: {
           DEFAULT: 'hsl(var(--ink))',
           soft: 'hsl(var(--ink-soft))',
           faint: 'hsl(var(--ink-faint))',
+          mute: 'hsl(var(--ink-mute))',
+          bg: 'hsl(var(--ink-bg))',
+          bg2: 'hsl(var(--ink-bg-2))',
         },
+        // Coral accent stack
         accent: {
           DEFAULT: 'hsl(var(--accent))',
+          deep: 'hsl(var(--accent-deep))',
+          soft: 'hsl(var(--accent-soft))',
+          tint: 'hsl(var(--accent-tint))',
           fg: 'hsl(var(--accent-fg))',
         },
         border: 'hsl(var(--border))',
+        'border-soft': 'hsl(var(--border-soft))',
         ring: 'hsl(var(--ring))',
-        // Status hues — muted, legal-grade
         success: 'hsl(var(--success))',
         warn: 'hsl(var(--warn))',
         danger: 'hsl(var(--danger))',
@@ -60,26 +69,32 @@ const config: Config = {
           foreground: 'hsl(var(--ink))',
         },
         card: {
-          DEFAULT: 'hsl(var(--paper))',
+          DEFAULT: 'hsl(var(--paper-deep))',
           foreground: 'hsl(var(--ink))',
         },
         popover: {
-          DEFAULT: 'hsl(var(--paper))',
+          DEFAULT: 'hsl(var(--paper-deep))',
           foreground: 'hsl(var(--ink))',
         },
         input: 'hsl(var(--border))',
       },
       borderRadius: {
-        // Sharper than typical SaaS — closer to document/legal aesthetic
-        lg: '4px',
-        md: '3px',
-        sm: '2px',
+        // Match definable.ai radii: 6 / 10 / 18 / 28
+        xs: '6px',
+        sm: '8px',
+        md: '10px',
+        lg: '18px',
+        xl: '28px',
+        pill: '9999px',
       },
       boxShadow: {
-        paper: '0 1px 0 0 hsl(var(--border)), 0 1px 2px 0 hsla(var(--ink), 0.04)',
+        xs: '0 1px 2px hsl(var(--ink) / 0.04)',
+        paper: '0 2px 8px hsl(var(--ink) / 0.04), 0 1px 2px hsl(var(--ink) / 0.03)',
         sheet:
-          '0 1px 0 0 hsl(var(--border)), 0 10px 30px -10px hsla(var(--ink), 0.12)',
-        ink: '0 0 0 1px hsl(var(--ink) / 0.08)',
+          '0 8px 32px hsl(var(--ink) / 0.06), 0 2px 6px hsl(var(--ink) / 0.04)',
+        lifted:
+          '0 24px 60px hsl(var(--ink) / 0.10), 0 8px 20px hsl(var(--ink) / 0.05)',
+        coral: '0 10px 22px hsl(var(--accent) / 0.28)',
       },
       keyframes: {
         'fade-up': {
@@ -94,11 +109,17 @@ const config: Config = {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        'pulse-coral': {
+          '0%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.45)' },
+          '70%': { boxShadow: '0 0 0 8px hsl(var(--accent) / 0)' },
+          '100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.4s ease-out',
         'scale-in': 'scale-in 0.2s ease-out',
         shimmer: 'shimmer 2s linear infinite',
+        'pulse-coral': 'pulse-coral 1.6s ease-out infinite',
       },
     },
   },
