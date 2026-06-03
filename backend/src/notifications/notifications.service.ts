@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
+
+import { ConsoleDriver } from './drivers/console.driver';
+import type { EmailDriver } from './drivers/email-driver.interface';
+import { PostmarkDriver } from './drivers/postmark.driver';
+import { SendGridDriver } from './drivers/sendgrid.driver';
+import { SmtpDriver } from './drivers/smtp.driver';
 
 export interface SigningRequestPayload {
   to: string;
@@ -18,80 +22,88 @@ export interface CompletionPayload {
   envelopeId: string;
 }
 
+type ProviderName = 'console' | 'smtp' | 'sendgrid' | 'postmark';
+
 /**
- * Sole email dispatcher. All outbound mail goes through here.
- * When EMAIL_ENABLED=false, emails are logged instead of sent (dev mode).
+ * Sole email dispatcher. Selects driver per EMAIL_PROVIDER env at boot.
+ * Fails open: errors logged, never throw to caller (signing flow must not
+ * fail because email broke).
  */
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private transporter: Transporter | null = null;
+  private readonly driver: EmailDriver;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {
+    this.driver = this.selectDriver();
+    this.logger.log(`email driver: ${this.driver.name}`);
+  }
 
   async sendSigningRequest(payload: SigningRequestPayload): Promise<void> {
     const url = `${this.frontendUrl()}/sign/${payload.signingToken}`;
-
-    if (!this.isEmailEnabled()) {
-      this.logger.log(
-        `[EMAIL MOCK] Signing request → ${payload.to} | ${payload.envelopeTitle} | ${url}`,
-      );
-      return;
-    }
-
     const html = this.renderSigningHtml(
       payload.name,
       payload.envelopeTitle,
       url,
       payload.message ?? undefined,
     );
-    await this.send(payload.to, `Please sign: ${payload.envelopeTitle}`, html);
+    await this.dispatch(
+      payload.to,
+      `Please sign: ${payload.envelopeTitle}`,
+      html,
+    );
   }
 
   async sendCompletion(payload: CompletionPayload): Promise<void> {
     const url = `${this.frontendUrl()}/envelopes/${payload.envelopeId}`;
-
-    if (!this.isEmailEnabled()) {
-      this.logger.log(
-        `[EMAIL MOCK] Completion → ${payload.to} | ${payload.envelopeTitle} | ${url}`,
-      );
-      return;
-    }
-
     const html = this.renderCompletionHtml(
       payload.name,
       payload.envelopeTitle,
       url,
     );
-    await this.send(payload.to, `Signed: ${payload.envelopeTitle}`, html);
+    await this.dispatch(payload.to, `Signed: ${payload.envelopeTitle}`, html);
   }
 
-  private async send(to: string, subject: string, html: string): Promise<void> {
-    const transporter = this.getTransporter();
-    await transporter.sendMail({
-      from: this.config.get<string>('email.from') ?? 'noreply@sinable.com',
-      to,
-      subject,
-      html,
-    });
+  private async dispatch(to: string, subject: string, html: string): Promise<void> {
+    try {
+      await this.driver.send({
+        to,
+        from: this.config.get<string>('email.from') ?? 'noreply@sinable.com',
+        subject,
+        html,
+      });
+    } catch (err) {
+      this.logger.error(
+        `email failed via ${this.driver.name}: ${(err as Error).message}`,
+      );
+    }
   }
 
-  private getTransporter(): Transporter {
-    if (this.transporter) return this.transporter;
-    const user = this.config.get<string>('email.user');
-    this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('email.host'),
-      port: this.config.get<number>('email.port'),
-      secure: false,
-      auth: user
-        ? { user, pass: this.config.get<string>('email.password') ?? '' }
-        : undefined,
-    });
-    return this.transporter;
-  }
-
-  private isEmailEnabled(): boolean {
-    return this.config.get<boolean>('email.enabled') === true;
+  private selectDriver(): EmailDriver {
+    if (!this.config.get<boolean>('email.enabled')) {
+      return new ConsoleDriver();
+    }
+    const provider = (this.config.get<string>('email.provider') ?? 'smtp') as ProviderName;
+    switch (provider) {
+      case 'sendgrid':
+        return new SendGridDriver(
+          this.config.get<string>('email.sendgridApiKey') ?? '',
+        );
+      case 'postmark':
+        return new PostmarkDriver(
+          this.config.get<string>('email.postmarkToken') ?? '',
+        );
+      case 'console':
+        return new ConsoleDriver();
+      case 'smtp':
+      default:
+        return new SmtpDriver({
+          host: this.config.get<string>('email.host') ?? 'localhost',
+          port: this.config.get<number>('email.port') ?? 25,
+          user: this.config.get<string>('email.user') ?? '',
+          password: this.config.get<string>('email.password') ?? '',
+        });
+    }
   }
 
   private frontendUrl(): string {
@@ -115,11 +127,7 @@ export class NotificationsService {
     `;
   }
 
-  private renderCompletionHtml(
-    name: string,
-    title: string,
-    url: string,
-  ): string {
+  private renderCompletionHtml(name: string, title: string, url: string): string {
     return `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Hello ${this.escape(name)},</h2>

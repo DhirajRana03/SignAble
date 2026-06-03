@@ -13,6 +13,23 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProcessorService } from '../processor/processor.service';
 import { StorageService } from '../storage/storage.service';
 
+/**
+ * Allowed upload extensions. Mirrors `processor/src/format_converter.SUPPORTED_EXTS`.
+ * Processor coerces non-PDF inputs to PDF before downstream processing.
+ */
+const SUPPORTED_EXTS = new Set([
+  '.pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.tif',
+  '.tiff',
+  '.bmp',
+  '.gif',
+  '.heic',
+  '.heif',
+]);
+
 @Injectable()
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
@@ -37,8 +54,11 @@ export class DocumentsService {
         `File exceeds size limit (${Math.floor(maxBytes / 1024 / 1024)}MB)`,
       );
     }
-    if (!file.originalname.toLowerCase().endsWith('.pdf')) {
-      throw new UnsupportedFormatError('Only PDF supported in this version');
+    const ext = file.originalname.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] ?? '';
+    if (!SUPPORTED_EXTS.has(ext)) {
+      throw new UnsupportedFormatError(
+        `Unsupported format: ${ext || 'unknown'}. Allowed: ${[...SUPPORTED_EXTS].join(', ')}`,
+      );
     }
 
     const storageKey = await this.storage.saveDocument(

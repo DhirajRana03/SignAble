@@ -12,7 +12,9 @@ dependencies = [
   "reportlab>=4.2",
   "Pillow>=11.0",
   "pydantic>=2.0",
-  "doc-converter @ git+https://github.com/pratyush618/doc_loader.git",
+  # NOTE: doc_loader (pkg name `doc-converter`) is incompatible — ships broken
+  # relative imports from its top-level `converters/` package. Using pypdf
+  # directly until upstream restructures into a proper package.
 ]
 
 [dependency-groups]

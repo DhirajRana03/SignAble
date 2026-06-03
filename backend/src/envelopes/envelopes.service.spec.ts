@@ -1,0 +1,211 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { EnvelopeStatus, SigningOrder } from '@prisma/client';
+
+import {
+  InvalidStateTransitionError,
+  NotFoundError,
+  ValidationError,
+} from '../common/exceptions/domain.exceptions';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
+import { EnvelopesService } from './envelopes.service';
+
+describe('EnvelopesService', () => {
+  let service: EnvelopesService;
+  let prisma: any;
+
+  const USER_ID = 'user-1';
+  const USER_EMAIL = 'user@test.dev';
+
+  beforeEach(async () => {
+    prisma = {
+      envelope: {
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
+      document: { findUnique: jest.fn() },
+      recipient: { findMany: jest.fn() },
+      auditEvent: { create: jest.fn(), findMany: jest.fn() },
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        EnvelopesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: StorageService, useValue: { load: jest.fn() } },
+        {
+          provide: NotificationsService,
+          useValue: { sendSigningRequest: jest.fn() },
+        },
+      ],
+    }).compile();
+
+    service = module.get(EnvelopesService);
+  });
+
+  describe('create', () => {
+    it('throws NotFoundError when document missing', async () => {
+      prisma.document.findUnique.mockResolvedValue(null);
+      await expect(
+        service.create(USER_ID, USER_EMAIL, {
+          documentId: 'd1',
+          title: 'X',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    it('rejects document not in READY status', async () => {
+      prisma.document.findUnique.mockResolvedValue({
+        id: 'd1',
+        userId: USER_ID,
+        status: 'PENDING',
+      });
+      await expect(
+        service.create(USER_ID, USER_EMAIL, {
+          documentId: 'd1',
+          title: 'X',
+        }),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('creates envelope + audit event when document READY', async () => {
+      prisma.document.findUnique.mockResolvedValue({
+        id: 'd1',
+        userId: USER_ID,
+        status: 'READY',
+      });
+      prisma.envelope.create.mockResolvedValue({
+        id: 'env-1',
+        title: 'X',
+        status: 'DRAFT',
+      });
+
+      const result = await service.create(USER_ID, USER_EMAIL, {
+        documentId: 'd1',
+        title: 'X',
+      });
+
+      expect(result.id).toBe('env-1');
+      expect(prisma.auditEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            envelopeId: 'env-1',
+            eventType: 'ENVELOPE_CREATED',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('send', () => {
+    const mockBg = { addTask: jest.fn() } as any;
+
+    it('rejects transition from COMPLETED', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.COMPLETED,
+      });
+      prisma.recipient.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.send(USER_ID, USER_EMAIL, 'env-1'),
+      ).rejects.toThrow();
+    });
+
+    it('rejects send with no recipients', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.DRAFT,
+        signingOrder: SigningOrder.SEQUENTIAL,
+      });
+      prisma.recipient.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.send(USER_ID, USER_EMAIL, 'env-1'),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('rejects when recipient has no required fields', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.DRAFT,
+        signingOrder: SigningOrder.SEQUENTIAL,
+      });
+      prisma.recipient.findMany.mockResolvedValue([
+        { id: 'r1', email: 'a@b.com', fields: [] },
+      ]);
+
+      await expect(
+        service.send(USER_ID, USER_EMAIL, 'env-1'),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('transitions DRAFT → SENT when recipients + required fields present', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.DRAFT,
+        signingOrder: SigningOrder.SEQUENTIAL,
+        title: 'X',
+        message: null,
+        recipients: [{ id: 'r1', email: 'a@b.com', name: 'A', signingToken: 't' }],
+      });
+      prisma.recipient.findMany.mockResolvedValue([
+        {
+          id: 'r1',
+          email: 'a@b.com',
+          fields: [{ required: true }],
+        },
+      ]);
+      prisma.envelope.update.mockResolvedValue({
+        id: 'env-1',
+        status: EnvelopeStatus.SENT,
+      });
+
+      const result = await service.send(USER_ID, USER_EMAIL, 'env-1');
+      expect(result.status).toBe(EnvelopeStatus.SENT);
+      expect(prisma.envelope.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: EnvelopeStatus.SENT }),
+        }),
+      );
+      // Wait for setImmediate microtask to complete + return
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+
+  describe('void', () => {
+    it('rejects void of already-voided envelope', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.VOIDED,
+      });
+
+      await expect(
+        service.void(USER_ID, USER_EMAIL, 'env-1', 'reason'),
+      ).rejects.toBeInstanceOf(InvalidStateTransitionError);
+    });
+
+    it('transitions DRAFT → VOIDED', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.DRAFT,
+      });
+      prisma.envelope.update.mockResolvedValue({
+        id: 'env-1',
+        status: EnvelopeStatus.VOIDED,
+      });
+
+      const result = await service.void(USER_ID, USER_EMAIL, 'env-1', 'r');
+      expect(result.status).toBe(EnvelopeStatus.VOIDED);
+    });
+  });
+});

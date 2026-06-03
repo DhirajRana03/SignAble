@@ -13,6 +13,7 @@ import base64
 from fastapi import FastAPI, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from .format_converter import SUPPORTED_EXTS, detect_extension, to_pdf
 from .pdf_processor import pdf_processor
 from .pdf_renderer import pdf_renderer
 from .signature_applier import SignedFieldData, signature_applier
@@ -45,18 +46,41 @@ class ApplySignaturesResponse(BaseModel):
     signed_pdf_base64: str
 
 
+class SupportedFormatsResponse(BaseModel):
+    extensions: list[str]
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/supported-formats", response_model=SupportedFormatsResponse)
+def supported_formats() -> SupportedFormatsResponse:
+    return SupportedFormatsResponse(extensions=sorted(SUPPORTED_EXTS))
+
+
+def _coerce_to_pdf(raw: bytes, filename: str | None) -> bytes:
+    """Validate + convert input to PDF. Raises HTTPException on failure."""
+    ext = detect_extension(filename)
+    if ext and ext not in SUPPORTED_EXTS:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported format: {ext}. Allowed: {sorted(SUPPORTED_EXTS)}",
+        )
+    try:
+        return to_pdf(raw, filename)
+    except ValueError as e:
+        raise HTTPException(status_code=415, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Conversion failed: {e}")
+
+
 @app.post("/process", response_model=ProcessResponse)
 async def process_document(file: UploadFile) -> ProcessResponse:
-    """Extract text content and page metadata from PDF."""
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=415, detail="Only PDF files supported")
-
-    pdf_bytes = await file.read()
+    """Extract text content + page metadata. Accepts PDF or image."""
+    raw = await file.read()
+    pdf_bytes = _coerce_to_pdf(raw, file.filename)
     try:
         result = await pdf_processor.extract_content(pdf_bytes)
         count = pdf_processor.page_count(pdf_bytes)
@@ -74,16 +98,16 @@ async def process_document(file: UploadFile) -> ProcessResponse:
 
 @app.post("/render-pages", response_model=RenderPagesResponse)
 async def render_pages(file: UploadFile) -> RenderPagesResponse:
-    """Render each PDF page as base64-encoded PNG."""
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=415, detail="Only PDF files supported")
-
-    pdf_bytes = await file.read()
+    """Render each page as base64-encoded PNG. Accepts PDF or image."""
+    raw = await file.read()
+    pdf_bytes = _coerce_to_pdf(raw, file.filename)
     try:
         page_images = pdf_renderer.render_pages(pdf_bytes)
         return RenderPagesResponse(
             pages=[base64.b64encode(img).decode() for img in page_images]
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Render failed: {e}")
 

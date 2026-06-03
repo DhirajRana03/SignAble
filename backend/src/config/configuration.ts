@@ -29,10 +29,17 @@ export default () => ({
 
   email: {
     enabled: process.env.EMAIL_ENABLED === 'true',
+    provider: (process.env.EMAIL_PROVIDER ?? 'smtp') as
+      | 'smtp'
+      | 'sendgrid'
+      | 'postmark'
+      | 'console',
     host: process.env.SMTP_HOST ?? 'localhost',
     port: parseInt(process.env.SMTP_PORT ?? '1025', 10),
     user: process.env.SMTP_USER ?? '',
     password: process.env.SMTP_PASSWORD ?? '',
+    sendgridApiKey: process.env.SENDGRID_API_KEY ?? '',
+    postmarkToken: process.env.POSTMARK_SERVER_TOKEN ?? '',
     from: process.env.EMAIL_FROM ?? 'noreply@sinable.com',
   },
 

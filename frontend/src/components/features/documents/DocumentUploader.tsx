@@ -49,7 +49,7 @@ export function DocumentUploader() {
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,application/pdf"
+        accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.gif,.heic,.heif,application/pdf,image/*"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
@@ -71,7 +71,7 @@ export function DocumentUploader() {
 
       <div className="flex-1 min-w-0">
         <p className="font-display text-lg tracking-tight">
-          {upload.isPending ? 'Uploading…' : 'Drop a PDF, or click to browse'}
+          {upload.isPending ? 'Uploading…' : 'Drop a file, or click to browse'}
         </p>
         <p className="text-xs text-ink-soft mt-0.5">
           Max 50&nbsp;MB · processed locally on our service
@@ -80,7 +80,7 @@ export function DocumentUploader() {
 
       <div className="hidden sm:flex flex-col items-end gap-1">
         <span className="label-mono">supported</span>
-        <span className="font-mono text-xs text-ink-faint">.pdf</span>
+        <span className="font-mono text-xs text-ink-faint">pdf · images</span>
       </div>
     </div>
   );
