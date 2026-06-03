@@ -79,29 +79,24 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               className={cn(
-                'group relative flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors',
+                'group relative flex items-center gap-3 px-3 py-2 text-[14px] transition-colors',
                 active
-                  ? 'bg-accent-tint/60 text-ink font-medium'
-                  : 'text-ink-soft hover:bg-paper-dim/50 hover:text-ink',
+                  ? 'text-ink font-medium'
+                  : 'text-ink-soft hover:text-ink',
               )}
             >
-              {/* coral rail — definable .nav-link.active style */}
-              <span
-                aria-hidden
-                className={cn(
-                  'absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-pill transition-colors',
-                  active ? 'bg-accent' : 'bg-transparent group-hover:bg-border',
-                )}
-              />
               <Icon
                 className={cn(
                   'h-4 w-4 shrink-0 transition-colors',
-                  active ? 'text-accent-deep' : 'text-ink-faint',
+                  active ? 'text-accent-deep' : 'text-ink-mute group-hover:text-ink-soft',
                 )}
               />
               <span>{item.label}</span>
               {active ? (
-                <span className="ml-auto h-1.5 w-1.5 rounded-pill bg-accent animate-pulse-coral" />
+                <span
+                  aria-hidden
+                  className="ml-auto h-1.5 w-1.5 rounded-pill bg-accent"
+                />
               ) : null}
             </Link>
           );
@@ -127,8 +122,8 @@ export function Sidebar({
 
   return (
     <>
-      {/* Desktop: persistent column */}
-      <aside className="hidden md:flex md:w-60 lg:w-64 shrink-0 border-r border-border bg-paper/80 backdrop-blur-md">
+      {/* Desktop: persistent column. No border, just transparency. */}
+      <aside className="hidden md:flex md:w-56 lg:w-60 shrink-0 bg-transparent">
         {navContent}
       </aside>
 
@@ -146,7 +141,7 @@ export function Sidebar({
         />
         <aside
           className={cn(
-            'absolute inset-y-0 left-0 w-72 max-w-[85vw] flex border-r border-border bg-paper transition-transform shadow-sheet',
+            'absolute inset-y-0 left-0 w-72 max-w-[85vw] flex bg-paper transition-transform',
             open ? 'translate-x-0' : '-translate-x-full',
           )}
         >

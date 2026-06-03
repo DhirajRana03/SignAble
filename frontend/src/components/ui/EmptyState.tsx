@@ -16,18 +16,18 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'sheet flex flex-col items-center justify-center gap-3 px-8 py-16 text-center animate-fade-up',
+        'flex flex-col items-center justify-center gap-4 py-20 text-center animate-fade-up',
         className,
       )}
     >
       <div className="relative">
-        <div className="absolute inset-0 -m-2 rounded-full bg-accent/5 blur-xl" />
+        <div className="absolute inset-0 -m-4 rounded-full bg-accent/8 blur-2xl" />
         <svg
           width="56"
           height="56"
           viewBox="0 0 56 56"
           fill="none"
-          className="relative text-ink-faint"
+          className="relative text-ink-mute"
         >
           <rect
             x="10"
@@ -36,33 +36,12 @@ export function EmptyState({
             height="44"
             rx="2"
             stroke="currentColor"
-            strokeWidth="1.5"
-            fill="hsl(var(--paper))"
+            strokeWidth="1.2"
+            fill="hsl(var(--paper-dim))"
           />
-          <line
-            x1="16"
-            y1="16"
-            x2="40"
-            y2="16"
-            stroke="currentColor"
-            strokeWidth="1"
-          />
-          <line
-            x1="16"
-            y1="22"
-            x2="34"
-            y2="22"
-            stroke="currentColor"
-            strokeWidth="1"
-          />
-          <line
-            x1="16"
-            y1="28"
-            x2="38"
-            y2="28"
-            stroke="currentColor"
-            strokeWidth="1"
-          />
+          <line x1="16" y1="16" x2="40" y2="16" stroke="currentColor" strokeWidth="0.8" />
+          <line x1="16" y1="22" x2="34" y2="22" stroke="currentColor" strokeWidth="0.8" />
+          <line x1="16" y1="28" x2="38" y2="28" stroke="currentColor" strokeWidth="0.8" />
           <path
             d="M16 38 Q22 32 30 38 T44 36"
             stroke="hsl(var(--accent))"
@@ -72,9 +51,11 @@ export function EmptyState({
           />
         </svg>
       </div>
-      <h3 className="font-display text-xl text-ink">{title}</h3>
+      <h3 className="font-display text-2xl tracking-tight">{title}</h3>
       {description ? (
-        <p className="max-w-sm text-sm text-ink-soft">{description}</p>
+        <p className="max-w-md text-sm text-ink-soft text-pretty leading-relaxed">
+          {description}
+        </p>
       ) : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>

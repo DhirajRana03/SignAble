@@ -3,69 +3,62 @@
 @tailwind utilities;
 
 /*
- * SinAble design tokens — matched to definable.ai system.
+ * SinAble — definable.ai aesthetic.
  *
- * Palette: warm bone-white paper (#FAF8F5), deep ink (#1A1714), coral accent (#D4623A).
- * Typography: Playfair Display (display serif) + Inter (body) + JetBrains Mono.
- * Radii: 6 / 10 / 18 / 28 (matches definable scale).
+ * No boxes. Hairline rules. Generous whitespace. Coral on warm paper.
+ * Typography drives hierarchy; surfaces stay flat and almost invisible.
  */
 @layer base {
   :root {
-    /* Surfaces */
-    --paper: 36 33% 97%;          /* #FAF8F5  bg */
-    --paper-dim: 39 35% 92%;       /* #F2EDE4  bg-warm */
-    --paper-deep: 0 0% 100%;        /* #FFFFFF  bg-card */
+    /* Warm paper surfaces */
+    --paper: 36 33% 97%;          /* #FAF8F5  primary bg */
+    --paper-dim: 39 35% 92%;       /* #F2EDE4  warmer recess */
+    --paper-deep: 0 0% 100%;        /* #FFFFFF  card lift (used sparingly) */
 
-    /* Ink */
-    --ink: 30 13% 9%;              /* #1A1714 */
-    --ink-soft: 32 14% 21%;         /* #3D362E */
-    --ink-faint: 30 8% 44%;         /* #7A7168 */
-    --ink-mute: 34 13% 68%;         /* #B8AFA3 */
+    /* Ink ramp */
+    --ink: 30 13% 9%;              /* #1A1714  primary text */
+    --ink-soft: 32 14% 21%;         /* #3D362E  secondary text */
+    --ink-faint: 30 8% 44%;         /* #7A7168  muted */
+    --ink-mute: 34 13% 68%;         /* #B8AFA3  quietest */
 
-    /* Inverse surfaces (footer, CTA backgrounds) */
+    /* Inverse — dark CTA + footer */
     --ink-bg: 30 18% 7%;            /* #14110E */
     --ink-bg-2: 33 17% 10%;         /* #1F1B16 */
 
-    /* Brand accent — coral */
-    --accent: 16 64% 53%;           /* #D4623A coral */
-    --accent-deep: 16 67% 43%;       /* #B54B24 coral-deep */
-    --accent-soft: 19 67% 88%;       /* #F5D9CC coral-soft */
-    --accent-tint: 22 76% 94%;       /* #FBEBE2 coral-tint */
-    --accent-fg: 36 33% 97%;        /* paper on accent */
+    /* Coral — single brand accent */
+    --accent: 16 64% 53%;           /* #D4623A */
+    --accent-deep: 16 67% 43%;       /* #B54B24 */
+    --accent-soft: 19 67% 88%;       /* #F5D9CC */
+    --accent-tint: 22 76% 94%;       /* #FBEBE2 */
+    --accent-fg: 36 33% 97%;
 
-    /* Lines */
-    --border: 37 31% 87%;           /* #E8E0D3 */
+    /* Lines — hairline only, never used as primary structure */
+    --border: 37 31% 87%;            /* #E8E0D3 */
     --border-soft: 40 36% 90%;       /* #EFE9DD */
 
-    /* Status */
-    --ring: 16 64% 53%;             /* coral */
-    --success: 103 27% 33%;          /* #4A6B3D */
+    --ring: 16 64% 53%;
+    --success: 103 27% 33%;
     --warn: 32 78% 42%;
-    --danger: 16 67% 43%;            /* aligned with coral-deep — single-warm-stack */
+    --danger: 16 67% 43%;
   }
 
   .dark {
-    --paper: 30 18% 7%;             /* ink-bg */
-    --paper-dim: 33 17% 10%;         /* ink-bg-2 */
-    --paper-deep: 33 14% 13%;         /* slightly lifted card */
-
-    --ink: 36 33% 97%;              /* paper as text */
-    --ink-soft: 38 18% 80%;          /* softer */
+    --paper: 30 18% 7%;
+    --paper-dim: 33 17% 10%;
+    --paper-deep: 33 14% 13%;
+    --ink: 36 33% 97%;
+    --ink-soft: 38 18% 80%;
     --ink-faint: 34 13% 60%;
     --ink-mute: 34 13% 45%;
-
-    --ink-bg: 36 33% 97%;            /* inverse — light surface in dark mode */
+    --ink-bg: 36 33% 97%;
     --ink-bg-2: 39 35% 92%;
-
-    --accent: 16 72% 60%;            /* lifted coral for contrast on dark */
+    --accent: 16 72% 60%;
     --accent-deep: 16 67% 50%;
     --accent-soft: 19 50% 25%;
     --accent-tint: 22 40% 18%;
     --accent-fg: 30 18% 7%;
-
     --border: 33 12% 18%;
     --border-soft: 33 12% 22%;
-
     --ring: 16 72% 60%;
     --success: 103 35% 50%;
     --warn: 32 78% 60%;
@@ -78,25 +71,42 @@
 
   html {
     @apply antialiased;
-    font-feature-settings: 'ss01', 'ss02', 'cv11', 'kern';
+    font-feature-settings: 'kern', 'ss01';
     scroll-behavior: smooth;
   }
 
   body {
     @apply bg-paper text-ink font-sans;
-    /* Subtle paper-grain texture — radial dot grid + warm vignette */
-    background-image:
-      radial-gradient(hsl(var(--ink) / 0.018) 1px, transparent 1px),
-      linear-gradient(180deg, hsl(var(--paper)) 0%, hsl(var(--paper-dim) / 0.6) 100%);
-    background-size: 28px 28px, 100% 100%;
-    background-attachment: fixed;
+    /* Flat warm paper — no grain, no gradient, no shadow */
   }
 
   h1, h2, h3, h4 {
-    @apply font-display tracking-tight;
+    @apply font-display;
     font-weight: 500;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.022em;
     line-height: 1.04;
+    color: hsl(var(--ink));
+  }
+
+  h1 {
+    font-size: clamp(48px, 6vw, 92px);
+    line-height: 0.98;
+    letter-spacing: -0.028em;
+  }
+  h2 {
+    font-size: clamp(36px, 4.6vw, 64px);
+    line-height: 1.02;
+    letter-spacing: -0.022em;
+  }
+  h3 {
+    font-size: clamp(24px, 2.6vw, 36px);
+    line-height: 1.1;
+    font-weight: 600;
+  }
+  h4 {
+    font-size: clamp(18px, 1.6vw, 22px);
+    line-height: 1.2;
+    font-weight: 600;
   }
 
   ::selection {
@@ -106,43 +116,84 @@
 
   :focus-visible {
     outline: 2px solid hsl(var(--accent));
-    outline-offset: 2px;
-    border-radius: 4px;
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 }
 
 @layer components {
-  /* Card "sheet" container — paper feel, hairline border */
-  .sheet {
-    @apply bg-paper-deep border border-border;
-    box-shadow: 0 1px 2px hsl(var(--ink) / 0.04);
-  }
-
-  .sheet-warm {
-    @apply bg-paper-dim border border-border-soft;
-  }
-
+  /* Hairline rule — the primary structural element. Use instead of borders. */
   .rule {
-    @apply border-t border-border;
+    height: 1px;
+    background: hsl(var(--border));
   }
 
-  /* Eyebrow label — coral dot + mono uppercase */
-  .label-mono {
-    @apply font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint inline-flex items-center gap-2;
+  /*
+   * Sheet — legacy class kept for compatibility. Was a card with border +
+   * shadow; now collapses to transparent. Components that still need a
+   * lifted card should explicitly use bg-paper-deep + border-border.
+   */
+  .sheet {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
   }
-  .label-mono::before {
+
+  /* Eyebrow label — coral dot + mono uppercase. The signature definable mark. */
+  .eyebrow {
+    font-family: var(--font-mono), 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--ink-faint));
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before {
     content: '';
-    @apply inline-block h-1.5 w-1.5 rounded-full bg-accent;
+    width: 6px;
+    height: 6px;
+    background: hsl(var(--accent));
+    border-radius: 50%;
+    display: inline-block;
   }
-  .label-mono.plain::before {
+  .eyebrow.plain::before {
     display: none;
   }
 
-  /* Italic accent inline (matches definable.ai .italic) */
+  /* Italic-accent — the definable signature inline flourish */
   .italic-accent {
     font-style: italic;
     color: hsl(var(--accent));
     font-weight: 500;
+  }
+
+  /* Container — definable max-width 1240px with 24px gutter */
+  .shell {
+    max-width: 1240px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* Pill link — minimal text link with subtle underline */
+  .text-link {
+    color: hsl(var(--ink-soft));
+    transition: color 150ms ease;
+  }
+  .text-link:hover {
+    color: hsl(var(--ink));
+  }
+
+  /* Lead paragraph */
+  .lede {
+    font-size: clamp(17px, 1.4vw, 20px);
+    line-height: 1.5;
+    color: hsl(var(--ink-soft));
+    max-width: 640px;
   }
 }
 
@@ -155,7 +206,7 @@
   }
 }
 
-/* Scrollbar — warm paper-toned */
+/* Scrollbar — warm, subtle */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -165,7 +216,7 @@
 }
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 8px;
+  border-radius: 999px;
   border: 2px solid hsl(var(--paper));
 }
 ::-webkit-scrollbar-thumb:hover {

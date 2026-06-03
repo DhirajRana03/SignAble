@@ -7,8 +7,8 @@ import { useUploadDocument } from '@/hooks/useDocuments';
 import { cn } from '@/lib/utils';
 
 /**
- * Drag-drop + click upload. Single-file, PDF only for v1.
- * Logic delegated to useUploadDocument hook.
+ * Borderless drop zone with dashed inner hairline. Definable-style:
+ * generous padding, minimal chrome, accent activates only on interaction.
  */
 export function DocumentUploader() {
   const upload = useUploadDocument();
@@ -38,11 +38,12 @@ export function DocumentUploader() {
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        'sheet relative cursor-pointer p-8 transition-all',
-        'flex items-center gap-5 group',
+        'relative cursor-pointer rounded-md p-10 lg:p-14 transition-all group',
+        'flex items-center gap-6',
+        'border border-dashed',
         dragging
-          ? 'border-accent shadow-sheet -translate-y-0.5'
-          : 'hover:border-ink-faint',
+          ? 'border-accent bg-accent-tint/30'
+          : 'border-border hover:border-accent-soft hover:bg-paper-dim/30',
         upload.isPending && 'pointer-events-none opacity-70',
       )}
     >
@@ -56,31 +57,31 @@ export function DocumentUploader() {
 
       <div
         className={cn(
-          'flex h-14 w-14 shrink-0 items-center justify-center rounded-sm border border-border bg-paper-dim transition-all',
-          dragging && 'border-accent bg-accent/5 scale-105',
+          'flex h-14 w-14 shrink-0 items-center justify-center rounded-pill transition-all',
+          dragging
+            ? 'bg-accent text-accent-fg'
+            : 'bg-paper-dim text-ink-soft group-hover:bg-accent-tint group-hover:text-accent-deep',
         )}
       >
         <UploadCloud
-          className={cn(
-            'h-6 w-6 text-ink-soft transition-colors',
-            dragging && 'text-accent',
-            upload.isPending && 'animate-pulse',
-          )}
+          className={cn('h-5 w-5', upload.isPending && 'animate-pulse')}
         />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="font-display text-lg tracking-tight">
+        <p className="font-display text-2xl tracking-tight">
           {upload.isPending ? 'Uploading…' : 'Drop a file, or click to browse'}
         </p>
-        <p className="text-xs text-ink-soft mt-0.5">
-          Max 50&nbsp;MB · processed locally on our service
+        <p className="text-sm text-ink-soft mt-1">
+          Max 50&nbsp;MB · PDF and common image formats
         </p>
       </div>
 
       <div className="hidden sm:flex flex-col items-end gap-1">
-        <span className="label-mono">supported</span>
-        <span className="font-mono text-xs text-ink-faint">pdf · images</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
+          Supported
+        </span>
+        <span className="font-mono text-xs text-ink-faint">pdf · img</span>
       </div>
     </div>
   );

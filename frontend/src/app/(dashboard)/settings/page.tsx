@@ -63,9 +63,11 @@ export default function SettingsPage() {
 
   return (
     <DashboardShell eyebrow="Workspace" title="Settings">
-      <div className="grid grid-cols-1 lg:grid-cols-[16rem_1fr] xl:grid-cols-[18rem_1fr] gap-8 lg:gap-12 max-w-6xl">
-        <aside className="lg:sticky lg:top-24 lg:self-start space-y-4">
-          <p className="label-mono px-5">Index</p>
+      <div className="grid grid-cols-1 lg:grid-cols-[14rem_1fr] xl:grid-cols-[16rem_1fr] gap-12 lg:gap-20 pb-16">
+        <aside className="lg:sticky lg:top-24 lg:self-start space-y-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
+            Index
+          </p>
           <SettingsNav
             sections={SECTIONS}
             active={active}

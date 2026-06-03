@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Chapter-style section header. Roman numeral floats above the rule.
- * Always pair with a SettingsSection for consistent rhythm.
+ * Chapter-style section header. Borderless. Eyebrow + display title +
+ * hairline rule below.
  */
 export function SettingsSection({
   roman,
@@ -24,21 +24,22 @@ export function SettingsSection({
   return (
     <section
       id={eyebrow.toLowerCase()}
-      className={cn('space-y-6 animate-fade-up', className)}
+      className={cn('space-y-8 animate-fade-up', className)}
     >
-      <header className="relative pb-6 border-b border-border">
-        <div className="absolute -top-3 left-0 flex items-center gap-3">
-          <span className="font-display italic text-accent text-sm bg-paper px-2">
-            {roman}
+      <header>
+        <div className="flex items-baseline gap-3 mb-4">
+          <span className="font-display italic text-accent text-sm">{roman}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
+            {eyebrow}
           </span>
-          <span className="label-mono bg-paper pr-2">{eyebrow}</span>
         </div>
-        <h2 className="font-display text-3xl tracking-tight pt-6">{title}</h2>
+        <h2 className="font-display tracking-tight">{title}</h2>
         {description ? (
-          <p className="mt-2 text-sm text-ink-soft max-w-2xl text-pretty">
+          <p className="mt-3 text-base text-ink-soft max-w-2xl text-pretty leading-relaxed">
             {description}
           </p>
         ) : null}
+        <div className="rule mt-8" />
       </header>
       {children}
     </section>
@@ -46,7 +47,7 @@ export function SettingsSection({
 }
 
 /**
- * Subdivides a section. Smaller rule, optional trailing action area.
+ * Settings row with label gutter + content. Borderless dividers.
  */
 export function SettingsRow({
   label,
@@ -64,16 +65,18 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        'grid grid-cols-1 lg:grid-cols-3 gap-6 py-6 border-b border-border last:border-0',
+        'grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12 py-8 border-b border-border-soft last:border-0',
         className,
       )}
     >
-      <div className="lg:col-span-1 space-y-1">
+      <div className="lg:col-span-1 space-y-1.5">
         {label ? (
-          <p className="font-display tracking-tight text-base">{label}</p>
+          <p className="font-display text-lg tracking-tight">{label}</p>
         ) : null}
         {description ? (
-          <p className="text-xs text-ink-soft text-pretty">{description}</p>
+          <p className="text-sm text-ink-soft text-pretty leading-relaxed max-w-xs">
+            {description}
+          </p>
         ) : null}
       </div>
       <div className="lg:col-span-2 space-y-4">

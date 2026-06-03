@@ -4,21 +4,25 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 
 export default function DocumentsPage() {
   return (
-    <DashboardShell
-      eyebrow="Library"
-      title="Documents"
-    >
-      <div className="space-y-8 max-w-7xl">
-        <DocumentUploader />
+    <DashboardShell eyebrow="Library" title="Documents">
+      <div className="space-y-16 lg:space-y-20 pb-16">
+        <section>
+          <DocumentUploader />
+        </section>
 
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-lg tracking-tight">
-            Your documents
-          </h2>
-          <span className="label-mono">most recent first</span>
-        </div>
+        <section>
+          <div className="flex items-baseline justify-between mb-8">
+            <div>
+              <span className="eyebrow">Your files</span>
+              <h2 className="mt-3">All documents</h2>
+            </div>
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+              Most recent first
+            </span>
+          </div>
 
-        <DocumentGrid />
+          <DocumentGrid />
+        </section>
       </div>
     </DashboardShell>
   );

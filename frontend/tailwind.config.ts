@@ -88,12 +88,11 @@ const config: Config = {
         pill: '9999px',
       },
       boxShadow: {
+        // Only used on hover-lift CTA. Default surfaces stay flat.
         xs: '0 1px 2px hsl(var(--ink) / 0.04)',
-        paper: '0 2px 8px hsl(var(--ink) / 0.04), 0 1px 2px hsl(var(--ink) / 0.03)',
-        sheet:
-          '0 8px 32px hsl(var(--ink) / 0.06), 0 2px 6px hsl(var(--ink) / 0.04)',
-        lifted:
-          '0 24px 60px hsl(var(--ink) / 0.10), 0 8px 20px hsl(var(--ink) / 0.05)',
+        paper: 'none',
+        sheet: 'none',
+        lifted: '0 24px 60px hsl(var(--ink) / 0.10), 0 8px 20px hsl(var(--ink) / 0.05)',
         coral: '0 10px 22px hsl(var(--accent) / 0.28)',
       },
       keyframes: {

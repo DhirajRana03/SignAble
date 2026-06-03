@@ -1,12 +1,16 @@
 'use client';
 
-import { ArrowRight, Users } from 'lucide-react';
+import { ArrowUpRight, Users } from 'lucide-react';
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { cn, formatRelative, recipientColor } from '@/lib/utils';
 import type { Envelope } from '@/types/envelope.types';
 
+/**
+ * Row pattern — no border-card box. Hairline separator below.
+ * Hover surfaces a subtle paper-dim wash + coral arrow translate.
+ */
 export function EnvelopeCard({
   envelope,
   index,
@@ -18,76 +22,82 @@ export function EnvelopeCard({
   const signed = recipients.filter((r) => r.status === 'SIGNED').length;
 
   return (
-    <Link
-      href={`/envelopes/${envelope.id}`}
-      className="sheet group relative block rounded-md p-5 transition-all hover:-translate-y-0.5 hover:shadow-sheet hover:border-accent-soft animate-fade-up overflow-hidden"
-      style={{ animationDelay: `${index * 35}ms` }}
-    >
-      {/* coral aurora wash on hover */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
-        style={{
-          background:
-            'linear-gradient(135deg, hsl(var(--accent) / 0.04) 0%, transparent 60%)',
-        }}
-      />
-
-      <div className="relative flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display text-lg tracking-tight truncate text-ink">
-            {envelope.title}
-          </h3>
-          {envelope.message ? (
-            <p className="mt-1 text-sm text-ink-soft line-clamp-2">
-              {envelope.message}
-            </p>
-          ) : null}
-        </div>
-        <StatusBadge status={envelope.status} />
-      </div>
-
-      <div className="relative rule my-4" />
-
-      <div className="relative flex items-center justify-between text-xs">
-        <div className="flex items-center gap-3 text-ink-soft">
-          <div className="flex items-center gap-1.5">
-            <Users className="h-3 w-3" />
-            <span>
-              <span className="font-mono font-medium text-ink">
-                {signed}/{recipients.length}
-              </span>{' '}
-              signed
-            </span>
+    <>
+      <Link
+        href={`/envelopes/${envelope.id}`}
+        className="group block relative py-7 transition-colors animate-fade-up hover:bg-paper-dim/50 -mx-4 px-4 lg:-mx-6 lg:px-6 rounded-sm"
+        style={{ animationDelay: `${index * 28}ms` }}
+      >
+        <div className="grid grid-cols-12 gap-4 items-center">
+          {/* Title + message */}
+          <div className="col-span-12 md:col-span-5 min-w-0">
+            <h3 className="font-display text-xl tracking-tight truncate text-ink">
+              {envelope.title}
+            </h3>
+            {envelope.message ? (
+              <p className="mt-1 text-sm text-ink-soft line-clamp-1">
+                {envelope.message}
+              </p>
+            ) : null}
           </div>
 
-          <div className="flex -space-x-1.5">
-            {recipients.slice(0, 4).map((r, i) => {
-              const color = recipientColor(i);
-              return (
-                <span
-                  key={r.id}
-                  className={cn(
-                    'inline-flex h-5 w-5 items-center justify-center rounded-pill border text-[9px] font-mono uppercase',
-                    color.bg,
-                    color.fg,
-                    'border-current',
-                    r.status === 'SIGNED' && 'ring-2 ring-success ring-offset-1 ring-offset-paper-deep',
-                  )}
-                  title={`${r.name} · ${r.status}`}
-                >
-                  {r.name[0]}
+          {/* Signers + status */}
+          <div className="col-span-7 md:col-span-4 flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-ink-soft">
+              <Users className="h-3.5 w-3.5 text-ink-mute" />
+              <span>
+                <span className="font-mono font-medium text-ink">
+                  {signed}
                 </span>
-              );
-            })}
+                <span className="text-ink-mute"> / {recipients.length}</span>
+              </span>
+            </div>
+
+            <div className="flex -space-x-1.5">
+              {recipients.slice(0, 4).map((r, i) => {
+                const color = recipientColor(i);
+                return (
+                  <span
+                    key={r.id}
+                    className={cn(
+                      'inline-flex h-5 w-5 items-center justify-center rounded-pill border text-[9px] font-mono uppercase',
+                      color.bg,
+                      color.fg,
+                      'border-current',
+                      r.status === 'SIGNED' && 'ring-2 ring-success ring-offset-1 ring-offset-paper',
+                    )}
+                    title={`${r.name} · ${r.status}`}
+                  >
+                    {r.name[0]}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Status badge */}
+          <div className="hidden md:flex md:col-span-2 justify-end">
+            <StatusBadge status={envelope.status} />
+          </div>
+
+          {/* Date + arrow */}
+          <div className="col-span-5 md:col-span-1 flex items-center justify-end gap-2 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-mute">
+            <span className="hidden lg:inline whitespace-nowrap">
+              {formatRelative(envelope.createdAt)}
+            </span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-ink-faint group-hover:text-accent-deep group-hover:translate-x-px group-hover:-translate-y-px transition-all" />
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-mute">
-          <span>{formatRelative(envelope.createdAt)}</span>
-          <ArrowRight className="h-3 w-3 text-ink-faint group-hover:text-accent-deep group-hover:translate-x-0.5 transition-all" />
+        {/* Mobile status row */}
+        <div className="mt-3 flex items-center justify-between md:hidden">
+          <StatusBadge status={envelope.status} />
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-mute">
+            {formatRelative(envelope.createdAt)}
+          </span>
         </div>
-      </div>
-    </Link>
+      </Link>
+      <div className="rule" />
+    </>
   );
 }
