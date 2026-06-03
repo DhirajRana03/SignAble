@@ -79,21 +79,29 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               className={cn(
-                'flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors',
+                'group relative flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors',
                 active
-                  ? 'bg-ink text-paper shadow-paper'
-                  : 'text-ink-soft hover:bg-paper-deep/40 hover:text-ink',
+                  ? 'bg-accent-tint/60 text-ink font-medium'
+                  : 'text-ink-soft hover:bg-paper-dim/50 hover:text-ink',
               )}
             >
+              {/* coral rail — definable .nav-link.active style */}
+              <span
+                aria-hidden
+                className={cn(
+                  'absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-pill transition-colors',
+                  active ? 'bg-accent' : 'bg-transparent group-hover:bg-border',
+                )}
+              />
               <Icon
                 className={cn(
-                  'h-4 w-4',
-                  active ? 'text-paper' : 'text-ink-faint',
+                  'h-4 w-4 shrink-0 transition-colors',
+                  active ? 'text-accent-deep' : 'text-ink-faint',
                 )}
               />
               <span>{item.label}</span>
               {active ? (
-                <span className="ml-auto h-1 w-1 rounded-full bg-accent" />
+                <span className="ml-auto h-1.5 w-1.5 rounded-pill bg-accent animate-pulse-coral" />
               ) : null}
             </Link>
           );
@@ -110,7 +118,9 @@ export function Sidebar({
           <Settings className="h-3.5 w-3.5" />
           Settings
         </Link>
-        <p className="label-mono">v0.2 · beta</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
+          v0.3 · beta
+        </p>
       </div>
     </div>
   );
@@ -118,7 +128,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop: persistent column */}
-      <aside className="hidden md:flex md:w-60 lg:w-64 shrink-0 border-r border-border bg-paper-dim/40 backdrop-blur-sm">
+      <aside className="hidden md:flex md:w-60 lg:w-64 shrink-0 border-r border-border bg-paper/80 backdrop-blur-md">
         {navContent}
       </aside>
 

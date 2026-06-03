@@ -23,13 +23,13 @@ export function DocumentCard({
 
   return (
     <article
-      className="sheet group relative flex flex-col p-5 transition-all hover:shadow-sheet animate-fade-up"
+      className="sheet group relative flex flex-col rounded-md p-5 transition-all hover:-translate-y-0.5 hover:shadow-sheet hover:border-accent-soft animate-fade-up"
       style={{ animationDelay: `${index * 35}ms` }}
     >
       <div className="absolute top-3 right-3">
         <button
           onClick={() => setMenuOpen((s) => !s)}
-          className="p-1 rounded-sm hover:bg-paper-dim text-ink-faint"
+          className="p-1 rounded-md hover:bg-paper-dim text-ink-faint transition-colors"
           aria-label="Actions"
         >
           <MoreVertical className="h-4 w-4" />
@@ -40,7 +40,7 @@ export function DocumentCard({
               className="fixed inset-0 z-10"
               onClick={() => setMenuOpen(false)}
             />
-            <div className="absolute right-0 top-7 z-20 w-44 sheet animate-scale-in p-1">
+            <div className="absolute right-0 top-7 z-20 w-44 sheet rounded-md animate-scale-in p-1">
               <button
                 onClick={() => del.mutate(doc.id)}
                 className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-danger hover:bg-danger/5"
@@ -55,13 +55,14 @@ export function DocumentCard({
       <div className="flex items-start gap-4">
         <div
           className={cn(
-            'flex h-14 w-12 shrink-0 items-center justify-center rounded-sm border border-border bg-paper-dim',
-            'relative overflow-hidden',
+            'flex h-14 w-12 shrink-0 items-center justify-center rounded-sm border border-border bg-accent-tint/40',
+            'relative overflow-hidden transition-colors',
+            'group-hover:border-accent-soft group-hover:bg-accent-tint',
           )}
         >
-          <FileText className="h-5 w-5 text-ink-faint" />
+          <FileText className="h-5 w-5 text-accent-deep" />
           {/* Hairline page-fold ornament */}
-          <div className="absolute top-0 right-0 h-3 w-3 border-l border-b border-border bg-paper" />
+          <div className="absolute top-0 right-0 h-3 w-3 border-l border-b border-border bg-paper-deep" />
         </div>
 
         <div className="min-w-0 flex-1 pr-6">

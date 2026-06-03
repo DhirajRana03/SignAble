@@ -52,16 +52,18 @@ export function AppearanceSection() {
                 onClick={() => setTheme(opt.value)}
                 aria-pressed={active}
                 className={cn(
-                  'sheet relative p-4 text-left transition-all flex flex-col gap-2',
+                  'sheet relative rounded-md p-4 text-left transition-all flex flex-col gap-2 overflow-hidden',
                   active
-                    ? 'border-accent shadow-paper -translate-y-0.5'
-                    : 'hover:border-ink-faint',
+                    ? 'border-accent shadow-paper -translate-y-0.5 bg-accent-tint/30'
+                    : 'hover:border-accent-soft hover:bg-paper-dim/40',
                 )}
               >
                 <span
                   className={cn(
-                    'h-9 w-9 rounded-sm border border-border flex items-center justify-center',
-                    active ? 'bg-accent text-accent-fg border-accent' : 'bg-paper-dim text-ink-soft',
+                    'h-9 w-9 rounded-md border flex items-center justify-center transition-colors',
+                    active
+                      ? 'bg-accent text-accent-fg border-accent-deep shadow-coral'
+                      : 'bg-paper-dim text-ink-soft border-border',
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -73,7 +75,7 @@ export function AppearanceSection() {
                   {opt.description}
                 </span>
                 {active ? (
-                  <span className="absolute top-3 right-3 h-1.5 w-1.5 rounded-full bg-accent" />
+                  <span className="absolute top-3 right-3 h-1.5 w-1.5 rounded-pill bg-accent animate-pulse-coral" />
                 ) : null}
               </button>
             );

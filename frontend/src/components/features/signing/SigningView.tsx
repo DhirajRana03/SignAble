@@ -115,26 +115,28 @@ export function SigningView({ token }: { token: string }) {
       </section>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 inset-x-0 z-30 border-t border-border bg-paper/95 backdrop-blur-md">
+      <div className="fixed bottom-0 inset-x-0 z-30 border-t border-border bg-paper-deep/95 backdrop-blur-md shadow-[0_-8px_32px_hsl(var(--ink)/0.06)]">
         <div className="mx-auto max-w-6xl px-6 h-20 flex items-center gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-1.5 w-32 bg-paper-deep rounded-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="h-1.5 w-32 bg-paper-dim rounded-pill overflow-hidden">
                 <div
-                  className="h-full bg-success transition-all"
+                  className="h-full bg-accent transition-all rounded-pill"
                   style={{
                     width: `${(completedCount / Math.max(required.length, 1)) * 100}%`,
                   }}
                 />
               </div>
-              <span className="label-mono">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">
                 {Math.round((completedCount / Math.max(required.length, 1)) * 100)}%
               </span>
             </div>
             <p className="text-xs text-ink-soft">
-              {allRequiredFilled
-                ? 'Ready to submit'
-                : 'Tap each highlighted field on the document'}
+              {allRequiredFilled ? (
+                <span className="italic-accent">Ready to submit.</span>
+              ) : (
+                'Tap each highlighted field on the document'
+              )}
             </p>
           </div>
           <Button

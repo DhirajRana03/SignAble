@@ -106,11 +106,11 @@ export function FieldToolbar({
                   setPendingFieldType(selected ? null : f.type)
                 }
                 className={cn(
-                  'flex flex-col items-center gap-1.5 rounded-sm border p-3 transition-all',
+                  'flex flex-col items-center gap-1.5 rounded-md border p-3 transition-all',
                   'disabled:opacity-40 disabled:cursor-not-allowed',
                   selected
-                    ? 'border-accent bg-accent/5 text-accent shadow-paper'
-                    : 'border-border hover:border-ink-faint',
+                    ? 'border-accent bg-accent-tint text-accent-deep shadow-paper'
+                    : 'border-border text-ink-soft hover:border-accent-soft hover:bg-paper-dim/40 hover:text-ink',
                 )}
               >
                 <Icon className="h-4 w-4" />

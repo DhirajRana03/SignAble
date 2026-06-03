@@ -20,12 +20,22 @@ export function EnvelopeCard({
   return (
     <Link
       href={`/envelopes/${envelope.id}`}
-      className="sheet group block p-5 transition-all hover:shadow-sheet hover:-translate-y-0.5 animate-fade-up"
+      className="sheet group relative block rounded-md p-5 transition-all hover:-translate-y-0.5 hover:shadow-sheet hover:border-accent-soft animate-fade-up overflow-hidden"
       style={{ animationDelay: `${index * 35}ms` }}
     >
-      <div className="flex items-start justify-between gap-4">
+      {/* coral aurora wash on hover */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+        style={{
+          background:
+            'linear-gradient(135deg, hsl(var(--accent) / 0.04) 0%, transparent 60%)',
+        }}
+      />
+
+      <div className="relative flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h3 className="font-display text-lg tracking-tight truncate">
+          <h3 className="font-display text-lg tracking-tight truncate text-ink">
             {envelope.title}
           </h3>
           {envelope.message ? (
@@ -37,9 +47,9 @@ export function EnvelopeCard({
         <StatusBadge status={envelope.status} />
       </div>
 
-      <div className="rule my-4" />
+      <div className="relative rule my-4" />
 
-      <div className="flex items-center justify-between text-xs">
+      <div className="relative flex items-center justify-between text-xs">
         <div className="flex items-center gap-3 text-ink-soft">
           <div className="flex items-center gap-1.5">
             <Users className="h-3 w-3" />
@@ -58,11 +68,11 @@ export function EnvelopeCard({
                 <span
                   key={r.id}
                   className={cn(
-                    'inline-flex h-5 w-5 items-center justify-center rounded-sm border text-[9px] font-mono uppercase',
+                    'inline-flex h-5 w-5 items-center justify-center rounded-pill border text-[9px] font-mono uppercase',
                     color.bg,
                     color.fg,
                     'border-current',
-                    r.status === 'SIGNED' && 'ring-2 ring-success ring-offset-1 ring-offset-paper',
+                    r.status === 'SIGNED' && 'ring-2 ring-success ring-offset-1 ring-offset-paper-deep',
                   )}
                   title={`${r.name} · ${r.status}`}
                 >
@@ -73,9 +83,9 @@ export function EnvelopeCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-ink-soft">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-mute">
           <span>{formatRelative(envelope.createdAt)}</span>
-          <ArrowRight className="h-3 w-3 text-ink-faint group-hover:text-accent transition-colors" />
+          <ArrowRight className="h-3 w-3 text-ink-faint group-hover:text-accent-deep group-hover:translate-x-0.5 transition-all" />
         </div>
       </div>
     </Link>

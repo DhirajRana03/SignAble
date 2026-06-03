@@ -179,14 +179,20 @@ function SigningOrderPicker({
           type="button"
           onClick={() => onChange(o.value)}
           className={cn(
-            'text-left rounded-sm border p-4 transition-all',
+            'relative text-left rounded-md border p-4 transition-all overflow-hidden',
             value === o.value
-              ? 'border-accent bg-accent/5 shadow-paper'
-              : 'border-border hover:border-ink-faint',
+              ? 'border-accent bg-accent-tint/40 shadow-paper'
+              : 'border-border hover:border-accent-soft hover:bg-paper-dim/40',
           )}
         >
-          <p className="font-medium text-sm">{o.title}</p>
-          <p className="text-xs text-ink-soft mt-1">{o.desc}</p>
+          {value === o.value ? (
+            <span
+              aria-hidden
+              className="absolute right-3 top-3 inline-flex h-1.5 w-1.5 rounded-pill bg-accent animate-pulse-coral"
+            />
+          ) : null}
+          <p className="font-display text-base tracking-tight">{o.title}</p>
+          <p className="text-xs text-ink-soft mt-1 leading-relaxed">{o.desc}</p>
         </button>
       ))}
     </div>

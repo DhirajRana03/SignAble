@@ -52,7 +52,7 @@ export function SigningFieldOverlay({
               'absolute pointer-events-auto rounded-sm transition-all border-2 group',
               filled
                 ? 'border-success bg-success/5'
-                : 'border-accent bg-accent/10 hover:bg-accent/20 animate-pulse',
+                : 'border-accent bg-accent-tint/70 hover:bg-accent-tint hover:border-accent-deep shadow-coral animate-pulse-coral',
               'flex items-center justify-center',
             )}
           >

@@ -30,7 +30,7 @@ export function Topbar({
         {onMenuClick ? (
           <button
             onClick={onMenuClick}
-            className="md:hidden h-9 w-9 flex items-center justify-center rounded-sm border border-border bg-paper text-ink-faint hover:bg-paper-dim hover:text-ink"
+            className="md:hidden h-9 w-9 flex items-center justify-center rounded-md border border-border bg-paper-deep text-ink-faint hover:bg-paper-dim hover:text-ink hover:border-accent-soft transition-colors"
             aria-label="Open navigation"
           >
             <Menu className="h-4 w-4" />
@@ -62,7 +62,12 @@ export function Topbar({
           <div className="relative ml-1 sm:ml-2">
             <button
               onClick={() => setMenuOpen((s) => !s)}
-              className="flex h-9 w-9 items-center justify-center rounded-sm border border-border bg-paper text-xs font-medium uppercase tracking-wider hover:bg-paper-dim"
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-pill border bg-paper-deep text-xs font-mono uppercase tracking-wider transition-all',
+                menuOpen
+                  ? 'border-accent text-accent-deep bg-accent-tint'
+                  : 'border-border text-ink-soft hover:border-accent-soft hover:text-ink hover:-translate-y-px',
+              )}
               aria-label="Account menu"
               aria-expanded={menuOpen}
             >
