@@ -14,6 +14,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProcessorService } from '../processor/processor.service';
 import { StorageService } from '../storage/storage.service';
+import { QueueService } from '../queues/queue.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { SigningService } from './signing.service';
 
@@ -55,6 +56,10 @@ describe('SigningService', () => {
         {
           provide: WebhooksService,
           useValue: { fanOut: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: QueueService,
+          useValue: { enqueue: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

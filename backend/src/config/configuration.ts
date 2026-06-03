@@ -15,6 +15,23 @@ export default () => ({
 
   processorUrl: process.env.PROCESSOR_URL ?? 'http://processor:8001',
 
+  redis: {
+    host: process.env.REDIS_HOST ?? 'redis',
+    port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+    password: process.env.REDIS_PASSWORD ?? '',
+    db: parseInt(process.env.REDIS_DB ?? '0', 10),
+    // When true, queues become synchronous in-process (no Redis needed).
+    // Useful for tests + dev without Redis. Production: false.
+    inline: process.env.QUEUES_INLINE === 'true',
+  },
+
+  bull: {
+    boardEnabled: process.env.BULL_BOARD_ENABLED === 'true',
+    // Job retention to avoid Redis bloat
+    completedRetention: parseInt(process.env.BULL_COMPLETED_RETAIN ?? '500', 10),
+    failedRetention: parseInt(process.env.BULL_FAILED_RETAIN ?? '5000', 10),
+  },
+
   storage: {
     root: process.env.STORAGE_ROOT ?? 'storage',
     urlBase: process.env.STORAGE_URL_BASE ?? 'http://localhost:8000/api/v1/files',

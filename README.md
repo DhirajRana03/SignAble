@@ -8,19 +8,20 @@ DocuSign-style e-signature platform. Upload PDFs, place signature fields, route 
 
 ## Architecture
 
-3-service monorepo:
+3-service monorepo + Redis-backed job queues:
 
-- **`backend/`** — NestJS + Prisma + PostgreSQL. Auth, envelopes, recipients, fields, signing flow, storage.
-- **`processor/`** — Python FastAPI. Stateless PDF processing only (extract, render pages, apply signatures). Wraps [doc_loader](https://github.com/pratyush618/doc_loader).
-- **`frontend/`** — Next.js 14 + TypeScript + Tailwind. Editorial/legal aesthetic.
+- **`backend/`** — NestJS + Prisma + PostgreSQL. Auth, envelopes, recipients, fields, signing flow, storage, webhooks.
+- **`processor/`** — Python FastAPI. Stateless PDF processing only (extract, render pages, apply signatures). Uses pypdf directly.
+- **`frontend/`** — Next.js 14 + TypeScript + Tailwind. Coral-on-paper editorial aesthetic, matched to definable.ai.
 
 Communication: Frontend → NestJS API → Python processor via internal HTTP.
+Background work: document processing, signed PDF finalization, webhook delivery, and signing-request emails all run on **BullMQ + Redis** with exponential-backoff retries. Set `QUEUES_INLINE=true` for synchronous execution in dev/CI without Redis.
 
 ## Tech Stack
 
 | Layer | Tech |
 |---|---|
-| Backend API | NestJS 10 · Prisma 5 · PostgreSQL 16 · JWT · bcrypt |
+| Backend API | NestJS 10 · Prisma 5 · PostgreSQL 16 · JWT · bcrypt · BullMQ · Redis 7 |
 | Processor | FastAPI · pypdf · pdf2image · reportlab · doc_loader |
 | Frontend | Next.js 14 · TanStack Query · Zustand · Tailwind · shadcn-style primitives |
 | Container | Docker Compose (4 services) |

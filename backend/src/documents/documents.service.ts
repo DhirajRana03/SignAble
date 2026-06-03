@@ -11,6 +11,9 @@ import {
 } from '../common/exceptions/domain.exceptions';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProcessorService } from '../processor/processor.service';
+import { JOB_NAMES, QUEUE_NAMES } from '../queues/queue-names';
+import { QueueService } from '../queues/queue.service';
+import type { ProcessDocumentJob } from '../queues/queue.types';
 import { StorageService } from '../storage/storage.service';
 
 /**
@@ -39,6 +42,7 @@ export class DocumentsService {
     private readonly storage: StorageService,
     private readonly processor: ProcessorService,
     private readonly config: ConfigService,
+    private readonly queue: QueueService,
   ) {}
 
   async upload(
@@ -75,11 +79,13 @@ export class DocumentsService {
       },
     });
 
-    // Fire-and-forget processing. setImmediate keeps response fast.
-    // Upgrade path: swap with Bull queue without touching callers.
-    setImmediate(() => {
-      void this.processInBackground(doc.id);
-    });
+    // Enqueue durable processing job. BullMQ handles retries + backoff;
+    // inline mode runs handler synchronously.
+    await this.queue.enqueue<ProcessDocumentJob>(
+      QUEUE_NAMES.DOCUMENTS,
+      JOB_NAMES.PROCESS_DOCUMENT,
+      { documentId: doc.id },
+    );
 
     return doc;
   }
@@ -118,7 +124,12 @@ export class DocumentsService {
     await this.prisma.document.delete({ where: { id: docId } });
   }
 
-  private async processInBackground(docId: string): Promise<void> {
+  /**
+   * Worker entrypoint. Executed by DocumentsProcessor worker (or inline
+   * fallback). Pulls PDF from storage, calls processor, persists rendered
+   * page images, updates status. Errors mark document FAILED with message.
+   */
+  async runProcessDocument(docId: string): Promise<void> {
     try {
       await this.prisma.document.update({
         where: { id: docId },
@@ -159,6 +170,8 @@ export class DocumentsService {
           },
         })
         .catch(() => undefined);
+      // Rethrow so BullMQ records as failed attempt; retries kick in.
+      throw err;
     }
   }
 }

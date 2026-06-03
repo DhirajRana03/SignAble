@@ -20,6 +20,12 @@ import {
   ProcessorService,
   SignedFieldData,
 } from '../processor/processor.service';
+import { JOB_NAMES, QUEUE_NAMES } from '../queues/queue-names';
+import { QueueService } from '../queues/queue.service';
+import type {
+  FinalizeSignedPdfJob,
+  SendSigningRequestJob,
+} from '../queues/queue.types';
 import { StorageService } from '../storage/storage.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 
@@ -33,6 +39,7 @@ export class SigningService {
     private readonly processor: ProcessorService,
     private readonly notifications: NotificationsService,
     private readonly webhooks: WebhooksService,
+    private readonly queue: QueueService,
   ) {}
 
   async getForSigner(token: string) {
@@ -190,9 +197,11 @@ export class SigningService {
             data: { status: EnvelopeStatus.IN_PROGRESS },
           });
         }
-        setImmediate(() => {
-          void this.sendSigningEmail(next.id);
-        });
+        await this.queue.enqueue<SendSigningRequestJob>(
+          QUEUE_NAMES.NOTIFICATIONS,
+          JOB_NAMES.SEND_SIGNING_REQUEST,
+          { recipientId: next.id },
+        );
       } else {
         await this.finalize(envelope);
       }
@@ -221,9 +230,26 @@ export class SigningService {
       AuditEventType.ENVELOPE_COMPLETED,
       'system',
     );
-    setImmediate(() => {
-      void this.buildSignedPdf(envelope.id);
-    });
+    await this.queue.enqueue<FinalizeSignedPdfJob>(
+      QUEUE_NAMES.SIGNING,
+      JOB_NAMES.FINALIZE_SIGNED_PDF,
+      { envelopeId: envelope.id },
+    );
+  }
+
+  /**
+   * Worker entrypoint. Builds the final signed PDF + posts completion emails.
+   * Made public so SigningWorker can invoke it; not for direct controller use.
+   */
+  async runFinalizeSignedPdf(envelopeId: string): Promise<void> {
+    return this.buildSignedPdf(envelopeId);
+  }
+
+  /**
+   * Worker entrypoint. Sends signing request to a recipient.
+   */
+  async runSendSigningRequest(recipientId: string): Promise<void> {
+    return this.sendSigningEmail(recipientId);
   }
 
   private async buildSignedPdf(envelopeId: string): Promise<void> {
@@ -295,6 +321,8 @@ export class SigningService {
       this.logger.error(
         `buildSignedPdf failed for ${envelopeId}: ${(err as Error).message}`,
       );
+      // Rethrow so BullMQ marks the job failed + applies retry policy.
+      throw err;
     }
   }
 

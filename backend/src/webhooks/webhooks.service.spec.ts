@@ -5,6 +5,7 @@ import {
   NotFoundError,
 } from '../common/exceptions/domain.exceptions';
 import { PrismaService } from '../prisma/prisma.service';
+import { QueueService } from '../queues/queue.service';
 import { WebhooksService } from './webhooks.service';
 
 describe('WebhooksService', () => {
@@ -29,6 +30,10 @@ describe('WebhooksService', () => {
       providers: [
         WebhooksService,
         { provide: PrismaService, useValue: prisma },
+        {
+          provide: QueueService,
+          useValue: { enqueue: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

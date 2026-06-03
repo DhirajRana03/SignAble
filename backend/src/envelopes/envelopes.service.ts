@@ -17,6 +17,9 @@ import {
 } from '../common/exceptions/domain.exceptions';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { JOB_NAMES, QUEUE_NAMES } from '../queues/queue-names';
+import { QueueService } from '../queues/queue.service';
+import type { SendSigningRequestJob } from '../queues/queue.types';
 import { StorageService } from '../storage/storage.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateEnvelopeDto, UpdateEnvelopeDto } from './dto/envelope.dto';
@@ -37,6 +40,7 @@ export class EnvelopesService {
     private readonly storage: StorageService,
     private readonly notifications: NotificationsService,
     private readonly webhooks: WebhooksService,
+    private readonly queue: QueueService,
   ) {}
 
   async create(
@@ -135,10 +139,9 @@ export class EnvelopesService {
 
     await this.log(envelopeId, AuditEventType.ENVELOPE_SENT, userEmail);
 
-    // Notify first recipient(s) without blocking the response.
-    setImmediate(() => {
-      void this.notifyInitial(envelopeId);
-    });
+    // Enqueue per-recipient signing-request jobs. BullMQ handles retries
+    // + backoff; inline mode dispatches immediately via registered handler.
+    await this.notifyInitial(envelopeId);
 
     return updated;
   }
@@ -222,13 +225,11 @@ export class EnvelopesService {
         : envelope.recipients;
 
     for (const r of targets) {
-      await this.notifications.sendSigningRequest({
-        to: r.email,
-        name: r.name,
-        envelopeTitle: envelope.title,
-        signingToken: r.signingToken,
-        message: envelope.message,
-      });
+      await this.queue.enqueue<SendSigningRequestJob>(
+        QUEUE_NAMES.NOTIFICATIONS,
+        JOB_NAMES.SEND_SIGNING_REQUEST,
+        { recipientId: r.id },
+      );
     }
   }
 

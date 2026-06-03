@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProcessorModule } from './processor/processor.module';
+import { QueuesModule } from './queues/queues.module';
 import { RecipientsModule } from './recipients/recipients.module';
 import { SigningModule } from './signing/signing.module';
 import { StorageModule } from './storage/storage.module';
@@ -31,6 +32,7 @@ import configuration from './config/configuration';
       { name: 'long', ttl: 60_000, limit: 200 },
     ]),
     PrismaModule,
+    QueuesModule,
     StorageModule,
     ProcessorModule,
     NotificationsModule,

@@ -41,6 +41,8 @@ jobs:
       PROCESSOR_URL: http://localhost:8001
       FRONTEND_URL: http://localhost:3000
       ALLOWED_ORIGINS: http://localhost:3000
+      # Inline mode runs jobs synchronously — no Redis needed in CI
+      QUEUES_INLINE: "true"
       STORAGE_ROOT: storage
       STORAGE_URL_BASE: http://localhost:8000/api/v1/files
       EMAIL_ENABLED: "false"

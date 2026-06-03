@@ -8,6 +8,7 @@ import {
 } from '../common/exceptions/domain.exceptions';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { QueueService } from '../queues/queue.service';
 import { StorageService } from '../storage/storage.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { EnvelopesService } from './envelopes.service';
@@ -44,6 +45,10 @@ describe('EnvelopesService', () => {
         {
           provide: WebhooksService,
           useValue: { fanOut: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: QueueService,
+          useValue: { enqueue: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();
@@ -180,8 +185,6 @@ describe('EnvelopesService', () => {
           data: expect.objectContaining({ status: EnvelopeStatus.SENT }),
         }),
       );
-      // Wait for setImmediate microtask to complete + return
-      await new Promise((r) => setImmediate(r));
     });
   });
 

@@ -8,6 +8,9 @@ import {
   NotFoundError,
 } from '../common/exceptions/domain.exceptions';
 import { PrismaService } from '../prisma/prisma.service';
+import { JOB_NAMES, QUEUE_NAMES } from '../queues/queue-names';
+import { QueueService } from '../queues/queue.service';
+import type { DeliverWebhookJob } from '../queues/queue.types';
 import {
   CreateWebhookDto,
   UpdateWebhookDto,
@@ -25,7 +28,10 @@ interface WebhookPayload {
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly queue: QueueService,
+  ) {}
 
   async create(userId: string, dto: CreateWebhookDto) {
     return this.prisma.webhookSubscription.create({
@@ -101,19 +107,47 @@ export class WebhooksService {
 
     if (subs.length === 0) return;
 
-    const payload: WebhookPayload = {
-      event: eventType,
-      envelopeId,
-      data,
-      timestamp: new Date().toISOString(),
-    };
+    const timestamp = new Date().toISOString();
 
-    // Schedule deliveries without blocking caller
-    setImmediate(() => {
-      void Promise.all(
-        subs.map((s) => this.deliver(s.id, s.url, s.secret, payload)),
-      );
-    });
+    // Enqueue one delivery job per subscription. Each retries independently
+    // with exponential backoff (configured in QueueService defaults).
+    await Promise.all(
+      subs.map((s) =>
+        this.queue.enqueue<DeliverWebhookJob>(
+          QUEUE_NAMES.WEBHOOKS,
+          JOB_NAMES.DELIVER_WEBHOOK,
+          {
+            subscriptionId: s.id,
+            url: s.url,
+            secret: s.secret,
+            eventType,
+            envelopeId,
+            data,
+            timestamp,
+          },
+        ),
+      ),
+    );
+  }
+
+  /**
+   * Worker entrypoint. Performs the HTTP POST + records delivery row.
+   * Throws on non-2xx to trigger BullMQ retry; persistent failure rows
+   * accumulate per subscription.
+   */
+  async runDeliver(payload: DeliverWebhookJob): Promise<void> {
+    const webhookPayload: WebhookPayload = {
+      event: String(payload.eventType),
+      envelopeId: payload.envelopeId,
+      data: payload.data,
+      timestamp: payload.timestamp,
+    };
+    await this.deliver(
+      payload.subscriptionId,
+      payload.url,
+      payload.secret,
+      webhookPayload,
+    );
   }
 
   private async deliver(
@@ -165,15 +199,21 @@ export class WebhooksService {
         where: { id: subscriptionId },
         data: { lastFiredAt: new Date(), failureCount: 0 },
       });
-    } else {
-      await this.prisma.webhookSubscription.update({
-        where: { id: subscriptionId },
-        data: { failureCount: { increment: 1 } },
-      });
-      this.logger.warn(
-        `webhook delivery failed sub=${subscriptionId} status=${status}`,
-      );
+      return;
     }
+
+    await this.prisma.webhookSubscription.update({
+      where: { id: subscriptionId },
+      data: { failureCount: { increment: 1 } },
+    });
+    this.logger.warn(
+      `webhook delivery failed sub=${subscriptionId} status=${status}`,
+    );
+    // Throw so BullMQ retries with backoff. Delivery row already persisted
+    // with the failure status; retries create additional rows.
+    throw new Error(
+      `Webhook delivery failed: sub=${subscriptionId} status=${status}`,
+    );
   }
 
   private generateSecret(): string {
