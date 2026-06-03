@@ -23,7 +23,10 @@ build/
 backend/dist/
 frontend/.next/
 frontend/out/
+frontend/tsconfig.tsbuildinfo
+*.tsbuildinfo
 processor/.venv/
+processor/uv.lock
 
 # Storage (user-uploaded files)
 backend/storage/
