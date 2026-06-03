@@ -1,0 +1,105 @@
+/**
+ * Field placement editor state.
+ *
+ * In Zustand because:
+ * - mutated rapidly during drag (too noisy for server / query cache)
+ * - shared across FieldToolbar, FieldOverlay, DraggableField without prop drilling
+ * - represents draft state before user clicks "Save fields"
+ */
+import { nanoid } from '@/lib/nanoid';
+import type { FieldType, SignatureField } from '@/types/envelope.types';
+import { create } from 'zustand';
+
+export interface EditorField {
+  tempId: string;            // client-only id; replaced by server id after save
+  serverId?: string;          // populated once persisted
+  recipientId: string;
+  pageNumber: number;
+  xPct: number;
+  yPct: number;
+  widthPct: number;
+  heightPct: number;
+  fieldType: FieldType;
+  required: boolean;
+}
+
+interface EditorState {
+  envelopeId: string | null;
+  fields: EditorField[];
+  selectedTempId: string | null;
+  activeRecipientId: string | null;
+  dirty: boolean;
+  init: (envelopeId: string, existing: SignatureField[]) => void;
+  setActiveRecipient: (recipientId: string | null) => void;
+  addField: (field: Omit<EditorField, 'tempId'>) => void;
+  updateField: (tempId: string, patch: Partial<EditorField>) => void;
+  removeField: (tempId: string) => void;
+  select: (tempId: string | null) => void;
+  markClean: () => void;
+  reset: () => void;
+}
+
+export const useEnvelopeEditorStore = create<EditorState>((set) => ({
+  envelopeId: null,
+  fields: [],
+  selectedTempId: null,
+  activeRecipientId: null,
+  dirty: false,
+
+  init: (envelopeId, existing) => {
+    set({
+      envelopeId,
+      fields: existing.map((f) => ({
+        tempId: nanoid(),
+        serverId: f.id,
+        recipientId: f.recipientId,
+        pageNumber: f.pageNumber,
+        xPct: f.xPct,
+        yPct: f.yPct,
+        widthPct: f.widthPct,
+        heightPct: f.heightPct,
+        fieldType: f.fieldType,
+        required: f.required,
+      })),
+      selectedTempId: null,
+      dirty: false,
+    });
+  },
+
+  setActiveRecipient: (recipientId) =>
+    set({ activeRecipientId: recipientId }),
+
+  addField: (field) =>
+    set((s) => ({
+      fields: [...s.fields, { ...field, tempId: nanoid() }],
+      dirty: true,
+    })),
+
+  updateField: (tempId, patch) =>
+    set((s) => ({
+      fields: s.fields.map((f) =>
+        f.tempId === tempId ? { ...f, ...patch } : f,
+      ),
+      dirty: true,
+    })),
+
+  removeField: (tempId) =>
+    set((s) => ({
+      fields: s.fields.filter((f) => f.tempId !== tempId),
+      selectedTempId: s.selectedTempId === tempId ? null : s.selectedTempId,
+      dirty: true,
+    })),
+
+  select: (tempId) => set({ selectedTempId: tempId }),
+
+  markClean: () => set({ dirty: false }),
+
+  reset: () =>
+    set({
+      envelopeId: null,
+      fields: [],
+      selectedTempId: null,
+      activeRecipientId: null,
+      dirty: false,
+    }),
+}));

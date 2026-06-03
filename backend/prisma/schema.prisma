@@ -1,0 +1,169 @@
+// Prisma schema for SinAble — e-signature platform.
+// All models managed here. Migration applied via `prisma migrate dev`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+
+  documents Document[]
+  envelopes Envelope[]
+
+  @@map("users")
+}
+
+model Document {
+  id           String         @id @default(uuid())
+  userId       String
+  filename     String
+  storageKey   String
+  pageCount    Int            @default(0)
+  status       DocumentStatus @default(PENDING)
+  errorMessage String?
+  createdAt    DateTime       @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  envelopes Envelope[]
+
+  @@index([userId])
+  @@map("documents")
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Envelope {
+  id               String         @id @default(uuid())
+  userId           String
+  documentId       String
+  title            String
+  message          String?
+  status           EnvelopeStatus @default(DRAFT)
+  signingOrder     SigningOrder   @default(SEQUENTIAL)
+  signedStorageKey String?
+  createdAt        DateTime       @default(now())
+  sentAt           DateTime?
+  completedAt      DateTime?
+  expiresAt        DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document         @relation(fields: [documentId], references: [id])
+  recipients  Recipient[]
+  fields      SignatureField[]
+  auditEvents AuditEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("envelopes")
+}
+
+enum EnvelopeStatus {
+  DRAFT
+  SENT
+  IN_PROGRESS
+  COMPLETED
+  VOIDED
+  EXPIRED
+}
+
+enum SigningOrder {
+  SEQUENTIAL
+  PARALLEL
+}
+
+model Recipient {
+  id            String          @id @default(uuid())
+  envelopeId    String
+  email         String
+  name          String
+  orderIndex    Int             @default(0)
+  status        RecipientStatus @default(PENDING)
+  signingToken  String          @unique @default(cuid())
+  signedAt      DateTime?
+  declinedAt    DateTime?
+  declineReason String?
+  ipAddress     String?
+
+  envelope Envelope         @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  fields   SignatureField[]
+
+  @@index([envelopeId])
+  @@map("recipients")
+}
+
+enum RecipientStatus {
+  PENDING
+  VIEWED
+  SIGNED
+  DECLINED
+}
+
+model SignatureField {
+  id          String    @id @default(uuid())
+  envelopeId  String
+  recipientId String
+  pageNumber  Int
+  xPct        Float
+  yPct        Float
+  widthPct    Float
+  heightPct   Float
+  fieldType   FieldType
+  required    Boolean   @default(true)
+  value       String?
+  signedAt    DateTime?
+
+  envelope  Envelope  @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  recipient Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([envelopeId])
+  @@index([recipientId])
+  @@map("signature_fields")
+}
+
+enum FieldType {
+  SIGNATURE
+  INITIALS
+  DATE
+  TEXT
+}
+
+model AuditEvent {
+  id         String         @id @default(uuid())
+  envelopeId String
+  eventType  AuditEventType
+  actorEmail String
+  metadata   Json           @default("{}")
+  ipAddress  String?
+  createdAt  DateTime       @default(now())
+
+  envelope Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+
+  @@index([envelopeId])
+  @@map("audit_events")
+}
+
+enum AuditEventType {
+  ENVELOPE_CREATED
+  ENVELOPE_SENT
+  DOCUMENT_VIEWED
+  RECIPIENT_SIGNED
+  RECIPIENT_DECLINED
+  ENVELOPE_COMPLETED
+  ENVELOPE_VOIDED
+}

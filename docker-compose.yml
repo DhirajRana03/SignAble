@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sinable
+      POSTGRES_USER: sinable
+      POSTGRES_PASSWORD: secret
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sinable"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  processor:
+    build: ./processor
+    ports: ["8001:8001"]
+    environment:
+      PORT: "8001"
+
+  api:
+    build: ./backend
+    command: npm run start:dev
+    ports: ["8000:8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      processor:
+        condition: service_started
+    env_file: ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/storage:/app/storage
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: echo "frontend not built yet"
+    profiles: ["frontend"]
+
+volumes:
+  postgres_data:

@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * SinAble design tokens — editorial / legal aesthetic.
+ *
+ * Palette: warm off-white paper, deep ink text, single oxblood accent.
+ * Typography: serif display headings + clean grotesque body.
+ * Rhythm: sharp 2-4px radii, 1px hairlines, generous spacing.
+ */
+@layer base {
+  :root {
+    --paper: 38 28% 96%;          /* warm cream */
+    --paper-dim: 38 22% 92%;
+    --paper-deep: 36 18% 88%;
+
+    --ink: 220 18% 12%;           /* near-black with cool tint */
+    --ink-soft: 220 10% 32%;
+    --ink-faint: 220 8% 52%;
+
+    --accent: 350 62% 35%;        /* oxblood */
+    --accent-fg: 38 28% 96%;
+
+    --border: 30 10% 78%;
+    --ring: 350 62% 35%;
+
+    --success: 160 38% 32%;
+    --warn: 32 78% 42%;
+    --danger: 0 62% 42%;
+  }
+
+  .dark {
+    --paper: 220 18% 8%;
+    --paper-dim: 220 14% 12%;
+    --paper-deep: 220 12% 16%;
+
+    --ink: 38 28% 94%;
+    --ink-soft: 38 18% 72%;
+    --ink-faint: 38 10% 50%;
+
+    --accent: 350 70% 58%;
+    --accent-fg: 220 18% 8%;
+
+    --border: 220 12% 22%;
+    --ring: 350 70% 58%;
+
+    --success: 160 50% 50%;
+    --warn: 32 78% 58%;
+    --danger: 0 68% 58%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+    font-feature-settings: 'ss01', 'ss02', 'cv11', 'kern';
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans;
+    background-image:
+      radial-gradient(hsl(var(--ink) / 0.018) 1px, transparent 1px),
+      linear-gradient(180deg, hsl(var(--paper)) 0%, hsl(var(--paper-dim)) 100%);
+    background-size: 24px 24px, 100% 100%;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-fg));
+  }
+}
+
+@layer components {
+  /* Reusable "document sheet" container — feels like physical paper */
+  .sheet {
+    @apply bg-paper border border-border shadow-paper;
+    background-image:
+      linear-gradient(180deg, hsl(var(--paper)) 0%, hsl(var(--paper)) 100%);
+  }
+
+  /* Hairline rule — used for dividers in dense lists */
+  .rule {
+    @apply border-t border-border;
+  }
+
+  /* Numbered label — small caps, tracking */
+  .label-mono {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint;
+  }
+
+  /* Decorative drop cap for editorial flair */
+  .drop-cap::first-letter {
+    @apply font-display text-[3em] float-left mr-2 mt-1 leading-none text-accent;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+/* Custom scrollbar — subtle, paper-toned */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 8px;
+  border: 2px solid hsl(var(--paper));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--ink-faint));
+}
