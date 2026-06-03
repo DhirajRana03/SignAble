@@ -9,6 +9,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { EnvelopesService } from './envelopes.service';
 
 describe('EnvelopesService', () => {
@@ -39,6 +40,10 @@ describe('EnvelopesService', () => {
         {
           provide: NotificationsService,
           useValue: { sendSigningRequest: jest.fn() },
+        },
+        {
+          provide: WebhooksService,
+          useValue: { fanOut: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

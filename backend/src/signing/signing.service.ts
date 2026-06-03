@@ -21,6 +21,7 @@ import {
   SignedFieldData,
 } from '../processor/processor.service';
 import { StorageService } from '../storage/storage.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 
 @Injectable()
 export class SigningService {
@@ -31,6 +32,7 @@ export class SigningService {
     private readonly storage: StorageService,
     private readonly processor: ProcessorService,
     private readonly notifications: NotificationsService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async getForSigner(token: string) {
@@ -389,5 +391,29 @@ export class SigningService {
         ipAddress: ipAddress ?? undefined,
       },
     });
+    void this.fanOutWebhook(envelopeId, eventType, metadata, actorEmail);
+  }
+
+  private async fanOutWebhook(
+    envelopeId: string,
+    eventType: AuditEventType,
+    metadata: Prisma.JsonObject,
+    actorEmail: string,
+  ): Promise<void> {
+    try {
+      const env = await this.prisma.envelope.findUnique({
+        where: { id: envelopeId },
+        select: { userId: true, status: true, title: true },
+      });
+      if (!env) return;
+      await this.webhooks.fanOut(env.userId, eventType, envelopeId, {
+        status: env.status,
+        title: env.title,
+        actorEmail,
+        ...metadata,
+      });
+    } catch {
+      /* swallow */
+    }
   }
 }

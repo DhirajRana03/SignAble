@@ -3,6 +3,7 @@
 import { EnvelopeCard } from '@/components/features/envelopes/EnvelopeCard';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 
 export default function EnvelopesPage() {
@@ -14,7 +15,7 @@ export default function EnvelopesPage() {
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="sheet h-40 animate-pulse" />
+              <CardSkeleton key={i} />
             ))}
           </div>
         ) : !data?.length ? (

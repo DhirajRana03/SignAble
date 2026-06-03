@@ -18,6 +18,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateEnvelopeDto, UpdateEnvelopeDto } from './dto/envelope.dto';
 
 const ALLOWED_TRANSITIONS: Record<EnvelopeStatus, EnvelopeStatus[]> = {
@@ -35,6 +36,7 @@ export class EnvelopesService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly notifications: NotificationsService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async create(
@@ -246,5 +248,29 @@ export class EnvelopesService {
         ipAddress,
       },
     });
+    // Webhook fan-out runs after audit row commits; resolves envelope owner
+    // for routing. Errors swallowed inside service — never block audit path.
+    void this.fanOutWebhook(envelopeId, eventType, metadata);
+  }
+
+  private async fanOutWebhook(
+    envelopeId: string,
+    eventType: AuditEventType,
+    metadata: Prisma.JsonObject,
+  ): Promise<void> {
+    try {
+      const env = await this.prisma.envelope.findUnique({
+        where: { id: envelopeId },
+        select: { userId: true, status: true, title: true },
+      });
+      if (!env) return;
+      await this.webhooks.fanOut(env.userId, eventType, envelopeId, {
+        status: env.status,
+        title: env.title,
+        ...metadata,
+      });
+    } catch {
+      /* never throw out of webhook fan-out */
+    }
   }
 }

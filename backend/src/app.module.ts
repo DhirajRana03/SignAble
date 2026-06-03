@@ -16,6 +16,7 @@ import { ProcessorModule } from './processor/processor.module';
 import { RecipientsModule } from './recipients/recipients.module';
 import { SigningModule } from './signing/signing.module';
 import { StorageModule } from './storage/storage.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -41,6 +42,7 @@ import configuration from './config/configuration';
     RecipientsModule,
     FieldsModule,
     SigningModule,
+    WebhooksModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

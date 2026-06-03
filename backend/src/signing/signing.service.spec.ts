@@ -14,6 +14,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProcessorService } from '../processor/processor.service';
 import { StorageService } from '../storage/storage.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { SigningService } from './signing.service';
 
 describe('SigningService', () => {
@@ -51,6 +52,10 @@ describe('SigningService', () => {
         { provide: StorageService, useValue: { load: jest.fn(), saveSigned: jest.fn(), pageUrls: jest.fn(() => []) } },
         { provide: ProcessorService, useValue: { processDocument: jest.fn(), applySignatures: jest.fn() } },
         { provide: NotificationsService, useValue: notifications },
+        {
+          provide: WebhooksService,
+          useValue: { fanOut: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

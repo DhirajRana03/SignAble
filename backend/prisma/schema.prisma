@@ -20,6 +20,7 @@ model User {
 
   documents Document[]
   envelopes Envelope[]
+  webhookSubscriptions WebhookSubscription[]
 
   @@map("users")
 }
@@ -166,4 +167,39 @@ enum AuditEventType {
   RECIPIENT_DECLINED
   ENVELOPE_COMPLETED
   ENVELOPE_VOIDED
+}
+
+model WebhookSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  url         String
+  secret      String
+  events      String[] // AuditEventType values, empty = all
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  lastFiredAt DateTime?
+  failureCount Int     @default(0)
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([userId])
+  @@map("webhook_subscriptions")
+}
+
+model WebhookDelivery {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  eventType      String
+  payload        Json
+  responseStatus Int?
+  responseBody   String?
+  attempt        Int      @default(1)
+  succeeded      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("webhook_deliveries")
 }

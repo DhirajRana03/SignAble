@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Plus } from 'lucide-react';
+import { LogOut, Menu, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -13,41 +13,58 @@ export function Topbar({
   title,
   eyebrow,
   actions,
+  onMenuClick,
 }: {
   title: string;
   eyebrow?: string;
   actions?: React.ReactNode;
+  onMenuClick?: () => void;
 }) {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-paper/80 backdrop-blur-md">
-      <div className="flex h-16 items-center gap-4 px-6 lg:px-10">
+      <div className="flex h-16 items-center gap-2 sm:gap-4 px-4 md:px-6 lg:px-10">
+        {/* Mobile menu trigger */}
+        {onMenuClick ? (
+          <button
+            onClick={onMenuClick}
+            className="md:hidden h-9 w-9 flex items-center justify-center rounded-sm border border-border bg-paper text-ink-faint hover:bg-paper-dim hover:text-ink"
+            aria-label="Open navigation"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+        ) : null}
+
         <div className="min-w-0 flex-1">
           {eyebrow ? (
-            <p className="label-mono mb-0.5">{eyebrow}</p>
+            <p className="label-mono mb-0.5 hidden sm:block">{eyebrow}</p>
           ) : null}
-          <h1 className="truncate font-display text-xl tracking-tight">
+          <h1 className="truncate font-display text-lg sm:text-xl tracking-tight">
             {title}
           </h1>
         </div>
 
         <div className="flex items-center gap-2">
-          {actions}
-          <ThemeToggle />
+          <div className="hidden sm:flex items-center gap-2">
+            {actions}
+            <ThemeToggle />
+          </div>
+
           <Link href="/envelopes/new">
             <Button variant="accent" size="sm">
               <Plus className="h-3.5 w-3.5" />
-              New envelope
+              <span className="hidden sm:inline">New envelope</span>
             </Button>
           </Link>
 
-          <div className="relative ml-2">
+          <div className="relative ml-1 sm:ml-2">
             <button
               onClick={() => setMenuOpen((s) => !s)}
               className="flex h-9 w-9 items-center justify-center rounded-sm border border-border bg-paper text-xs font-medium uppercase tracking-wider hover:bg-paper-dim"
               aria-label="Account menu"
+              aria-expanded={menuOpen}
             >
               {user ? initials(user.name) : '?'}
             </button>
@@ -70,6 +87,13 @@ export function Topbar({
                       {user?.email}
                     </p>
                   </div>
+
+                  {/* Theme toggle inside menu on mobile */}
+                  <div className="px-3 py-2 sm:hidden border-b border-border">
+                    <p className="label-mono mb-2">Theme</p>
+                    <ThemeToggle />
+                  </div>
+
                   <button
                     onClick={logout}
                     className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-ink-soft hover:bg-paper-dim hover:text-ink"

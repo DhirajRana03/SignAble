@@ -1,6 +1,7 @@
 'use client';
 
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useDocuments } from '@/hooks/useDocuments';
 import { DocumentCard } from './DocumentCard';
 
@@ -11,11 +12,7 @@ export function DocumentGrid() {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="sheet h-40 animate-pulse"
-            style={{ animationDelay: `${i * 75}ms` }}
-          />
+          <CardSkeleton key={i} />
         ))}
       </div>
     );
