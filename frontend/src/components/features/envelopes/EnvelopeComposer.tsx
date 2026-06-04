@@ -2,16 +2,34 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   Check,
   ChevronDown,
   Eye,
   FileText,
+  GripVertical,
   Mail,
   Pen,
   Plus,
   Trash2,
   UploadCloud,
-  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -40,16 +58,6 @@ const recipientSchema = z.object({
 });
 type RecipientFormValues = z.infer<typeof recipientSchema>;
 
-/**
- * Envelope composer — compact create flow.
- *
- * Layout:
- *   - Title inline at top
- *   - Document upload (small)
- *   - Recipients section with signing-order toggle in its header
- *     Each recipient has Name + Email + Action dropdown (signer/cc/viewer)
- *   - Sticky review sidebar with submit
- */
 export function EnvelopeComposer() {
   const router = useRouter();
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -64,7 +72,6 @@ export function EnvelopeComposer() {
   const docReady = document?.status === 'READY';
   const docFailed = document?.status === 'FAILED';
 
-  // Prefill title from filename when document arrives
   useEffect(() => {
     if (document && !title) {
       setTitle(
@@ -77,9 +84,29 @@ export function EnvelopeComposer() {
   const signerCount = recipients.filter((r) => r.role === 'SIGNER').length;
   const canSubmit = docReady && signerCount > 0 && !!title && !submitting;
 
+  // Sortable sensors — pointer for mouse/touch, keyboard for a11y
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 4 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setRecipients((rs) => {
+      const oldIdx = rs.findIndex((r) => r.id === active.id);
+      const newIdx = rs.findIndex((r) => r.id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return rs;
+      return arrayMove(rs, oldIdx, newIdx);
+    });
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!documentId || !docReady) {
       setSubmitError('Wait for document to finish processing.');
       return;
@@ -92,17 +119,14 @@ export function EnvelopeComposer() {
       setSubmitError('Title required.');
       return;
     }
-
     setSubmitError(null);
     setSubmitting(true);
-
     try {
       const envelope = await createEnvelope.mutateAsync({
         documentId,
         title: title.trim(),
         signingOrder,
       });
-
       const { envelopeService } = await import('@/services/envelope.service');
       for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
@@ -113,7 +137,6 @@ export function EnvelopeComposer() {
           role: r.role,
         });
       }
-
       toast.success('Envelope created');
       router.push(`/envelopes/${envelope.id}/prepare`);
     } catch (err) {
@@ -122,14 +145,15 @@ export function EnvelopeComposer() {
     }
   };
 
+  const sequential = signingOrder === 'SEQUENTIAL';
+
   return (
     <form
       onSubmit={onSubmit}
       className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 pb-12"
     >
-      {/* Main column */}
       <div className="space-y-5">
-        {/* Title — inline at top */}
+        {/* Title */}
         <div className="glass p-4 lg:p-5">
           <Label htmlFor="env-title">Envelope title</Label>
           <Input
@@ -141,7 +165,7 @@ export function EnvelopeComposer() {
           />
         </div>
 
-        {/* Document — small uploader */}
+        {/* Document */}
         <div className="glass p-4 lg:p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold tracking-[-0.018em]">
@@ -170,7 +194,7 @@ export function EnvelopeComposer() {
           )}
         </div>
 
-        {/* Recipients + signing-order in header */}
+        {/* Recipients + signing-order header */}
         <div className="glass p-4 lg:p-5">
           <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
             <div>
@@ -178,10 +202,15 @@ export function EnvelopeComposer() {
                 Recipients
               </h3>
               <p className="text-[12px] text-ink-3 mt-0.5">
-                Add everyone who needs to sign, review, or get a copy.
+                {sequential
+                  ? 'Sequential signing — drag to reorder.'
+                  : 'Parallel signing — order does not matter.'}
               </p>
             </div>
-            <SigningOrderToggle value={signingOrder} onChange={setSigningOrder} />
+            <SigningOrderToggle
+              value={signingOrder}
+              onChange={setSigningOrder}
+            />
           </div>
 
           <RecipientAddForm
@@ -199,23 +228,38 @@ export function EnvelopeComposer() {
           />
 
           {recipients.length > 0 ? (
-            <ul className="mt-3 space-y-1">
-              {recipients.map((r, i) => (
-                <RecipientItem
-                  key={r.id}
-                  index={i}
-                  recipient={r}
-                  onChangeRole={(role) =>
-                    setRecipients((rs) =>
-                      rs.map((x) => (x.id === r.id ? { ...x, role } : x)),
-                    )
-                  }
-                  onRemove={() =>
-                    setRecipients((rs) => rs.filter((x) => x.id !== r.id))
-                  }
-                />
-              ))}
-            </ul>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={recipients.map((r) => r.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className="mt-3 space-y-1">
+                  {recipients.map((r, i) => (
+                    <SortableRecipientItem
+                      key={r.id}
+                      index={i}
+                      recipient={r}
+                      sequential={sequential}
+                      onChangeRole={(role) =>
+                        setRecipients((rs) =>
+                          rs.map((x) =>
+                            x.id === r.id ? { ...x, role } : x,
+                          ),
+                        )
+                      }
+                      onRemove={() =>
+                        setRecipients((rs) => rs.filter((x) => x.id !== r.id))
+                      }
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
           ) : null}
         </div>
 
@@ -226,7 +270,7 @@ export function EnvelopeComposer() {
         ) : null}
       </div>
 
-      {/* Sticky review panel */}
+      {/* Sticky review */}
       <aside className="lg:sticky lg:top-20 lg:self-start">
         <div className="glass p-5">
           <span className="eyebrow">Review</span>
@@ -245,7 +289,11 @@ export function EnvelopeComposer() {
             <ReviewRow
               label="Document"
               value={
-                docReady ? document!.filename : documentId ? 'Processing…' : 'Not uploaded'
+                docReady
+                  ? document!.filename
+                  : documentId
+                    ? 'Processing…'
+                    : 'Not uploaded'
               }
               state={docReady ? 'ok' : documentId ? 'pending' : 'todo'}
             />
@@ -356,7 +404,7 @@ function DocumentDropzoneCompact({
   );
 }
 
-/* ─────────────── Document line (after upload) ─────────────── */
+/* ─────────────── Document line ─────────────── */
 
 function DocumentLine({
   filename,
@@ -415,7 +463,7 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
-/* ─────────────── Signing order toggle (segment control) ─────────────── */
+/* ─────────────── Pill toggle with sliding indicator ─────────────── */
 
 function SigningOrderToggle({
   value,
@@ -428,22 +476,36 @@ function SigningOrderToggle({
     { value: 'SEQUENTIAL', label: 'Sequential' },
     { value: 'PARALLEL', label: 'Parallel' },
   ];
+  const activeIdx = opts.findIndex((o) => o.value === value);
+
   return (
-    <div className="inline-flex items-center rounded-pill bg-surface-sunken p-0.5">
+    <div
+      role="radiogroup"
+      aria-label="Signing order"
+      className="relative inline-flex items-center rounded-pill bg-surface-sunken p-0.5 border border-border-soft"
+    >
+      {/* Sliding indicator — animates left/right between options */}
+      <span
+        aria-hidden
+        className="absolute top-0.5 bottom-0.5 rounded-pill bg-white shadow-[0_2px_8px_-2px_hsl(var(--accent)/0.45),0_0_0_1px_hsl(var(--accent)/0.35)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0.16,1)]"
+        style={{
+          width: `calc(50% - 2px)`,
+          left: activeIdx === 0 ? '2px' : 'calc(50% + 0px)',
+        }}
+      />
       {opts.map((o) => {
         const active = value === o.value;
         return (
           <button
             key={o.value}
             type="button"
+            role="radio"
+            aria-checked={active}
             onClick={() => onChange(o.value)}
             className={cn(
-              'h-7 px-3 rounded-pill text-[11.5px] font-medium transition-all duration-150',
-              active
-                ? 'bg-surface-2 text-ink shadow-soft'
-                : 'text-ink-3 hover:text-ink',
+              'relative z-[1] h-8 px-4 rounded-pill text-[12px] font-semibold transition-colors duration-200 min-w-[88px]',
+              active ? 'text-accent-deep' : 'text-ink-3 hover:text-ink',
             )}
-            aria-pressed={active}
           >
             {o.label}
           </button>
@@ -512,25 +574,36 @@ function RecipientAddForm({
   );
 }
 
-/* ─────────────── Recipient row with action dropdown ─────────────── */
+/* ─────────────── Sortable recipient row ─────────────── */
 
-const ROLE_OPTIONS: { value: RecipientRole; label: string; icon: typeof Pen; hint: string }[] = [
-  { value: 'SIGNER', label: 'Needs to sign', icon: Pen, hint: 'Must sign the document' },
-  { value: 'CC', label: 'Receives a copy', icon: Mail, hint: 'Gets a copy when complete' },
-  { value: 'VIEWER', label: 'Needs to view', icon: Eye, hint: 'Must view before completion' },
-];
-
-function RecipientItem({
+function SortableRecipientItem({
   index,
   recipient,
+  sequential,
   onChangeRole,
   onRemove,
 }: {
   index: number;
   recipient: DraftRecipient;
+  sequential: boolean;
   onChangeRole: (role: RecipientRole) => void;
   onRemove: () => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: recipient.id, disabled: !sequential });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 'auto',
+  } as React.CSSProperties;
+
   const tones = [
     'from-violet-400/30 to-indigo-500/30 text-indigo-700',
     'from-amber-400/30 to-orange-500/30 text-orange-700',
@@ -541,7 +614,40 @@ function RecipientItem({
   const tone = tones[index % tones.length];
 
   return (
-    <li className="group flex items-center gap-3 py-2 px-2 -mx-2 rounded-md hover:bg-surface-sunken/60 transition-colors">
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group flex items-center gap-2.5 py-2 px-2 -mx-2 rounded-md transition-colors',
+        isDragging
+          ? 'bg-white shadow-lifted ring-1 ring-accent/30'
+          : 'hover:bg-surface-sunken/60',
+      )}
+    >
+      {sequential ? (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className={cn(
+            'h-7 w-5 grid place-items-center rounded text-ink-4 hover:text-ink hover:bg-surface-sunken transition-colors shrink-0',
+            isDragging ? 'cursor-grabbing text-accent-deep' : 'cursor-grab',
+          )}
+          aria-label={`Drag to reorder ${recipient.name}`}
+          tabIndex={0}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <span className="w-5 shrink-0" aria-hidden />
+      )}
+
+      {sequential ? (
+        <span className="font-mono text-[10.5px] text-ink-4 w-5 text-center shrink-0">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+      ) : null}
+
       <span
         className={cn(
           'h-8 w-8 grid place-items-center rounded-pill bg-gradient-to-br text-[12px] font-semibold uppercase shrink-0',
@@ -550,6 +656,7 @@ function RecipientItem({
       >
         {recipient.name[0]}
       </span>
+
       <div className="min-w-0 flex-1">
         <p className="text-[13.5px] font-medium text-ink truncate">
           {recipient.name}
@@ -572,6 +679,17 @@ function RecipientItem({
 }
 
 /* ─────────────── Action dropdown ─────────────── */
+
+const ROLE_OPTIONS: {
+  value: RecipientRole;
+  label: string;
+  icon: typeof Pen;
+  hint: string;
+}[] = [
+  { value: 'SIGNER', label: 'Needs to sign', icon: Pen, hint: 'Must sign the document' },
+  { value: 'CC', label: 'Receives a copy', icon: Mail, hint: 'Gets a copy when complete' },
+  { value: 'VIEWER', label: 'Needs to view', icon: Eye, hint: 'Must view before completion' },
+];
 
 function ActionDropdown({
   value,
@@ -603,10 +721,7 @@ function ActionDropdown({
 
       {open ? (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-10 z-20 w-56 glass-strong shadow-popover animate-scale-in origin-top-right p-1">
             {ROLE_OPTIONS.map((o) => {
               const O = o.icon;
