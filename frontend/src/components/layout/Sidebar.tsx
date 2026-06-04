@@ -138,9 +138,11 @@ export function Sidebar({
             className={cn(
               'h-10 w-10 grid place-items-center rounded-full shrink-0',
               'text-[12px] font-semibold uppercase tracking-tight text-white',
-              'bg-accent shadow-paper ring-2 ring-paper',
-              'transition-transform duration-150 ease-out',
-              profileOpen ? 'scale-105 bg-accent-deep' : 'group-hover:scale-105',
+              'bg-accent shadow-paper',
+              'transition-all duration-150 ease-out',
+              profileOpen
+                ? 'scale-105 bg-accent-deep ring-2 ring-accent/40'
+                : 'group-hover:scale-105',
             )}
           >
             {user ? initials(user.name) : '?'}
