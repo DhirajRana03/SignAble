@@ -70,6 +70,7 @@ export function EnvelopeComposer() {
   const router = useRouter();
   const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [recipients, setRecipients] = useState<DraftRecipient[]>([]);
+  const [pendingRecipientInput, setPendingRecipientInput] = useState(false);
   const [title, setTitle] = useState('');
   const [signingOrder, setSigningOrder] = useState<SigningOrder>('SEQUENTIAL');
   const [submitting, setSubmitting] = useState(false);
@@ -202,13 +203,17 @@ export function EnvelopeComposer() {
   const hasAnyInput =
     documentIds.length > 0 ||
     recipients.length > 0 ||
-    title.trim().length > 0;
+    title.trim().length > 0 ||
+    pendingRecipientInput;
   const canSaveDraft = hasAnyInput && !submitting;
 
   const setDirty = useComposerGuardStore((s) => s.setDirty);
   const setSaveDraftHandler = useComposerGuardStore((s) => s.setSaveDraft);
   const isDirty =
-    documentIds.length > 0 || recipients.length > 0 || title.trim().length > 0;
+    documentIds.length > 0 ||
+    recipients.length > 0 ||
+    title.trim().length > 0 ||
+    pendingRecipientInput;
 
   useEffect(() => {
     setDirty(isDirty);
@@ -332,6 +337,7 @@ export function EnvelopeComposer() {
           </div>
 
           <RecipientAddForm
+            onDirtyChange={setPendingRecipientInput}
             onAdd={(v) =>
               setRecipients((rs) => [
                 ...rs,
@@ -839,17 +845,29 @@ function SigningOrderToggle({
 
 function RecipientAddForm({
   onAdd,
+  onDirtyChange,
 }: {
   onAdd: (values: RecipientFormValues) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const form = useForm<RecipientFormValues>({
     resolver: zodResolver(recipientSchema),
     defaultValues: { name: '', email: '' },
   });
 
-  const submit = form.handleSubmit((values) => {
-    onAdd(values);
+  // Watch form values; propagate dirty signal so composer guard captures
+  // unsaved typing before user clicks Add.
+  const values = form.watch();
+  useEffect(() => {
+    const hasInput =
+      (values.name?.length ?? 0) > 0 || (values.email?.length ?? 0) > 0;
+    onDirtyChange?.(hasInput);
+  }, [values.name, values.email, onDirtyChange]);
+
+  const submit = form.handleSubmit((vals) => {
+    onAdd(vals);
     form.reset({ name: '', email: '' });
+    onDirtyChange?.(false);
   });
 
   return (
