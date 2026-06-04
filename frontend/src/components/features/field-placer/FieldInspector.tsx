@@ -6,7 +6,6 @@ import {
   ChevronDown,
   ChevronUp,
   Edit3,
-  MousePointer2,
   Plus,
   Trash2,
   Type as TypeIcon,
@@ -14,6 +13,7 @@ import {
 import { useState } from 'react';
 
 import { Input, Label } from '@/components/ui/Input';
+import { useAuthedImage } from '@/hooks/useAuthedImage';
 import { cn } from '@/lib/utils';
 import {
   useEnvelopeEditorStore,
@@ -40,16 +40,27 @@ const FIELD_ICON: Record<FieldType, typeof TypeIcon> = {
 };
 
 /**
- * Right-rail field inspector. Empty placeholder when no field selected;
- * detailed editor when a chip is active. Mirrors DocuSign right panel.
+ * Right-rail field inspector. Page preview card by default; switches to
+ * field editor when a chip is active. Mirrors DocuSign right panel.
  */
-export function FieldInspector() {
+export function FieldInspector({
+  filename,
+  pageUrls,
+  activePage,
+  totalPages,
+}: {
+  filename: string;
+  pageUrls: string[];
+  activePage: number;
+  totalPages: number;
+}) {
   const fields = useEnvelopeEditorStore((s) => s.fields);
   const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
   const updateField = useEnvelopeEditorStore((s) => s.updateField);
   const removeField = useEnvelopeEditorStore((s) => s.removeField);
 
   const selected = fields.find((f) => f.tempId === selectedTempId) ?? null;
+  const activeUrl = pageUrls[activePage - 1];
 
   return (
     <aside className="sticky top-20 self-start w-72 shrink-0 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 pb-2">
@@ -60,26 +71,82 @@ export function FieldInspector() {
           onRemove={() => removeField(selected.tempId)}
         />
       ) : (
-        <EmptyInspector />
+        <PagePreview
+          filename={filename}
+          activeUrl={activeUrl}
+          activePage={activePage}
+          totalPages={totalPages}
+        />
       )}
     </aside>
   );
 }
 
-/* ─────────────── Empty placeholder ─────────────── */
+/* ─────────────── Page preview ─────────────── */
 
-function EmptyInspector() {
+function PagePreview({
+  filename,
+  activeUrl,
+  activePage,
+  totalPages,
+}: {
+  filename: string;
+  activeUrl: string | undefined;
+  activePage: number;
+  totalPages: number;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const { src } = useAuthedImage(activeUrl);
+
   return (
-    <section className="rounded-xl bg-white/70 backdrop-blur-md border border-white/60 shadow-sm p-6 text-center">
-      <div className="mx-auto h-12 w-12 grid place-items-center rounded-full bg-sky-100 text-sky-700 border border-sky-200 mb-3">
-        <MousePointer2 className="h-5 w-5" strokeWidth={2} />
-      </div>
-      <p className="text-[13px] font-semibold text-ink leading-tight">
-        No field selected
-      </p>
-      <p className="text-[11.5px] text-ink-3 mt-1.5 leading-snug">
-        Click any placed field on the document to edit its properties.
-      </p>
+    <section className="rounded-xl bg-white/70 backdrop-blur-md border border-white/60 shadow-sm overflow-hidden">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-white/50">
+        <p
+          className="text-[14px] font-semibold text-ink truncate"
+          title={filename}
+        >
+          {filename}
+        </p>
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="h-7 w-7 grid place-items-center rounded-md text-ink-3 hover:text-ink hover:bg-white/60 transition-colors shrink-0"
+          aria-label={collapsed ? 'Expand preview' : 'Collapse preview'}
+        >
+          <ChevronUp
+            className={cn(
+              'h-3.5 w-3.5 transition-transform',
+              collapsed && 'rotate-180',
+            )}
+          />
+        </button>
+      </header>
+
+      {!collapsed ? (
+        <div className="p-4">
+          <p className="text-[12.5px] text-ink-3 mb-2.5">
+            Pages: {totalPages}
+          </p>
+          <div className="relative rounded-md overflow-hidden border-[3px] border-accent shadow-md">
+            <div className="bg-paper aspect-[8.5/11] relative">
+              {src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src}
+                  alt={`Page ${activePage}`}
+                  className="block w-full h-full object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <div className="w-full h-full animate-pulse bg-surface-sunken" />
+              )}
+            </div>
+            <div className="px-3 py-1.5 text-[11.5px] font-mono text-ink-2 bg-white/80 border-t border-border/60">
+              {activePage}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

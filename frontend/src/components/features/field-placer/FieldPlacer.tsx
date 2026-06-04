@@ -4,7 +4,7 @@ import { FileSignature, MoveDownLeft } from 'lucide-react';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { DocumentViewer } from '@/components/features/document-viewer/DocumentViewer';
-import { useDocumentPagesMeta } from '@/hooks/useDocuments';
+import { useDocument, useDocumentPagesMeta } from '@/hooks/useDocuments';
 import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
 import { cn } from '@/lib/utils';
 import type { Envelope, FieldOptions } from '@/types/envelope.types';
@@ -33,6 +33,7 @@ function maybeSnap(value: number, snap: boolean): number {
 
 export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   const pagesMeta = useDocumentPagesMeta(envelope.documentId);
+  const docQuery = useDocument(envelope.documentId);
   const init = useEnvelopeEditorStore((s) => s.init);
   const addField = useEnvelopeEditorStore((s) => s.addField);
   const setActiveRecipient = useEnvelopeEditorStore(
@@ -154,7 +155,12 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
           {fieldCount === 0 ? <EmptyHint /> : null}
         </div>
 
-        <FieldInspector />
+        <FieldInspector
+          filename={docQuery.data?.filename ?? 'Document'}
+          pageUrls={pageUrls}
+          activePage={activePage}
+          totalPages={pageUrls.length}
+        />
 
         <ThumbnailStrip
           pageUrls={pageUrls}
