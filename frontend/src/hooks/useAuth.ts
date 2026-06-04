@@ -38,7 +38,7 @@ export function useAuth() {
     onSuccess: ({ tokens, me }) => {
       setAuth(me, tokens.access_token, tokens.refresh_token);
       toast.success('Welcome back');
-      router.push('/documents');
+      router.push('/');
     },
     onError: (err) => {
       useAuthStore.setState({ accessToken: null });
@@ -57,7 +57,7 @@ export function useAuth() {
     onSuccess: ({ tokens, me }) => {
       setAuth(me, tokens.access_token, tokens.refresh_token);
       toast.success('Account created');
-      router.push('/documents');
+      router.push('/');
     },
     onError: (err) => {
       useAuthStore.setState({ accessToken: null });

@@ -14,7 +14,7 @@ export default function AuthRouteLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated) router.replace('/documents');
+    if (isAuthenticated) router.replace('/');
   }, [isAuthenticated, router]);
 
   return <>{children}</>;
