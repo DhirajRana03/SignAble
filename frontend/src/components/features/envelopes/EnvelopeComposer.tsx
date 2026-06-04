@@ -48,6 +48,7 @@ import {
   useUploadDocument,
 } from '@/hooks/useDocuments';
 import { useCreateEnvelope } from '@/hooks/useEnvelopes';
+import { useComposerGuardStore } from '@/store/composerGuardStore';
 import { cn } from '@/lib/utils';
 import { extractErrorMessage } from '@/services/api-client';
 import type { RecipientRole, SigningOrder } from '@/types/envelope.types';
@@ -130,7 +131,7 @@ export function EnvelopeComposer() {
    * for field placement. mode='draft' saves and exits to drafts list.
    * Draft mode skips signer requirement so user can return later.
    */
-  const persist = async (mode: 'continue' | 'draft') => {
+  const persist = useCallback(async (mode: 'continue' | 'draft') => {
     if (!primaryId || !docReady) {
       setSubmitError('Wait for document to finish processing.');
       return;
@@ -175,7 +176,17 @@ export function EnvelopeComposer() {
       setSubmitError(extractErrorMessage(err));
       setSubmitting(false);
     }
-  };
+  }, [
+    primaryId,
+    docReady,
+    title,
+    signerCount,
+    createEnvelope,
+    documentIds,
+    recipients,
+    signingOrder,
+    router,
+  ]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,6 +194,27 @@ export function EnvelopeComposer() {
   };
 
   const canSaveDraft = !!primaryId && docReady && !!title.trim() && !submitting;
+
+  const setDirty = useComposerGuardStore((s) => s.setDirty);
+  const setSaveDraftHandler = useComposerGuardStore((s) => s.setSaveDraft);
+  const isDirty =
+    documentIds.length > 0 || recipients.length > 0 || title.trim().length > 0;
+
+  useEffect(() => {
+    setDirty(isDirty);
+  }, [isDirty, setDirty]);
+
+  useEffect(() => {
+    setSaveDraftHandler(canSaveDraft ? () => persist('draft') : null);
+  }, [canSaveDraft, setSaveDraftHandler, persist]);
+
+  useEffect(
+    () => () => {
+      setDirty(false);
+      setSaveDraftHandler(null);
+    },
+    [setDirty, setSaveDraftHandler],
+  );
 
   const sequential = signingOrder === 'SEQUENTIAL';
 

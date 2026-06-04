@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, initials } from '@/lib/utils';
+import { useComposerGuardStore } from '@/store/composerGuardStore';
 
 const NAV = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,6 +44,18 @@ export function Sidebar({
   const pathname = usePathname() ?? '/';
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const dirty = useComposerGuardStore((s) => s.dirty);
+  const requestNavigate = useComposerGuardStore((s) => s.requestNavigate);
+
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    if (dirty && pathname.startsWith('/envelopes/new') && href !== pathname) {
+      e.preventDefault();
+      requestNavigate(href);
+      onClose?.();
+    } else {
+      onClose?.();
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -56,7 +69,7 @@ export function Sidebar({
   const inner = (
     <div className="flex flex-1 flex-col">
       <div className="px-4 pt-5 pb-6 flex items-center justify-between">
-        <Link href="/" onClick={onClose}>
+        <Link href="/" onClick={(e) => handleNavClick(e, '/')}>
           <Logo />
         </Link>
         {onClose ? (
@@ -85,7 +98,7 @@ export function Sidebar({
             <Link
               key={item.href}
               href={item.href}
-              onClick={onClose}
+              onClick={(e) => handleNavClick(e, item.href)}
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-md pl-3 pr-3 py-2 text-[14px]',
@@ -171,9 +184,9 @@ export function Sidebar({
             <div className="absolute bottom-full left-3 right-3 mb-2 z-20 glass-strong shadow-popover animate-scale-in origin-bottom p-1.5">
               <Link
                 href="/settings"
-                onClick={() => {
+                onClick={(e) => {
                   setProfileOpen(false);
-                  onClose?.();
+                  handleNavClick(e, '/settings');
                 }}
                 className="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-2 hover:bg-surface-sunken hover:text-ink transition-colors"
               >

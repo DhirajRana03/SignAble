@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { ComposerGuardModal } from '@/components/features/envelopes/ComposerGuardModal';
 import { useAuthStore } from '@/store/authStore';
 
 export default function DashboardRouteLayout({
@@ -27,5 +28,10 @@ export default function DashboardRouteLayout({
       </div>
     );
   }
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <ComposerGuardModal />
+    </>
+  );
 }
