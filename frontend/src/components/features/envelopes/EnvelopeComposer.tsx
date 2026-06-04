@@ -489,28 +489,26 @@ function SigningOrderToggle({
       role="radiogroup"
       aria-label="Signing order"
       className={cn(
-        // Elliptical glass track — frosted, hairline edge, soft inner shadow
-        'relative inline-flex items-center rounded-pill p-1',
-        'bg-white/35 backdrop-blur-xl backdrop-saturate-150',
-        'border border-white/50',
-        'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(99,102,241,0.05),0_1px_2px_rgba(15,15,15,0.04)]',
+        // Elliptical glass track — height 44px gives a tall oval silhouette
+        'relative inline-flex items-center p-1 h-11',
+        'rounded-[999px]',
+        'bg-white/30 backdrop-blur-xl backdrop-saturate-150',
+        'border border-white/55',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.7),inset_0_-1px_0_rgba(99,102,241,0.06),0_1px_2px_rgba(15,15,15,0.04)]',
       )}
     >
-      {/*
-        Sliding glass pill — gradient surface + rim light + inner highlight.
-        Animates with a longer spring-like easing for tactile feel.
-      */}
+      {/* Sliding elliptical glass capsule */}
       <span
         aria-hidden
         className={cn(
-          'absolute top-1 bottom-1 rounded-pill',
-          'bg-gradient-to-b from-white to-white/85',
+          'absolute top-1 bottom-1 rounded-[999px]',
+          'bg-gradient-to-b from-white via-white/95 to-white/80',
           'border border-white',
-          'shadow-[0_2px_6px_-1px_rgba(99,102,241,0.30),0_8px_22px_-8px_rgba(99,102,241,0.45),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(99,102,241,0.10)]',
-          'transition-[left,transform,box-shadow] duration-[420ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+          'shadow-[0_2px_6px_-1px_rgba(99,102,241,0.30),0_10px_24px_-10px_rgba(99,102,241,0.50),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(99,102,241,0.12)]',
+          'transition-[left,box-shadow] duration-[420ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]',
         )}
         style={{
-          width: `calc(50% - 4px)`,
+          width: 'calc(50% - 4px)',
           left: activeIdx === 0 ? '4px' : 'calc(50% + 0px)',
         }}
       />
@@ -527,23 +525,23 @@ function SigningOrderToggle({
             onClick={() => onChange(o.value)}
             className={cn(
               'relative z-[1] inline-flex items-center justify-center gap-1.5',
-              'h-9 px-4 rounded-pill text-[13px] font-semibold min-w-[120px]',
-              'transition-all duration-300',
+              // Taller pill — matches track height for elliptical look
+              'h-9 px-5 rounded-[999px] min-w-[112px]',
+              'text-[11px] font-semibold tracking-[0.01em]',
+              'transition-colors duration-300',
               active
-                ? 'text-accent-deep scale-[1.02]'
+                ? 'text-accent-deep'
                 : 'text-ink-3 hover:text-ink',
             )}
           >
             <Icon
               className={cn(
-                'h-3.5 w-3.5 transition-all duration-300',
-                active
-                  ? 'text-accent-deep scale-110'
-                  : 'text-ink-4 scale-100',
+                'h-3 w-3 transition-all duration-300',
+                active ? 'text-accent-deep' : 'text-ink-4',
               )}
-              strokeWidth={2.2}
+              strokeWidth={2.4}
             />
-            <span className="tracking-[-0.005em]">{o.label}</span>
+            <span>{o.label}</span>
           </button>
         );
       })}
