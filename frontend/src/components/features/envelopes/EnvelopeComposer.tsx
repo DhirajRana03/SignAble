@@ -271,26 +271,15 @@ export function EnvelopeComposer({
           }
         }
 
-        // PATCH metadata + primary swap. Retry without documentId on
-        // older backends that whitelist-reject the field.
+        // PATCH metadata + primary swap. No silent retry: rejection
+        // surfaces so caller can show truthful error.
         const wantsPrimarySwap =
           !!newPrimary && newPrimary !== initialPrimary;
-        try {
-          await envelopeService.update(draftId, {
-            title: title.trim() || 'Untitled draft',
-            signingOrder,
-            documentId: wantsPrimarySwap ? newPrimary : undefined,
-          });
-        } catch (err) {
-          if (wantsPrimarySwap) {
-            await envelopeService.update(draftId, {
-              title: title.trim() || 'Untitled draft',
-              signingOrder,
-            });
-          } else {
-            throw err;
-          }
-        }
+        await envelopeService.update(draftId, {
+          title: title.trim() || 'Untitled draft',
+          signingOrder,
+          documentId: wantsPrimarySwap ? newPrimary : undefined,
+        });
 
         // If primary swap occurred, detach the old primary (it remained
         // referenced by envelope.documentId until the PATCH succeeded).
