@@ -125,18 +125,22 @@ export function EnvelopeComposer() {
     });
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Persist envelope. mode='continue' routes user to prepare workspace
+   * for field placement. mode='draft' saves and exits to drafts list.
+   * Draft mode skips signer requirement so user can return later.
+   */
+  const persist = async (mode: 'continue' | 'draft') => {
     if (!primaryId || !docReady) {
       setSubmitError('Wait for document to finish processing.');
       return;
     }
-    if (signerCount === 0) {
-      setSubmitError('Add at least one signer.');
-      return;
-    }
     if (!title.trim()) {
       setSubmitError('Title required.');
+      return;
+    }
+    if (mode === 'continue' && signerCount === 0) {
+      setSubmitError('Add at least one signer.');
       return;
     }
     setSubmitError(null);
@@ -148,9 +152,7 @@ export function EnvelopeComposer() {
         signingOrder,
       });
       const { envelopeService } = await import('@/services/envelope.service');
-      // Attach extra documents (beyond primary) to envelope. Skip primaryId.
-      const extras = documentIds.slice(1);
-      for (const extraId of extras) {
+      for (const extraId of documentIds.slice(1)) {
         await envelopeService.attachDocument(envelope.id, extraId);
       }
       for (let i = 0; i < recipients.length; i++) {
@@ -162,13 +164,25 @@ export function EnvelopeComposer() {
           role: r.role,
         });
       }
-      toast.success('Envelope created');
-      router.push(`/envelopes/${envelope.id}/prepare`);
+      if (mode === 'draft') {
+        toast.success('Draft saved');
+        router.push('/drafts');
+      } else {
+        toast.success('Envelope created');
+        router.push(`/envelopes/${envelope.id}/prepare`);
+      }
     } catch (err) {
       setSubmitError(extractErrorMessage(err));
       setSubmitting(false);
     }
   };
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void persist('continue');
+  };
+
+  const canSaveDraft = !!primaryId && docReady && !!title.trim() && !submitting;
 
   const sequential = signingOrder === 'SEQUENTIAL';
 
@@ -360,6 +374,16 @@ export function EnvelopeComposer() {
             disabled={!canSubmit}
           >
             {submitting ? 'Creating…' : 'Create envelope'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            className="w-full mt-2"
+            disabled={!canSaveDraft}
+            onClick={() => void persist('draft')}
+          >
+            Save as draft
           </Button>
           <p className="text-[11px] text-ink-4 mt-2.5 text-center">
             Next: place fields, then send.
