@@ -93,7 +93,7 @@ class SignatureApplier:
         doc = SimpleDocTemplate(buf, pagesize=A4)
         styles = getSampleStyleSheet()
         story = [
-            Paragraph("Certificate of Completion — SinAble", styles["Heading1"]),
+            Paragraph("Certificate of Completion — SignAble", styles["Heading1"]),
             Spacer(1, 12),
             Paragraph(f"Total fields signed: {len(fields)}", styles["Normal"]),
             Spacer(1, 6),

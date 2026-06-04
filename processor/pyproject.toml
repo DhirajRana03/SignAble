@@ -1,7 +1,7 @@
 [project]
-name = "sinable-processor"
+name = "signable-processor"
 version = "0.1.0"
-description = "SinAble document processor service (PDF extraction, rendering, signature application)"
+description = "SignAble document processor service (PDF extraction, rendering, signature application)"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",

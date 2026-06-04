@@ -167,9 +167,9 @@ export class WebhooksService {
       const res = await axios.post(url, body, {
         headers: {
           'Content-Type': 'application/json',
-          'X-SinAble-Event': payload.event,
-          'X-SinAble-Signature': signature,
-          'X-SinAble-Delivery': randomBytes(8).toString('hex'),
+          'X-SignAble-Event': payload.event,
+          'X-SignAble-Signature': signature,
+          'X-SignAble-Delivery': randomBytes(8).toString('hex'),
         },
         timeout: 10_000,
         validateStatus: () => true,

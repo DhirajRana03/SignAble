@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
-const STORAGE_KEY = 'sinable-theme';
+const STORAGE_KEY = 'signable-theme';
 
 /**
  * Theme controller. Toggles `dark` class on <html>.

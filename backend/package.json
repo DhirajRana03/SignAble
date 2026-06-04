@@ -1,7 +1,7 @@
 {
-  "name": "sinable-backend",
+  "name": "signable-backend",
   "version": "0.1.0",
-  "description": "SinAble NestJS backend — e-signature platform",
+  "description": "SignAble NestJS backend — e-signature platform",
   "private": true,
   "scripts": {
     "build": "nest build",

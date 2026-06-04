@@ -42,7 +42,7 @@ export function AuthLayout({
 
       <div className="px-6 py-5 text-center">
         <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-ink-4">
-          SinAble
+          SignAble
         </span>
       </div>
     </div>

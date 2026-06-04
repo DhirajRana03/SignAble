@@ -1,4 +1,4 @@
-// Prisma schema for SinAble — e-signature platform.
+// Prisma schema for SignAble — e-signature platform.
 // All models managed here. Migration applied via `prisma migrate dev`.
 
 generator client {

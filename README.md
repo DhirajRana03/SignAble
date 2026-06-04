@@ -1,4 +1,4 @@
-# SinAble
+# SignAble
 
 [![Backend CI](https://github.com/DhirajRana03/SignAble/actions/workflows/backend.yml/badge.svg)](https://github.com/DhirajRana03/SignAble/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/DhirajRana03/SignAble/actions/workflows/frontend.yml/badge.svg)](https://github.com/DhirajRana03/SignAble/actions/workflows/frontend.yml)
@@ -46,8 +46,8 @@ Requires PostgreSQL 16, Python 3.12, Node 20, poppler-utils.
 
 ```bash
 # 1. Database
-createuser sinable -P              # password: secret
-createdb sinable -O sinable
+createuser signable -P             # password: secret
+createdb signable -O signable
 
 # 2. Backend
 cd backend
@@ -71,7 +71,7 @@ npm run dev                        # :3000
 ## Project Structure
 
 ```
-sinable/
+signable/
 ├── backend/        NestJS API — auth, envelopes, signing
 ├── processor/      Python — PDF processing
 ├── frontend/       Next.js — UI

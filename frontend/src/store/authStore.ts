@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
         }),
     }),
     {
-      name: 'sinable-auth',
+      name: 'signable-auth',
       partialize: (s) => ({
         user: s.user,
         accessToken: s.accessToken,

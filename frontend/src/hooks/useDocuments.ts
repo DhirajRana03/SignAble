@@ -70,19 +70,36 @@ export function useDocumentPagesMeta(
 export function useUploadDocument() {
   const qc = useQueryClient();
   const controllerRef = useRef<AbortController | null>(null);
+  const lastProgressRef = useRef(0);
   const [progress, setProgress] = useState(0);
+
+  /**
+   * Quantize to 2% steps. axios fires onUploadProgress per chunk
+   * (50+/sec on fast pipes); without throttle each tick triggers a
+   * full re-render of the dropzone + progress ring. Quantizing cuts
+   * updates ~25x while staying visually smooth.
+   */
+  const handleProgress = useCallback((pct: number) => {
+    const stepped = Math.min(100, Math.round(pct / 2) * 2);
+    if (stepped !== lastProgressRef.current) {
+      lastProgressRef.current = stepped;
+      setProgress(stepped);
+    }
+  }, []);
 
   const mutation = useMutation({
     mutationFn: (file: File) => {
       const controller = new AbortController();
       controllerRef.current = controller;
+      lastProgressRef.current = 0;
       setProgress(0);
       return documentService.upload(file, {
         signal: controller.signal,
-        onProgress: setProgress,
+        onProgress: handleProgress,
       });
     },
     onSuccess: () => {
+      lastProgressRef.current = 0;
       setProgress(0);
       controllerRef.current = null;
       toast.success('Upload complete — processing');
@@ -90,6 +107,7 @@ export function useUploadDocument() {
     },
     onError: (err) => {
       controllerRef.current = null;
+      lastProgressRef.current = 0;
       setProgress(0);
       if (axios.isCancel(err)) return; // user-initiated, silent
       toast.error(extractErrorMessage(err));

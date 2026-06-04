@@ -25,18 +25,18 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: sinable
-          POSTGRES_USER: sinable
+          POSTGRES_DB: signable
+          POSTGRES_USER: signable
           POSTGRES_PASSWORD: secret
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U sinable"
+          --health-cmd "pg_isready -U signable"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://sinable:secret@localhost:5432/sinable
+      DATABASE_URL: postgresql://signable:secret@localhost:5432/signable
       JWT_SECRET: ci-only-secret
       PROCESSOR_URL: http://localhost:8001
       FRONTEND_URL: http://localhost:3000

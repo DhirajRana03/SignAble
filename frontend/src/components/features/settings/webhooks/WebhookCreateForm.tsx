@@ -77,7 +77,7 @@ export function WebhookCreateForm() {
         <Input
           id="url"
           type="url"
-          placeholder="https://yourapp.com/webhooks/sinable"
+          placeholder="https://yourapp.com/webhooks/signable"
           {...form.register('url')}
         />
         {form.formState.errors.url ? (

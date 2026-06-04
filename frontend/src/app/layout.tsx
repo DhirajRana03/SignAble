@@ -6,7 +6,7 @@ import { Providers } from './providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SinAble',
+  title: 'SignAble',
   description: 'Electronic signature platform.',
   themeColor: '#6366F1',
 };

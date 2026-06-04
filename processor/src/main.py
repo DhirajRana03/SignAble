@@ -1,4 +1,4 @@
-"""SinAble document processor — FastAPI service.
+"""SignAble document processor — FastAPI service.
 
 Stateless processing-only service. Three endpoints:
 - POST /process           — extract text + page metadata
@@ -18,7 +18,7 @@ from .pdf_processor import pdf_processor
 from .pdf_renderer import pdf_renderer
 from .signature_applier import SignedFieldData, signature_applier
 
-app = FastAPI(title="SinAble Document Processor", version="0.1.0")
+app = FastAPI(title="SignAble Document Processor", version="0.1.0")
 
 
 class PageDimension(BaseModel):

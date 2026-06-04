@@ -68,7 +68,7 @@ export class NotificationsService {
     try {
       await this.driver.send({
         to,
-        from: this.config.get<string>('email.from') ?? 'noreply@sinable.com',
+        from: this.config.get<string>('email.from') ?? 'noreply@signable.com',
         subject,
         html,
       });

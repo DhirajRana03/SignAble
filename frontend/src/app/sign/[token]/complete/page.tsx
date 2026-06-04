@@ -43,7 +43,7 @@ export default function SignCompletePage() {
 
       <footer className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 h-12 flex items-center justify-center">
-          <p className="label-mono">SinAble · signed with intent</p>
+          <p className="label-mono">SignAble · signed with intent</p>
         </div>
       </footer>
     </div>

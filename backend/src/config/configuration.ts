@@ -57,7 +57,7 @@ export default () => ({
     password: process.env.SMTP_PASSWORD ?? '',
     sendgridApiKey: process.env.SENDGRID_API_KEY ?? '',
     postmarkToken: process.env.POSTMARK_SERVER_TOKEN ?? '',
-    from: process.env.EMAIL_FROM ?? 'noreply@sinable.com',
+    from: process.env.EMAIL_FROM ?? 'noreply@signable.com',
   },
 
   maxUploadBytes: parseInt(

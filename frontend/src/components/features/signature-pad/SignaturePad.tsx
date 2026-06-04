@@ -38,7 +38,7 @@ export function SignaturePad({
 
   // Inject script fonts once
   useEffect(() => {
-    const id = 'sinable-script-fonts';
+    const id = 'signable-script-fonts';
     if (typeof document === 'undefined') return;
     if (document.getElementById(id)) return;
     const link = document.createElement('link');

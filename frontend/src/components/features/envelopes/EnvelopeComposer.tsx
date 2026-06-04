@@ -370,6 +370,45 @@ export function EnvelopeComposer() {
   );
 }
 
+/* ─────────────── Progress ring (SVG, GPU-accelerated) ─────────────── */
+
+function ProgressRing({ pct }: { pct: number }) {
+  const radius = 12;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(pct, 100) / 100) * circumference;
+  return (
+    <div className="relative h-8 w-8 shrink-0">
+      <svg className="h-8 w-8 -rotate-90" viewBox="0 0 32 32">
+        <circle
+          cx="16"
+          cy="16"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          className="text-accent/15"
+        />
+        <circle
+          cx="16"
+          cy="16"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="text-accent transition-[stroke-dashoffset] duration-150 ease-linear"
+        />
+      </svg>
+      <UploadCloud
+        className="absolute inset-0 m-auto h-3.5 w-3.5 text-accent-deep"
+        strokeWidth={2.2}
+      />
+    </div>
+  );
+}
+
 /* ─────────────── Compact dropzone ─────────────── */
 
 function DocumentDropzoneCompact({
@@ -413,21 +452,20 @@ function DocumentDropzoneCompact({
     [upload, onUploaded],
   );
 
-  // Active upload view: filename + progress + cancel.
+  // Active upload: compact card with progress arc + cancel.
   if (upload.isPending) {
+    const pct = upload.progress;
     return (
-      <div className="rounded-md border-2 border-dashed border-accent bg-accent-soft/30 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 grid place-items-center rounded-pill bg-accent text-white shrink-0">
-            <UploadCloud className="h-4 w-4 animate-pulse" strokeWidth={2} />
-          </div>
+      <div className="rounded-md border border-accent/40 bg-accent-soft/20 px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <ProgressRing pct={pct} />
           <div className="min-w-0 flex-1">
-            <p className="text-[13.5px] font-medium text-ink truncate">
+            <p className="text-[12.5px] font-medium text-ink truncate leading-tight">
               {uploadingName ?? 'Uploading…'}
             </p>
-            <p className="text-[11.5px] text-ink-3 mt-0.5">
-              {upload.progress}% uploaded
-              {queueCount > 1 ? ` · ${queueCount} remaining` : ''}
+            <p className="text-[10.5px] text-ink-3 mt-0.5">
+              {pct}%
+              {queueCount > 1 ? ` · ${queueCount} files left` : ''}
             </p>
           </div>
           <button
@@ -437,17 +475,11 @@ function DocumentDropzoneCompact({
               upload.cancel();
               setUploadingName(null);
             }}
-            className="h-8 px-2.5 inline-flex items-center gap-1 rounded-md text-[12px] font-medium text-ink-3 hover:text-danger hover:bg-danger/10 transition-colors shrink-0"
+            className="h-6 w-6 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 transition-colors shrink-0"
             aria-label="Cancel upload"
           >
-            <X className="h-3.5 w-3.5" /> Cancel
+            <X className="h-3.5 w-3.5" strokeWidth={2.5} />
           </button>
-        </div>
-        <div className="mt-2.5 h-1 rounded-full bg-white/60 overflow-hidden">
-          <div
-            className="h-full bg-accent transition-[width] duration-200 ease-out"
-            style={{ width: `${upload.progress}%` }}
-          />
         </div>
       </div>
     );
@@ -467,11 +499,12 @@ function DocumentDropzoneCompact({
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        'relative cursor-pointer rounded-md border-2 border-dashed transition-all duration-150',
-        'flex items-center gap-3 px-4 py-3',
+        'relative cursor-pointer rounded-md border border-dashed',
+        'flex items-center gap-2.5 px-3 py-2.5',
+        'transition-colors duration-150',
         dragging
           ? 'border-accent bg-accent-soft/40'
-          : 'border-border-strong bg-surface-1/40 hover:border-accent hover:bg-accent-soft/20',
+          : 'border-border-strong/70 bg-surface-1/30 hover:border-accent/60 hover:bg-accent-soft/15',
       )}
     >
       <input
@@ -488,12 +521,11 @@ function DocumentDropzoneCompact({
       />
       <div
         className={cn(
-          'h-9 w-9 grid place-items-center rounded-pill transition-all shrink-0',
-          dragging
+          'h-8 w-8 grid place-items-center rounded-md shrink-0',
+          'transition-colors duration-150',
+          dragging || hasExisting
             ? 'bg-accent text-white'
-            : hasExisting
-              ? 'bg-accent text-white'
-              : 'bg-accent-soft text-accent-deep',
+            : 'bg-accent-soft text-accent-deep',
         )}
       >
         {hasExisting ? (
@@ -503,15 +535,13 @@ function DocumentDropzoneCompact({
         )}
       </div>
       <div className="min-w-0">
-        <p className="text-[13.5px] font-medium text-ink">
-          {hasExisting
-            ? 'Add another document'
-            : 'Drop files or click to browse'}
+        <p className="text-[12.5px] font-medium text-ink leading-tight">
+          {hasExisting ? 'Add document' : 'Drop or click to upload'}
         </p>
-        <p className="text-[11.5px] text-ink-3 mt-0.5">
+        <p className="text-[10.5px] text-ink-3 mt-0.5">
           {hasExisting
-            ? 'Click to select more files'
-            : 'PDF or image · up to 50 MB · multiple allowed'}
+            ? 'Multiple files allowed'
+            : 'PDF or image · up to 50 MB'}
         </p>
       </div>
     </div>
@@ -519,6 +549,13 @@ function DocumentDropzoneCompact({
 }
 
 /* ─────────────── Document card ─────────────── */
+
+const STATUS_DOT: Record<string, string> = {
+  PENDING: 'bg-ink-4',
+  PROCESSING: 'bg-warn animate-pulse',
+  READY: 'bg-success',
+  FAILED: 'bg-danger',
+};
 
 function DocumentCard({
   documentId,
@@ -539,8 +576,10 @@ function DocumentCard({
   return (
     <li
       className={cn(
-        'relative rounded-lg sunken p-4 pr-9 transition-shadow',
-        primary && 'ring-1 ring-accent/30',
+        'group relative rounded-md bg-surface-2/70 backdrop-blur-sm',
+        'border border-border/60 px-3 py-2.5',
+        'hover:border-accent/40 hover:shadow-paper transition-all duration-150',
+        primary && 'border-accent/40 ring-1 ring-accent/15',
       )}
     >
       <button
@@ -549,20 +588,20 @@ function DocumentCard({
         aria-label="Delete document"
         title="Delete document"
         className={cn(
-          'absolute top-2 right-2 h-7 w-7 grid place-items-center rounded-full',
-          'bg-danger text-white shadow-md ring-2 ring-paper z-10',
-          'hover:bg-danger/90 hover:scale-105 active:scale-95',
+          'absolute -top-1.5 -right-1.5 h-5 w-5 grid place-items-center rounded-full',
+          'bg-danger text-white shadow-sm ring-2 ring-paper',
+          'hover:bg-red-600 hover:scale-110 active:scale-95',
           'focus:outline-none focus:ring-2 focus:ring-danger/50',
-          'transition-all',
+          'transition-transform duration-100',
         )}
       >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+        <Trash2 className="h-2.5 w-2.5" strokeWidth={3} />
       </button>
 
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-2.5">
         <div
           className={cn(
-            'h-10 w-10 grid place-items-center rounded-md shrink-0',
+            'h-7 w-7 grid place-items-center rounded-sm shrink-0',
             isReady
               ? 'bg-accent-soft text-accent-deep'
               : failed
@@ -570,58 +609,43 @@ function DocumentCard({
                 : 'bg-surface-sunken text-ink-3',
           )}
         >
-          <FileText className="h-5 w-5" />
+          <FileText className="h-3.5 w-3.5" strokeWidth={2} />
         </div>
+
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="flex items-center gap-1.5">
+            <p
+              className="text-[12.5px] font-medium text-ink truncate leading-tight"
+              title={doc?.filename}
+            >
+              {doc?.filename ?? 'Loading…'}
+            </p>
             {primary ? (
-              <span className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-accent-deep bg-accent-soft px-1.5 py-0.5 rounded-pill shrink-0">
+              <span className="text-[8.5px] font-semibold uppercase tracking-[0.06em] text-accent-deep bg-accent-soft px-1 py-px rounded shrink-0">
                 Primary
               </span>
             ) : null}
           </div>
-          <p
-            className="text-[13.5px] font-medium text-ink truncate"
-            title={doc?.filename}
-          >
-            {doc?.filename ?? 'Loading…'}
-          </p>
-          <p className="text-[11.5px] text-ink-3 mt-1">
-            {isProcessing
-              ? 'Processing pages…'
-              : isReady
-                ? `${doc?.pageCount ?? 0} page${doc?.pageCount === 1 ? '' : 's'}`
-                : failed
-                  ? doc?.errorMessage ?? 'Failed'
-                  : String(status).toLowerCase()}
-          </p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full shrink-0',
+                STATUS_DOT[status] ?? STATUS_DOT.PENDING,
+              )}
+            />
+            <p className="text-[10.5px] text-ink-3 truncate">
+              {isProcessing
+                ? 'Processing'
+                : isReady
+                  ? `${doc?.pageCount ?? 0} page${doc?.pageCount === 1 ? '' : 's'}`
+                  : failed
+                    ? doc?.errorMessage ?? 'Failed'
+                    : String(status).toLowerCase()}
+            </p>
+          </div>
         </div>
       </div>
-
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <StatusChip status={status} />
-      </div>
     </li>
-  );
-}
-
-function StatusChip({ status }: { status: string }) {
-  const map: Record<string, { tone: string; label: string }> = {
-    PENDING: { tone: 'bg-surface-sunken text-ink-3', label: 'queued' },
-    PROCESSING: { tone: 'bg-warn/12 text-warn', label: 'processing' },
-    READY: { tone: 'bg-success/12 text-success', label: 'ready' },
-    FAILED: { tone: 'bg-danger/12 text-danger', label: 'failed' },
-  };
-  const m = map[status] ?? map.PENDING;
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-pill px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-[0.06em]',
-        m.tone,
-      )}
-    >
-      {m.label}
-    </span>
   );
 }
 

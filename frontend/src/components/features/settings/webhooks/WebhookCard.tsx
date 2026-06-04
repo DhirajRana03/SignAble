@@ -145,7 +145,7 @@ export function WebhookCard({ hook, onViewDeliveries }: Props) {
         </div>
         <p className="text-[10px] text-ink-faint mt-2 leading-relaxed">
           Verify HMAC-SHA256 of raw body using this secret. Header:{' '}
-          <code className="font-mono">X-SinAble-Signature</code>.
+          <code className="font-mono">X-SignAble-Signature</code>.
         </p>
       </div>
 

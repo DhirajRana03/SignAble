@@ -37,7 +37,7 @@ export function Logo({
       </div>
       {showText ? (
         <span className="text-[15px] font-semibold tracking-[-0.022em] text-ink">
-          SinAble
+          SignAble
         </span>
       ) : null}
     </div>
