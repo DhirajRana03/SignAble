@@ -51,13 +51,18 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     null,
   );
 
-  // Initialize editor store with existing fields whenever the envelope changes
+  // Seed editor store once per envelope id. fields/recipients deliberately
+  // omitted from deps — react-query hands back new array refs on every
+  // refetch which would re-init and re-trigger setActiveRecipient,
+  // producing an infinite render loop. activeRecipientId also excluded
+  // since the effect mutates it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     init(envelope.id, envelope.fields ?? []);
-    if (envelope.recipients?.length && !activeRecipientId) {
+    if (envelope.recipients?.length) {
       setActiveRecipient(envelope.recipients[0].id);
     }
-  }, [envelope.id, envelope.fields, envelope.recipients, init, setActiveRecipient, activeRecipientId]);
+  }, [envelope.id]);
 
   const handlePagePointerDown = (
     e: React.PointerEvent,
