@@ -27,7 +27,7 @@ export function DraftCard({
 
   return (
     <Link
-      href={`/envelopes/${envelope.id}/prepare`}
+      href={`/envelopes/${envelope.id}/edit`}
       className="group relative block animate-fade-up"
       style={{ animationDelay: `${index * 40}ms` }}
     >

@@ -30,7 +30,7 @@ export default function EnvelopeDetailPage() {
   // Drafts finalize via prepare workspace. Redirect on load.
   useEffect(() => {
     if (envelope.data?.status === 'DRAFT') {
-      router.replace(`/envelopes/${envelope.data.id}/prepare`);
+      router.replace(`/envelopes/${envelope.data.id}/edit`);
     }
   }, [envelope.data?.status, envelope.data?.id, router]);
 

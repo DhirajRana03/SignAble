@@ -24,7 +24,7 @@ export function EnvelopeCard({
   const del = useDeleteEnvelope();
   const [confirming, setConfirming] = useState(false);
   const href = isDraft
-    ? `/envelopes/${envelope.id}/prepare`
+    ? `/envelopes/${envelope.id}/edit`
     : `/envelopes/${envelope.id}`;
 
   return (

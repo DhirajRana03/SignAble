@@ -66,7 +66,11 @@ const recipientSchema = z.object({
 });
 type RecipientFormValues = z.infer<typeof recipientSchema>;
 
-export function EnvelopeComposer() {
+export function EnvelopeComposer({
+  draftId,
+}: {
+  draftId?: string;
+} = {}) {
   const router = useRouter();
   const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [recipients, setRecipients] = useState<DraftRecipient[]>([]);
@@ -75,6 +79,57 @@ export function EnvelopeComposer() {
   const [signingOrder, setSigningOrder] = useState<SigningOrder>('SEQUENTIAL');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(!draftId);
+
+  // Hydrate from existing draft. Loads envelope + attached docs once.
+  // Skips when draftId absent (fresh create flow).
+  useEffect(() => {
+    if (!draftId || hydrated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { envelopeService } = await import(
+          '@/services/envelope.service'
+        );
+        const [env, attached] = await Promise.all([
+          envelopeService.get(draftId),
+          envelopeService.listAttachedDocuments(draftId),
+        ]);
+        if (cancelled) return;
+        if (env.status !== 'DRAFT') {
+          // Non-draft cannot edit via composer. Bounce to detail.
+          router.replace(`/envelopes/${env.id}`);
+          return;
+        }
+        const docIds = [
+          env.documentId,
+          ...attached
+            .sort((a, b) => a.orderIndex - b.orderIndex)
+            .map((a) => a.documentId),
+        ];
+        setDocumentIds(docIds);
+        setTitle(env.title ?? '');
+        setSigningOrder(env.signingOrder);
+        setRecipients(
+          (env.recipients ?? [])
+            .sort((a, b) => a.orderIndex - b.orderIndex)
+            .map((r) => ({
+              id: r.id,
+              name: r.name,
+              email: r.email,
+              role: r.role,
+            })),
+        );
+        setHydrated(true);
+      } catch (err) {
+        setSubmitError(extractErrorMessage(err));
+        setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [draftId, hydrated, router]);
 
   // Primary document: first in list. Drives envelope creation + title seed.
   const primaryId = documentIds[0] ?? null;
@@ -152,36 +207,72 @@ export function EnvelopeComposer() {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const envelope = await createEnvelope.mutateAsync({
-        documentId: primaryId,
-        title: title.trim() || 'Untitled draft',
-        signingOrder,
-      });
       const { envelopeService } = await import('@/services/envelope.service');
-      for (const extraId of documentIds.slice(1)) {
-        await envelopeService.attachDocument(envelope.id, extraId);
-      }
-      for (let i = 0; i < recipients.length; i++) {
-        const r = recipients[i];
-        await envelopeService.addRecipient(envelope.id, {
-          name: r.name,
-          email: r.email,
-          orderIndex: i,
-          role: r.role,
+      let envelopeId: string;
+      if (draftId) {
+        // Update existing draft: PATCH metadata. Reconcile attachments
+        // and recipients via diff (additions only for now — deletions
+        // handled by user via card remove + recipient delete UI).
+        await envelopeService.update(draftId, {
+          title: title.trim() || 'Untitled draft',
+          signingOrder,
         });
+        const existing = await envelopeService.listAttachedDocuments(draftId);
+        const existingIds = new Set(existing.map((a) => a.documentId));
+        for (const extraId of documentIds.slice(1)) {
+          if (!existingIds.has(extraId)) {
+            await envelopeService.attachDocument(draftId, extraId);
+          }
+        }
+        const env = await envelopeService.get(draftId);
+        const existingRecipientIds = new Set(
+          (env.recipients ?? []).map((r) => r.id),
+        );
+        for (let i = 0; i < recipients.length; i++) {
+          const r = recipients[i];
+          if (!existingRecipientIds.has(r.id)) {
+            await envelopeService.addRecipient(draftId, {
+              name: r.name,
+              email: r.email,
+              orderIndex: i,
+              role: r.role,
+            });
+          }
+        }
+        envelopeId = draftId;
+      } else {
+        const envelope = await createEnvelope.mutateAsync({
+          documentId: primaryId,
+          title: title.trim() || 'Untitled draft',
+          signingOrder,
+        });
+        envelopeId = envelope.id;
+        for (const extraId of documentIds.slice(1)) {
+          await envelopeService.attachDocument(envelopeId, extraId);
+        }
+        for (let i = 0; i < recipients.length; i++) {
+          const r = recipients[i];
+          await envelopeService.addRecipient(envelopeId, {
+            name: r.name,
+            email: r.email,
+            orderIndex: i,
+            role: r.role,
+          });
+        }
       }
       if (mode === 'draft') {
         toast.success('Draft saved');
         router.push('/drafts');
       } else {
-        toast.success('Envelope created');
-        router.push(`/envelopes/${envelope.id}/prepare`);
+        toast.success(draftId ? 'Draft updated' : 'Envelope created');
+        router.push(`/envelopes/${envelopeId}/prepare`);
       }
     } catch (err) {
       setSubmitError(extractErrorMessage(err));
       setSubmitting(false);
     }
   }, [
+    draftId,
     primaryId,
     docReady,
     title,
@@ -452,7 +543,13 @@ export function EnvelopeComposer() {
               loading={submitting}
               disabled={!canSubmit}
             >
-              {submitting ? 'Creating…' : 'Create envelope'}
+              {submitting
+                ? draftId
+                  ? 'Saving…'
+                  : 'Creating…'
+                : draftId
+                  ? 'Continue to fields'
+                  : 'Create envelope'}
             </Button>
             <Button
               type="button"

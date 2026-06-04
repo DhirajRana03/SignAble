@@ -71,6 +71,16 @@ export const envelopeService = {
     const { data } = await apiClient.get<Envelope>(`/envelopes/${id}`);
     return data;
   },
+  async update(
+    id: string,
+    input: { title?: string; message?: string; signingOrder?: SigningOrder },
+  ): Promise<Envelope> {
+    const { data } = await apiClient.patch<Envelope>(
+      `/envelopes/${id}`,
+      input,
+    );
+    return data;
+  },
   async send(id: string): Promise<Envelope> {
     const { data } = await apiClient.post<Envelope>(`/envelopes/${id}/send`);
     return data;
