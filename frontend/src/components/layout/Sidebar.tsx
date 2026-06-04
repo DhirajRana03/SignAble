@@ -137,12 +137,17 @@ export function Sidebar({
           )}
         >
           <span
+            style={{
+              backgroundColor: profileOpen
+                ? 'hsl(var(--accent-deep))'
+                : 'hsl(var(--accent))',
+            }}
             className={cn(
               'h-10 w-10 grid place-items-center rounded-full shrink-0',
               'text-[12px] font-semibold uppercase tracking-tight text-white',
               'shadow-paper',
               'transition-transform duration-150 ease-out',
-              profileOpen ? 'bg-accent-deep scale-105' : 'bg-accent',
+              profileOpen && 'scale-105',
             )}
           >
             {user ? initials(user.name) : '?'}
