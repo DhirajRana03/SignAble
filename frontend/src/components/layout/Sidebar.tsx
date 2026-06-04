@@ -127,7 +127,7 @@ export function Sidebar({
           aria-haspopup="menu"
           aria-label="Open account menu"
           className={cn(
-            'w-full flex items-center gap-2.5 rounded-md px-2 py-2',
+            'relative z-30 w-full flex items-center gap-2.5 rounded-md px-2 py-2',
             'border bg-transparent transition-colors duration-150',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
             'active:bg-transparent',
