@@ -1,6 +1,13 @@
 'use client';
 
-import { ArrowUpRight, FileText, MailCheck, MailOpen, Send } from 'lucide-react';
+import {
+  ArrowUpRight,
+  FileText,
+  MailCheck,
+  MailOpen,
+  Plus,
+  Send,
+} from 'lucide-react';
 import Link from 'next/link';
 
 import { EnvelopeCard } from '@/components/features/envelopes/EnvelopeCard';
@@ -35,21 +42,21 @@ export default function DashboardHome() {
       label: 'Drafts',
       value: env.filter((e) => e.status === 'DRAFT').length,
       icon: MailOpen,
-      href: '/envelopes',
+      href: '/drafts',
       tone: 'amber',
     },
     {
       label: 'In flight',
       value: env.filter((e) => ['SENT', 'IN_PROGRESS'].includes(e.status)).length,
       icon: Send,
-      href: '/envelopes',
+      href: '/sent',
       tone: 'rose',
     },
     {
       label: 'Completed',
       value: env.filter((e) => e.status === 'COMPLETED').length,
       icon: MailCheck,
-      href: '/envelopes',
+      href: '/completed',
       tone: 'emerald',
     },
   ];
@@ -61,8 +68,26 @@ export default function DashboardHome() {
       eyebrow={`Welcome back, ${user?.name?.split(' ')[0] ?? 'there'}`}
       title="Dashboard"
     >
-      <div className="space-y-10 pb-16">
-        {/* Stat bento — glass tiles with big numbers */}
+      <div className="space-y-8 pb-16">
+        {/* Hero CTA */}
+        <Link
+          href="/envelopes/new"
+          className="group glass flex items-center gap-4 p-5 transition-all hover:-translate-y-0.5 hover:shadow-lifted"
+        >
+          <span className="h-11 w-11 grid place-items-center rounded-md bg-accent text-white shrink-0 group-hover:scale-105 transition-transform">
+            <Plus className="h-5 w-5" strokeWidth={2.5} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-semibold text-ink leading-tight">
+              New envelope
+            </p>
+            <p className="text-[12px] text-ink-3 mt-0.5">
+              Upload a document and route it for signature.
+            </p>
+          </div>
+          <ArrowUpRight className="h-4 w-4 text-ink-4 group-hover:text-accent-deep group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+        </Link>
+
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map((s, i) => (
             <StatTile key={s.label} {...s} index={i} />
@@ -85,19 +110,10 @@ export default function DashboardHome() {
           </div>
 
           {recent.length === 0 ? (
-            <div className="glass p-12 text-center">
-              <p className="text-[15px] font-medium text-ink mb-1">
-                No envelopes yet
+            <div className="glass p-10 text-center">
+              <p className="text-[14px] text-ink-3">
+                No envelopes yet. Use the button above to create one.
               </p>
-              <p className="text-[13px] text-ink-3 max-w-xs mx-auto">
-                Create your first envelope to start sending documents for
-                signature.
-              </p>
-              <Link href="/envelopes/new" className="inline-block mt-4">
-                <Button variant="accent" size="md">
-                  New envelope
-                </Button>
-              </Link>
             </div>
           ) : (
             <div className="glass overflow-hidden">

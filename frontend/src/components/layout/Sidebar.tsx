@@ -3,19 +3,22 @@
 import {
   Archive,
   CheckCircle2,
+  ChevronUp,
   FileEdit,
   Inbox,
   LayoutDashboard,
+  LogOut,
   Send,
   Settings,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Logo } from '@/components/ui/Logo';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { cn, initials } from '@/lib/utils';
 
 const NAV = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -39,6 +42,8 @@ export function Sidebar({
   onClose?: () => void;
 }) {
   const pathname = usePathname() ?? '/';
+  const { user, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -108,16 +113,82 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="mt-auto px-4 py-4 flex items-center justify-between">
-        <Link
-          href="/settings"
-          onClick={onClose}
-          className="flex items-center gap-2 text-[12.5px] text-ink-3 hover:text-ink transition-colors"
+      <div className="mt-auto px-3 pb-4 pt-2 relative">
+        <button
+          type="button"
+          onClick={() => setProfileOpen((s) => !s)}
+          aria-expanded={profileOpen}
+          aria-haspopup="menu"
+          className={cn(
+            'w-full flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors',
+            profileOpen
+              ? 'bg-surface-sunken'
+              : 'hover:bg-surface-sunken/70',
+          )}
         >
-          <Settings className="h-3.5 w-3.5" />
-          Settings
-        </Link>
-        <span className="text-[10.5px] text-ink-4 font-mono">v0.3</span>
+          <span
+            className={cn(
+              'h-8 w-8 grid place-items-center rounded-pill text-[11px] font-semibold uppercase tracking-tight shrink-0',
+              profileOpen
+                ? 'bg-accent text-white'
+                : 'bg-accent-soft text-accent-deep',
+            )}
+          >
+            {user ? initials(user.name) : '?'}
+          </span>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="text-[12.5px] font-medium text-ink truncate leading-tight">
+              {user?.name ?? 'Account'}
+            </p>
+            <p className="text-[10.5px] text-ink-3 truncate">
+              {user?.email ?? ''}
+            </p>
+          </div>
+          <ChevronUp
+            className={cn(
+              'h-3.5 w-3.5 text-ink-3 shrink-0 transition-transform',
+              !profileOpen && 'rotate-180',
+            )}
+          />
+        </button>
+
+        {profileOpen ? (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setProfileOpen(false)}
+            />
+            <div className="absolute bottom-full left-3 right-3 mb-2 z-20 glass-strong shadow-popover animate-scale-in origin-bottom p-1.5">
+              <Link
+                href="/settings"
+                onClick={() => {
+                  setProfileOpen(false);
+                  onClose?.();
+                }}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-2 hover:bg-surface-sunken hover:text-ink transition-colors"
+              >
+                <Settings className="h-3.5 w-3.5 text-ink-3" />
+                Settings
+              </Link>
+              <div className="rule-soft my-1" />
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-2 hover:bg-surface-sunken hover:text-ink transition-colors"
+              >
+                <LogOut className="h-3.5 w-3.5 text-ink-3" />
+                Sign out
+              </button>
+              <div className="rule-soft my-1" />
+              <div className="px-3 py-1.5 text-[10px] text-ink-4 font-mono">
+                v0.3
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

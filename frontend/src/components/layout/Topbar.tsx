@@ -1,12 +1,6 @@
 'use client';
 
-import { LogOut, Menu, Plus } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
-
-import { Button } from '@/components/ui/Button';
-import { useAuth } from '@/hooks/useAuth';
-import { cn, initials } from '@/lib/utils';
+import { Menu } from 'lucide-react';
 
 export function Topbar({
   title,
@@ -19,12 +13,9 @@ export function Topbar({
   actions?: React.ReactNode;
   onMenuClick?: () => void;
 }) {
-  const { user, logout } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
     <header className="sticky top-0 z-20 bg-surface-0/70 backdrop-blur-lg backdrop-saturate-150">
-      <div className="flex h-14 items-center gap-3 px-4 md:px-6 lg:px-8">
+      <div className="flex h-16 items-center gap-3 px-4 md:px-6 lg:px-8 pt-3">
         {onMenuClick ? (
           <button
             onClick={onMenuClick}
@@ -46,60 +37,9 @@ export function Topbar({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        {actions ? (
           <div className="hidden sm:flex items-center gap-2">{actions}</div>
-
-          <Link href="/envelopes/new">
-            <Button variant="accent" size="sm">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New envelope</span>
-            </Button>
-          </Link>
-
-          <div className="relative ml-1">
-            <button
-              onClick={() => setMenuOpen((s) => !s)}
-              className={cn(
-                'h-9 w-9 grid place-items-center rounded-pill text-[11px] font-semibold uppercase tracking-tight transition-all',
-                menuOpen
-                  ? 'bg-accent text-white'
-                  : 'bg-surface-sunken text-ink-2 hover:bg-surface-1 hover:text-ink',
-              )}
-              aria-label="Account menu"
-              aria-expanded={menuOpen}
-            >
-              {user ? initials(user.name) : '?'}
-            </button>
-            {menuOpen ? (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-12 z-20 w-64 glass-strong shadow-popover animate-scale-in origin-top-right p-1.5">
-                  <div className="px-3 py-2.5">
-                    <p className="text-[13px] font-medium truncate text-ink">
-                      {user?.name}
-                    </p>
-                    <p className="text-[11.5px] text-ink-3 truncate">
-                      {user?.email}
-                    </p>
-                  </div>
-
-                  <div className="rule-soft my-1" />
-
-                  <button
-                    onClick={logout}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-2 hover:bg-surface-sunken hover:text-ink transition-colors"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Sign out
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </div>
-        </div>
+        ) : null}
       </div>
       <div className="rule-soft" />
     </header>
