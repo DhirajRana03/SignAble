@@ -326,8 +326,15 @@ export function EnvelopeComposer({
           signingOrder,
         });
         envelopeId = envelope.id;
+        // Attach extras. Tolerate route absence (older backend); primary
+        // already baked into create call. Failure here must not abort
+        // recipient creation or navigation.
         for (const extraId of documentIds.slice(1)) {
-          await envelopeService.attachDocument(envelopeId, extraId);
+          try {
+            await envelopeService.attachDocument(envelopeId, extraId);
+          } catch {
+            // Continue.
+          }
         }
         for (let i = 0; i < recipients.length; i++) {
           const r = recipients[i];
