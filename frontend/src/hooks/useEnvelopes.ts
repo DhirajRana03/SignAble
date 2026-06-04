@@ -102,6 +102,23 @@ export function useDeleteRecipient(envelopeId: string) {
   });
 }
 
+export function useUpdateRecipient(envelopeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      recipientId,
+      input,
+    }: {
+      recipientId: string;
+      input: Partial<RecipientInput>;
+    }) => envelopeService.updateRecipient(envelopeId, recipientId, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['envelopes', envelopeId] });
+    },
+    onError: (err) => toast.error(extractErrorMessage(err)),
+  });
+}
+
 export function useBulkSaveFields(envelopeId: string) {
   const qc = useQueryClient();
   return useMutation({

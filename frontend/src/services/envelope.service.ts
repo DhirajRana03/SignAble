@@ -80,6 +80,17 @@ export const envelopeService = {
     );
     return data;
   },
+  async updateRecipient(
+    envelopeId: string,
+    recipientId: string,
+    input: Partial<RecipientInput>,
+  ): Promise<Recipient> {
+    const { data } = await apiClient.put<Recipient>(
+      `/envelopes/${envelopeId}/recipients/${recipientId}`,
+      input,
+    );
+    return data;
+  },
   async deleteRecipient(
     envelopeId: string,
     recipientId: string,
