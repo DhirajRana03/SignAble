@@ -7,7 +7,11 @@
  * - represents draft state before user clicks "Save fields"
  */
 import { nanoid } from '@/lib/nanoid';
-import type { FieldType, SignatureField } from '@/types/envelope.types';
+import type {
+  FieldOptions,
+  FieldType,
+  SignatureField,
+} from '@/types/envelope.types';
 import { create } from 'zustand';
 
 export interface EditorField {
@@ -21,6 +25,7 @@ export interface EditorField {
   heightPct: number;
   fieldType: FieldType;
   required: boolean;
+  options: FieldOptions;
 }
 
 interface EditorState {
@@ -60,6 +65,7 @@ export const useEnvelopeEditorStore = create<EditorState>((set) => ({
         heightPct: f.heightPct,
         fieldType: f.fieldType,
         required: f.required,
+        options: f.options ?? null,
       })),
       selectedTempId: null,
       dirty: false,

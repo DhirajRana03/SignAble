@@ -27,7 +27,8 @@ export function AuditTrail({ envelopeId }: { envelopeId: string }) {
     );
   }
 
-  if (!data?.length) {
+  const items = data?.items ?? [];
+  if (items.length === 0) {
     return (
       <div className="sheet p-5 text-sm text-ink-soft">
         No events yet.
@@ -44,7 +45,7 @@ export function AuditTrail({ envelopeId }: { envelopeId: string }) {
 
       <ol className="space-y-3 relative">
         <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
-        {data.map((e) => (
+        {items.map((e) => (
           <li key={e.id} className="relative flex items-start gap-4 pl-6">
             <span className="absolute left-0 top-1 h-3.5 w-3.5 rounded-full border-2 border-accent bg-paper" />
             <div className="flex-1 min-w-0">

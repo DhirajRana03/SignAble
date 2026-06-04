@@ -1,12 +1,15 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { extractErrorMessage } from '@/services/api-client';
 import {
+  type AuditQueryInput,
   type CreateEnvelopeInput,
   type FieldInput,
+  type FieldPatchInput,
   type RecipientInput,
   envelopeService,
 } from '@/services/envelope.service';
@@ -26,10 +29,13 @@ export function useEnvelope(id: string | undefined) {
   });
 }
 
-export function useEnvelopeAudit(id: string | undefined) {
+export function useEnvelopeAudit(
+  id: string | undefined,
+  query: AuditQueryInput = {},
+) {
   return useQuery({
-    queryKey: ['envelopes', id, 'audit'],
-    queryFn: () => envelopeService.getAudit(id as string),
+    queryKey: ['envelopes', id, 'audit', query],
+    queryFn: () => envelopeService.getAudit(id as string, query),
     enabled: !!id,
   });
 }
@@ -131,4 +137,81 @@ export function useBulkSaveFields(envelopeId: string) {
     },
     onError: (err) => toast.error(extractErrorMessage(err)),
   });
+}
+
+export function usePatchField(envelopeId: string) {
+  return useMutation({
+    mutationFn: ({
+      fieldId,
+      input,
+    }: {
+      fieldId: string;
+      input: FieldPatchInput;
+    }) => envelopeService.patchField(envelopeId, fieldId, input),
+    onError: (err) => toast.error(extractErrorMessage(err)),
+  });
+}
+
+export function useDeleteField(envelopeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (fieldId: string) =>
+      envelopeService.deleteField(envelopeId, fieldId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['envelopes', envelopeId, 'fields'] });
+    },
+    onError: (err) => toast.error(extractErrorMessage(err)),
+  });
+}
+
+/**
+ * Debounced field-level auto-save. Returns a `schedule(fieldId, patch)`
+ * function. Successive calls within `delay` for the same field coalesce
+ * into one PATCH carrying the latest patch state.
+ */
+export function useFieldAutoSave(envelopeId: string, delay = 600) {
+  const patch = usePatchField(envelopeId);
+  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const pending = useRef<Map<string, FieldPatchInput>>(new Map());
+
+  // Cancel timers on unmount to avoid memory leaks
+  useEffect(() => {
+    const timersAtMount = timers.current;
+    return () => {
+      timersAtMount.forEach((t) => clearTimeout(t));
+      timersAtMount.clear();
+    };
+  }, []);
+
+  const schedule = useCallback(
+    (fieldId: string, input: FieldPatchInput) => {
+      pending.current.set(fieldId, {
+        ...(pending.current.get(fieldId) ?? {}),
+        ...input,
+      });
+      const existing = timers.current.get(fieldId);
+      if (existing) clearTimeout(existing);
+      const handle = setTimeout(() => {
+        const payload = pending.current.get(fieldId);
+        pending.current.delete(fieldId);
+        timers.current.delete(fieldId);
+        if (payload && Object.keys(payload).length > 0) {
+          patch.mutate({ fieldId, input: payload });
+        }
+      }, delay);
+      timers.current.set(fieldId, handle);
+    },
+    [delay, patch],
+  );
+
+  const flush = useCallback(() => {
+    timers.current.forEach((t) => clearTimeout(t));
+    timers.current.clear();
+    pending.current.forEach((input, fieldId) => {
+      patch.mutate({ fieldId, input });
+    });
+    pending.current.clear();
+  }, [patch]);
+
+  return { schedule, flush, isSaving: patch.isPending };
 }

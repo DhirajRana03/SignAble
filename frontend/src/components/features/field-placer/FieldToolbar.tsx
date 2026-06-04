@@ -1,11 +1,24 @@
 'use client';
 
-import { Calendar, Edit3, Save, Type } from 'lucide-react';
+import {
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  Edit3,
+  Plus,
+  Save,
+  Trash2,
+  Type,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
-import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
+import { Input, Label } from '@/components/ui/Input';
 import { useBulkSaveFields } from '@/hooks/useEnvelopes';
 import { cn, recipientColor } from '@/lib/utils';
+import {
+  useEnvelopeEditorStore,
+  type EditorField,
+} from '@/store/envelopeEditorStore';
 import type { FieldType, Recipient } from '@/types/envelope.types';
 
 const FIELDS: { type: FieldType; label: string; icon: typeof Type }[] = [
@@ -13,11 +26,14 @@ const FIELDS: { type: FieldType; label: string; icon: typeof Type }[] = [
   { type: 'INITIALS', label: 'Initials', icon: Type },
   { type: 'DATE', label: 'Date', icon: Calendar },
   { type: 'TEXT', label: 'Text', icon: Type },
+  { type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown },
+  { type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare },
 ];
 
 /**
- * Side panel: pick recipient → click a field type → click anywhere on the
- * document to drop it. Save button persists all fields atomically.
+ * Side panel: signers list + add-field palette + properties panel for the
+ * currently-selected field (dropdown choices, checkbox label, required
+ * toggle). Save button persists all fields atomically via bulkSave.
  */
 export function FieldToolbar({
   envelopeId,
@@ -35,9 +51,13 @@ export function FieldToolbar({
     (s) => s.setActiveRecipient,
   );
   const fields = useEnvelopeEditorStore((s) => s.fields);
+  const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
+  const updateField = useEnvelopeEditorStore((s) => s.updateField);
+  const removeField = useEnvelopeEditorStore((s) => s.removeField);
   const dirty = useEnvelopeEditorStore((s) => s.dirty);
   const markClean = useEnvelopeEditorStore((s) => s.markClean);
 
+  const selected = fields.find((f) => f.tempId === selectedTempId) ?? null;
   const save = useBulkSaveFields(envelopeId);
 
   const onSave = () => {
@@ -51,6 +71,7 @@ export function FieldToolbar({
         heightPct: f.heightPct,
         fieldType: f.fieldType,
         required: f.required,
+        options: f.options ?? undefined,
       })),
       { onSuccess: () => markClean() },
     );
@@ -97,18 +118,18 @@ export function FieldToolbar({
         <div className="grid grid-cols-2 gap-2">
           {FIELDS.map((f) => {
             const Icon = f.icon;
-            const selected = pendingFieldType === f.type;
+            const isSelected = pendingFieldType === f.type;
             return (
               <button
                 key={f.type}
                 disabled={!activeRecipientId}
                 onClick={() =>
-                  setPendingFieldType(selected ? null : f.type)
+                  setPendingFieldType(isSelected ? null : f.type)
                 }
                 className={cn(
                   'flex flex-col items-center gap-1.5 rounded-md border p-3 transition-all',
                   'disabled:opacity-40 disabled:cursor-not-allowed',
-                  selected
+                  isSelected
                     ? 'border-accent bg-accent-tint text-accent-deep shadow-paper'
                     : 'border-border text-ink-soft hover:border-accent-soft hover:bg-paper-dim/40 hover:text-ink',
                 )}
@@ -132,6 +153,14 @@ export function FieldToolbar({
         )}
       </div>
 
+      {selected ? (
+        <FieldPropertiesPanel
+          field={selected}
+          onUpdate={(patch) => updateField(selected.tempId, patch)}
+          onRemove={() => removeField(selected.tempId)}
+        />
+      ) : null}
+
       <div className="pt-4 border-t border-border space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="label-mono">Total fields</span>
@@ -149,5 +178,129 @@ export function FieldToolbar({
         </Button>
       </div>
     </aside>
+  );
+}
+
+/* ─────────────── Properties panel ─────────────── */
+
+function FieldPropertiesPanel({
+  field,
+  onUpdate,
+  onRemove,
+}: {
+  field: EditorField;
+  onUpdate: (patch: Partial<EditorField>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="pt-4 border-t border-border space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="label-mono">Selected field</p>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="h-7 w-7 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 transition-colors"
+          aria-label="Delete field"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="text-[12px] text-ink-3">
+        Type:{' '}
+        <span className="font-mono text-ink-2">{field.fieldType}</span>
+      </div>
+
+      <label className="flex items-center gap-2 text-[13px] text-ink-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={field.required}
+          onChange={(e) => onUpdate({ required: e.target.checked })}
+          className="h-3.5 w-3.5 accent-accent"
+        />
+        Required
+      </label>
+
+      {field.fieldType === 'DROPDOWN' ? (
+        <DropdownChoicesEditor
+          choices={
+            (field.options && 'choices' in field.options
+              ? field.options.choices
+              : undefined) ?? []
+          }
+          onChange={(choices) => onUpdate({ options: { choices } })}
+        />
+      ) : null}
+
+      {field.fieldType === 'CHECKBOX' ? (
+        <div>
+          <Label htmlFor="cb-label">Checkbox label</Label>
+          <Input
+            id="cb-label"
+            placeholder="Agree to terms"
+            value={
+              (field.options && 'label' in field.options
+                ? field.options.label
+                : '') ?? ''
+            }
+            onChange={(e) =>
+              onUpdate({ options: { label: e.target.value } })
+            }
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ─────────────── Dropdown choices editor ─────────────── */
+
+function DropdownChoicesEditor({
+  choices,
+  onChange,
+}: {
+  choices: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div>
+      <Label>Choices</Label>
+      <div className="space-y-1.5 mt-1">
+        {choices.map((c, i) => (
+          <div key={i} className="flex gap-1.5">
+            <Input
+              value={c}
+              onChange={(e) => {
+                const next = [...choices];
+                next[i] = e.target.value;
+                onChange(next);
+              }}
+              className="text-[12.5px]"
+            />
+            <button
+              type="button"
+              onClick={() => onChange(choices.filter((_, idx) => idx !== i))}
+              disabled={choices.length <= 1}
+              className="h-9 w-9 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Remove choice"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange([...choices, `Option ${choices.length + 1}`])}
+        className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-accent hover:text-accent-deep transition-colors"
+      >
+        <Plus className="h-3 w-3" /> Add choice
+      </button>
+      {choices.length === 0 ? (
+        <p className="mt-1.5 text-[11px] text-danger">
+          Dropdown requires at least one choice.
+        </p>
+      ) : null}
+    </div>
   );
 }

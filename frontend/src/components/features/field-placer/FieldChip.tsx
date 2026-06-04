@@ -1,6 +1,14 @@
 'use client';
 
-import { GripVertical, X } from 'lucide-react';
+import {
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  Edit3,
+  GripVertical,
+  Type as TypeIcon,
+  X,
+} from 'lucide-react';
 import { type CSSProperties, useRef } from 'react';
 
 import { useEnvelopeEditorStore, type EditorField } from '@/store/envelopeEditorStore';
@@ -12,6 +20,17 @@ const FIELD_LABEL: Record<FieldType, string> = {
   INITIALS: 'Initials',
   DATE: 'Date',
   TEXT: 'Text',
+  DROPDOWN: 'Dropdown',
+  CHECKBOX: 'Checkbox',
+};
+
+const FIELD_ICON: Record<FieldType, typeof TypeIcon> = {
+  SIGNATURE: Edit3,
+  INITIALS: TypeIcon,
+  DATE: Calendar,
+  TEXT: TypeIcon,
+  DROPDOWN: ChevronDown,
+  CHECKBOX: CheckSquare,
 };
 
 interface Props {
@@ -49,6 +68,7 @@ export function FieldChip({
   } | null>(null);
 
   const color = recipientColor(recipientIndex);
+  const Icon = FIELD_ICON[field.fieldType];
 
   const onPointerDown = (e: React.PointerEvent, type: 'move' | 'resize') => {
     e.stopPropagation();
@@ -114,8 +134,9 @@ export function FieldChip({
         selected ? 'ring-2 ring-current shadow-sheet z-20' : 'z-10',
       )}
     >
-      <div className="flex items-center gap-1.5 pointer-events-none px-2">
-        <GripVertical className="h-3 w-3 opacity-50" />
+      <div className="flex items-center gap-1.5 pointer-events-none px-2 min-w-0">
+        <GripVertical className="h-3 w-3 opacity-50 shrink-0" />
+        <Icon className="h-3 w-3 shrink-0" />
         <span className="font-mono text-[10px] uppercase tracking-wider truncate">
           {FIELD_LABEL[field.fieldType]}
         </span>

@@ -1,4 +1,5 @@
 import type { Document } from '@/types/document.types';
+import type { PageMeta } from '@/types/envelope.types';
 import { apiClient } from './api-client';
 
 export const documentService = {
@@ -23,6 +24,17 @@ export const documentService = {
 
   async getPageUrls(id: string): Promise<string[]> {
     const { data } = await apiClient.get<string[]>(`/documents/${id}/pages`);
+    return data;
+  },
+
+  /**
+   * Per-page metadata for prepare workspace: width, height (PDF points),
+   * imageUrl. Drives accurate aspect-ratio rendering of pages.
+   */
+  async getPagesMeta(id: string): Promise<PageMeta[]> {
+    const { data } = await apiClient.get<PageMeta[]>(
+      `/documents/${id}/pages-meta`,
+    );
     return data;
   },
 

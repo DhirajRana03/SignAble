@@ -1,6 +1,8 @@
 import type {
   AuditEvent,
+  AuditEventType,
   Envelope,
+  FieldOptions,
   Recipient,
   RecipientRole,
   SignatureField,
@@ -31,6 +33,24 @@ export interface FieldInput {
   heightPct: number;
   fieldType: SignatureField['fieldType'];
   required?: boolean;
+  options?: FieldOptions;
+}
+
+/**
+ * PATCH payload for single-field auto-save. All fields optional —
+ * server validates type/options pairing.
+ */
+export type FieldPatchInput = Partial<FieldInput>;
+
+export interface AuditQueryInput {
+  cursor?: string;
+  limit?: number;
+  eventType?: AuditEventType;
+}
+
+export interface AuditPage {
+  items: AuditEvent[];
+  nextCursor: string | null;
 }
 
 export const envelopeService = {
@@ -56,8 +76,15 @@ export const envelopeService = {
     });
     return data;
   },
-  async getAudit(id: string): Promise<AuditEvent[]> {
-    const { data } = await apiClient.get<AuditEvent[]>(`/envelopes/${id}/audit`);
+  async getAudit(id: string, query: AuditQueryInput = {}): Promise<AuditPage> {
+    const params: Record<string, string | number> = {};
+    if (query.cursor) params.cursor = query.cursor;
+    if (query.limit !== undefined) params.limit = query.limit;
+    if (query.eventType) params.eventType = query.eventType;
+    const { data } = await apiClient.get<AuditPage>(
+      `/envelopes/${id}/audit`,
+      { params },
+    );
     return data;
   },
   async download(id: string): Promise<Blob> {
@@ -116,5 +143,19 @@ export const envelopeService = {
       `/envelopes/${envelopeId}/fields`,
     );
     return data;
+  },
+  async patchField(
+    envelopeId: string,
+    fieldId: string,
+    input: FieldPatchInput,
+  ): Promise<SignatureField> {
+    const { data } = await apiClient.patch<SignatureField>(
+      `/envelopes/${envelopeId}/fields/${fieldId}`,
+      input,
+    );
+    return data;
+  },
+  async deleteField(envelopeId: string, fieldId: string): Promise<void> {
+    await apiClient.delete(`/envelopes/${envelopeId}/fields/${fieldId}`);
   },
 };

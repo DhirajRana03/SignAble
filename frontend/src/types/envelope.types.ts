@@ -8,7 +8,24 @@ export type EnvelopeStatus =
   | 'EXPIRED';
 export type RecipientStatus = 'PENDING' | 'VIEWED' | 'SIGNED' | 'DECLINED';
 export type RecipientRole = 'SIGNER' | 'CC' | 'VIEWER';
-export type FieldType = 'SIGNATURE' | 'INITIALS' | 'DATE' | 'TEXT';
+export type FieldType =
+  | 'SIGNATURE'
+  | 'INITIALS'
+  | 'DATE'
+  | 'TEXT'
+  | 'DROPDOWN'
+  | 'CHECKBOX';
+
+/**
+ * Type-specific configuration persisted alongside a field.
+ * - DROPDOWN: { choices: non-empty string[] }
+ * - CHECKBOX: { label?: string }
+ * - other types: null
+ */
+export type FieldOptions =
+  | { choices: string[] }
+  | { label?: string }
+  | null;
 
 export interface Recipient {
   id: string;
@@ -37,7 +54,15 @@ export interface SignatureField {
   fieldType: FieldType;
   required: boolean;
   value: string | null;
+  options: FieldOptions;
   signedAt: string | null;
+}
+
+export interface PageMeta {
+  pageNumber: number;
+  width: number;
+  height: number;
+  imageUrl: string;
 }
 
 export interface Envelope {

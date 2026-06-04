@@ -43,6 +43,22 @@ export function useDocumentPages(id: string | undefined, enabled = true) {
   });
 }
 
+/**
+ * Per-page metadata for the prepare workspace. Cached for 5 min — the
+ * dimensions never change after processing completes.
+ */
+export function useDocumentPagesMeta(
+  id: string | undefined,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['documents', id, 'pages-meta'],
+    queryFn: () => documentService.getPagesMeta(id as string),
+    enabled: !!id && enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useUploadDocument() {
   const qc = useQueryClient();
   return useMutation({
