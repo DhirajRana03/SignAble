@@ -100,7 +100,7 @@ export function DraftCard({
               size="sm"
               onClick={() => del.mutate(envelope.id)}
               loading={del.isPending}
-              className="bg-red-600 text-white border border-red-600 hover:bg-red-700 hover:border-red-700"
+              className="border border-red-500 text-red-600 bg-transparent hover:bg-red-50 hover:text-red-700 hover:border-red-600"
             >
               Confirm
             </Button>
