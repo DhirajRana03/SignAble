@@ -132,11 +132,15 @@ export function EnvelopeComposer() {
    * Draft mode skips signer requirement so user can return later.
    */
   const persist = useCallback(async (mode: 'continue' | 'draft') => {
-    if (!primaryId || !docReady) {
+    if (!primaryId) {
+      setSubmitError('Upload at least one document.');
+      return;
+    }
+    if (!docReady) {
       setSubmitError('Wait for document to finish processing.');
       return;
     }
-    if (!title.trim()) {
+    if (mode === 'continue' && !title.trim()) {
       setSubmitError('Title required.');
       return;
     }
@@ -149,7 +153,7 @@ export function EnvelopeComposer() {
     try {
       const envelope = await createEnvelope.mutateAsync({
         documentId: primaryId,
-        title: title.trim(),
+        title: title.trim() || 'Untitled draft',
         signingOrder,
       });
       const { envelopeService } = await import('@/services/envelope.service');
@@ -193,7 +197,13 @@ export function EnvelopeComposer() {
     void persist('continue');
   };
 
-  const canSaveDraft = !!primaryId && docReady && !!title.trim() && !submitting;
+  // Draft enables when any composer field has user input. Title auto-fills
+  // from filename once doc ready, so doc-only state still qualifies.
+  const hasAnyInput =
+    documentIds.length > 0 ||
+    recipients.length > 0 ||
+    title.trim().length > 0;
+  const canSaveDraft = hasAnyInput && !submitting;
 
   const setDirty = useComposerGuardStore((s) => s.setDirty);
   const setSaveDraftHandler = useComposerGuardStore((s) => s.setSaveDraft);
@@ -427,27 +437,33 @@ export function EnvelopeComposer() {
 
           <div className="rule-soft my-5" />
 
-          <Button
-            type="submit"
-            variant="accent"
-            size="lg"
-            className="w-full"
-            loading={submitting}
-            disabled={!canSubmit}
-          >
-            {submitting ? 'Creating…' : 'Create envelope'}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            className="w-full mt-2"
-            disabled={!canSaveDraft}
-            onClick={() => void persist('draft')}
-          >
-            Save as draft
-          </Button>
-          <p className="text-[11px] text-ink-4 mt-2.5 text-center">
+          <div className="space-y-2">
+            <Button
+              type="submit"
+              variant="accent"
+              size="lg"
+              className="w-full"
+              loading={submitting}
+              disabled={!canSubmit}
+            >
+              {submitting ? 'Creating…' : 'Create envelope'}
+            </Button>
+            <Button
+              type="button"
+              size="md"
+              className={cn(
+                'w-full bg-transparent border border-accent/40 text-accent-deep',
+                'hover:bg-accent-soft hover:border-accent/60',
+                'disabled:border-border disabled:text-ink-4',
+                'transition-colors duration-150',
+              )}
+              disabled={!canSaveDraft}
+              onClick={() => void persist('draft')}
+            >
+              Save as draft
+            </Button>
+          </div>
+          <p className="text-[11px] text-ink-4 mt-3 text-center">
             Next: place fields, then send.
           </p>
         </div>

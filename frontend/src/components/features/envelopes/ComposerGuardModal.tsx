@@ -79,27 +79,34 @@ export function ComposerGuardModal() {
           </div>
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-5">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
-            Stay on page
-          </Button>
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 mt-6">
           <Button
-            variant="danger"
-            size="sm"
-            onClick={onDiscard}
+            variant="ghost"
+            size="md"
+            onClick={onCancel}
             disabled={busy}
           >
-            Discard
+            Stay on page
           </Button>
-          <Button
-            variant="accent"
-            size="sm"
-            onClick={onSave}
-            loading={busy}
-            disabled={!saveDraft || busy}
-          >
-            Save as draft
-          </Button>
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              variant="danger"
+              size="md"
+              onClick={onDiscard}
+              disabled={busy}
+            >
+              Discard
+            </Button>
+            <Button
+              variant="accent"
+              size="md"
+              onClick={onSave}
+              loading={busy}
+              disabled={!saveDraft || busy}
+            >
+              Save as draft
+            </Button>
+          </div>
         </div>
       </div>
     </div>
