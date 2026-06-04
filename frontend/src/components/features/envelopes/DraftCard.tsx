@@ -64,29 +64,32 @@ export function DraftCard({
         </div>
       </header>
 
-      {/* Recipients */}
-      <p className="text-[12px] text-ink-3 truncate">
-        <span className="text-ink-4">Signers · </span>
-        <span className={recipients.length > 0 ? 'text-ink-2' : 'text-ink-4'}>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
+        <dt className="font-semibold text-ink-2">Signers</dt>
+        <dd
+          className={cn(
+            'truncate',
+            recipients.length > 0 ? 'text-ink-2' : 'text-ink-4',
+          )}
+        >
           {recipientLabel}
-        </span>
-      </p>
+        </dd>
 
-      {/* Dates */}
-      <p className="text-[11.5px] text-ink-4">
-        Created {formatDate(envelope.createdAt)}
-        <span className="px-1.5">·</span>
-        Modified {formatRelative(envelope.createdAt)}
-      </p>
+        <dt className="font-semibold text-ink-2">Created</dt>
+        <dd className="text-ink-3">{formatDate(envelope.createdAt)}</dd>
 
-      {/* Stats */}
-      <p className="text-[11.5px] text-ink-3 flex flex-wrap gap-x-3 gap-y-1">
-        <span>{fieldsLabel}</span>
-        <span className="text-ink-5">·</span>
-        <span>{progressLabel}</span>
-        <span className="text-ink-5">·</span>
-        <span>{pagesLabel}</span>
-      </p>
+        <dt className="font-semibold text-ink-2">Modified</dt>
+        <dd className="text-ink-3">{formatRelative(envelope.createdAt)}</dd>
+
+        <dt className="font-semibold text-ink-2">Fields</dt>
+        <dd className="text-ink-3">{fieldsLabel}</dd>
+
+        <dt className="font-semibold text-ink-2">Progress</dt>
+        <dd className="text-ink-3">{progressLabel}</dd>
+
+        <dt className="font-semibold text-ink-2">Pages</dt>
+        <dd className="text-ink-3">{pagesLabel}</dd>
+      </dl>
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-2 mt-auto">
@@ -99,10 +102,9 @@ export function DraftCard({
           <Button
             type="button"
             size="sm"
-            variant="ghost"
+            variant="danger"
             onClick={() => setConfirming(true)}
             aria-label="Delete draft"
-            className="text-ink-3 hover:text-danger hover:bg-danger/10"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete
           </Button>
