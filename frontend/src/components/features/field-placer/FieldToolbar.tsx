@@ -15,7 +15,6 @@ import {
   type LucideIcon,
   PenLine,
   Phone,
-  Save,
   Search,
   Stamp,
   StickyNote,
@@ -26,8 +25,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/Button';
-import { useBulkSaveFields } from '@/hooks/useEnvelopes';
 import { cn, initials, recipientColor } from '@/lib/utils';
 import {
   useEnvelopeEditorStore,
@@ -74,11 +71,9 @@ export const FIELDS: FieldDef[] = [
  * vertical list of field rows grouped by purpose with divider lines.
  */
 export function FieldToolbar({
-  envelopeId,
   recipients,
   onDragStart,
 }: {
-  envelopeId: string;
   recipients: Recipient[];
   onDragStart: (def: FieldDef) => void;
 }) {
@@ -87,28 +82,7 @@ export function FieldToolbar({
     (s) => s.setActiveRecipient,
   );
   const fields = useEnvelopeEditorStore((s) => s.fields);
-  const dirty = useEnvelopeEditorStore((s) => s.dirty);
-  const markClean = useEnvelopeEditorStore((s) => s.markClean);
   const [query, setQuery] = useState('');
-
-  const save = useBulkSaveFields(envelopeId);
-
-  const onSave = () => {
-    save.mutate(
-      fields.map((f) => ({
-        recipientId: f.recipientId,
-        pageNumber: f.pageNumber,
-        xPct: f.xPct,
-        yPct: f.yPct,
-        widthPct: f.widthPct,
-        heightPct: f.heightPct,
-        fieldType: f.fieldType,
-        required: f.required,
-        options: f.options ?? undefined,
-      })),
-      { onSuccess: () => markClean() },
-    );
-  };
 
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -174,27 +148,6 @@ export function FieldToolbar({
         )}
       </section>
 
-      <section className="rounded-xl bg-white/70 backdrop-blur-md border border-white/60 shadow-sm p-3">
-        <div className="flex items-center justify-between text-[11px] mb-2">
-          <span className="text-ink-3 uppercase tracking-[0.06em] font-semibold">
-            Fields placed
-          </span>
-          <span className="font-mono text-ink text-[12px]">
-            {fields.length}
-          </span>
-        </div>
-        <Button
-          variant="accent"
-          size="sm"
-          className="w-full"
-          loading={save.isPending}
-          disabled={!dirty}
-          onClick={onSave}
-        >
-          <Save className="h-3.5 w-3.5" />
-          {dirty ? 'Save fields' : 'All saved'}
-        </Button>
-      </section>
     </aside>
   );
 }

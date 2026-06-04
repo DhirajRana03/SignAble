@@ -126,7 +126,6 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     <>
       <div className="flex gap-4 items-start">
         <FieldToolbar
-          envelopeId={envelope.id}
           recipients={envelope.recipients ?? []}
           onDragStart={(def) => {
             draggingDefRef.current = def;

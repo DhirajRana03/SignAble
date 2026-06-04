@@ -51,11 +51,42 @@ export default function PreparePage() {
     );
   };
 
+  /**
+   * Send envelope. Auto-saves dirty field layout first so user does not
+   * have to think about a separate save step. Only sends after save
+   * resolves to avoid sending stale server-side field state.
+   */
   const onSend = () => {
-    send.mutate(env.id, {
-      onSuccess: () => router.push(`/envelopes/${env.id}`),
-    });
+    const dispatchSend = () =>
+      send.mutate(env.id, {
+        onSuccess: () => router.push(`/envelopes/${env.id}`),
+      });
+    if (!dirty) {
+      dispatchSend();
+      return;
+    }
+    save.mutate(
+      fields.map((f) => ({
+        recipientId: f.recipientId,
+        pageNumber: f.pageNumber,
+        xPct: f.xPct,
+        yPct: f.yPct,
+        widthPct: f.widthPct,
+        heightPct: f.heightPct,
+        fieldType: f.fieldType,
+        required: f.required,
+        options: f.options ?? undefined,
+      })),
+      {
+        onSuccess: () => {
+          markClean();
+          dispatchSend();
+        },
+      },
+    );
   };
+
+  const canSend = fields.length > 0 && !send.isPending && !save.isPending;
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-0">
@@ -95,9 +126,13 @@ export default function PreparePage() {
               size="sm"
               variant="accent"
               onClick={onSend}
-              disabled={dirty}
-              loading={send.isPending}
-              title={dirty ? 'Save fields before sending' : undefined}
+              disabled={!canSend}
+              loading={send.isPending || save.isPending}
+              title={
+                fields.length === 0
+                  ? 'Drop at least one field before sending'
+                  : undefined
+              }
             >
               <Send className="h-3.5 w-3.5" /> Send envelope
             </Button>
