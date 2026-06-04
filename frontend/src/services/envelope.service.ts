@@ -73,7 +73,12 @@ export const envelopeService = {
   },
   async update(
     id: string,
-    input: { title?: string; message?: string; signingOrder?: SigningOrder },
+    input: {
+      title?: string;
+      message?: string;
+      signingOrder?: SigningOrder;
+      documentId?: string;
+    },
   ): Promise<Envelope> {
     const { data } = await apiClient.patch<Envelope>(
       `/envelopes/${id}`,

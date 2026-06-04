@@ -39,6 +39,14 @@ export class UpdateEnvelopeDto {
   @IsOptional()
   @IsEnum(SigningOrder)
   signingOrder?: SigningOrder;
+
+  /**
+   * Swap envelope primary document. Allowed only on DRAFT envelopes;
+   * must point to a READY document owned by the same user.
+   */
+  @IsOptional()
+  @IsUUID()
+  documentId?: string;
 }
 
 export class VoidEnvelopeDto {

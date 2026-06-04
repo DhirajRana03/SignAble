@@ -238,34 +238,63 @@ export function EnvelopeComposer({
       const { envelopeService } = await import('@/services/envelope.service');
       let envelopeId: string;
       if (draftId) {
-        // Update existing draft. PATCH metadata, reconcile documents
-        // and recipients via full diff against hydration snapshot:
-        // additions for new ids, removals for ids no longer present.
-        await envelopeService.update(draftId, {
-          title: title.trim() || 'Untitled draft',
-          signingOrder,
-        });
+        // Update existing draft. Diff documents and recipients against
+        // hydration snapshot.
+        const initialPrimary = initialDocIdsRef.current[0];
+        const newPrimary = primaryId;
+        const initialAll = initialDocIdsRef.current;
+        const currentAll = documentIds;
+        const currentSet = new Set(currentAll);
 
-        // Document reconcile. Primary doc cannot change via attach API.
-        // Only diff the extras (slice(1)).
-        const initialExtras = initialDocIdsRef.current.slice(1);
-        const currentExtras = documentIds.slice(1);
-        const currentExtrasSet = new Set(currentExtras);
-        const initialExtrasSet = new Set(initialExtras);
-        for (const removedId of initialExtras) {
-          if (currentExtrasSet.has(removedId)) continue;
+        // Detach removed docs first. Skip primary (cannot detach via
+        // join — handled by PATCH documentId swap below).
+        for (const removedId of initialAll) {
+          if (currentSet.has(removedId)) continue;
+          if (removedId === initialPrimary) continue;
           try {
             await envelopeService.detachDocument(draftId, removedId);
           } catch {
-            // Already detached or missing route; continue.
+            // Continue.
           }
         }
-        for (const addedId of currentExtras) {
-          if (initialExtrasSet.has(addedId)) continue;
+
+        // Attach new extras (skip the one destined to become primary).
+        const initialSet = new Set(initialAll);
+        for (let i = 1; i < currentAll.length; i++) {
+          const id = currentAll[i];
+          if (initialSet.has(id)) continue;
+          if (id === newPrimary) continue;
           try {
-            await envelopeService.attachDocument(draftId, addedId);
+            await envelopeService.attachDocument(draftId, id);
           } catch {
             // Duplicate or transient; continue.
+          }
+        }
+
+        // PATCH metadata + primary swap. documentId only included when
+        // changed; backend validates owner + READY.
+        await envelopeService.update(draftId, {
+          title: title.trim() || 'Untitled draft',
+          signingOrder,
+          documentId:
+            newPrimary && newPrimary !== initialPrimary
+              ? newPrimary
+              : undefined,
+        });
+
+        // If primary swap occurred, detach the old primary (it remained
+        // referenced by envelope.documentId until the PATCH succeeded).
+        if (newPrimary && newPrimary !== initialPrimary) {
+          if (!currentSet.has(initialPrimary)) {
+            // Old primary fully removed: nothing further; Document row
+            // remains as orphan in user's library.
+          } else {
+            // Old primary now sits as extra: ensure attached.
+            try {
+              await envelopeService.attachDocument(draftId, initialPrimary);
+            } catch {
+              // Already attached.
+            }
           }
         }
 
@@ -311,6 +340,9 @@ export function EnvelopeComposer({
           });
         }
       }
+      // Refresh snapshot so subsequent saves diff against current state.
+      initialDocIdsRef.current = [...documentIds];
+      initialRecipientIdsRef.current = recipients.map((r) => r.id);
       queryClient.invalidateQueries({ queryKey: ['envelopes'] });
       queryClient.invalidateQueries({ queryKey: ['envelopes', envelopeId] });
       if (mode === 'draft') {

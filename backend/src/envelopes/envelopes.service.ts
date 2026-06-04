@@ -125,12 +125,37 @@ export class EnvelopesService {
     if (env.status !== EnvelopeStatus.DRAFT) {
       throw new InvalidStateTransitionError(env.status, 'update');
     }
+    // Validate primary document swap if requested.
+    if (dto.documentId && dto.documentId !== env.documentId) {
+      const doc = await this.prisma.document.findUnique({
+        where: { id: dto.documentId },
+      });
+      if (!doc) throw new NotFoundError('Document', dto.documentId);
+      if (doc.userId !== userId) throw new ForbiddenError();
+      if (doc.status !== DocumentStatus.READY) {
+        throw new ValidationError(
+          'Document must finish processing before use as primary',
+        );
+      }
+      // Detach from join table if previously attached as extra.
+      await this.prisma.envelopeDocument
+        .delete({
+          where: {
+            envelopeId_documentId: {
+              envelopeId,
+              documentId: dto.documentId,
+            },
+          },
+        })
+        .catch(() => undefined);
+    }
     return this.prisma.envelope.update({
       where: { id: envelopeId },
       data: {
         title: dto.title ?? undefined,
         message: dto.message ?? undefined,
         signingOrder: dto.signingOrder ?? undefined,
+        documentId: dto.documentId ?? undefined,
       },
     });
   }
