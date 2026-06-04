@@ -28,7 +28,20 @@ export function EnvelopeListView({
 }: Props) {
   const owned = useEnvelopes(source === 'owned' ? status : undefined);
   const inbox = useInboxEnvelopes();
-  const { data, isLoading } = source === 'inbox' ? inbox : owned;
+  const { data: rawData, isLoading } = source === 'inbox' ? inbox : owned;
+
+  // Client-side fallback filter. Server-side status query relies on
+  // backend that may run stale code ignoring the parameter; filtering
+  // here guarantees correct bucket data regardless.
+  const data =
+    source === 'owned' && status && rawData
+      ? rawData.filter((env) => {
+          const allowed = Array.isArray(status)
+            ? new Set(status.map((s) => s.toUpperCase()))
+            : new Set(status.split(',').map((s) => s.trim().toUpperCase()));
+          return allowed.has(env.status);
+        })
+      : rawData;
 
   if (isLoading) {
     return (
