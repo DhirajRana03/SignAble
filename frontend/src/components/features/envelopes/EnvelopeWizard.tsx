@@ -12,7 +12,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -25,6 +25,7 @@ import {
   useEnvelope,
   useUpdateRecipient,
 } from '@/hooks/useEnvelopes';
+import { extractErrorMessage } from '@/services/api-client';
 import { cn, recipientColor } from '@/lib/utils';
 import type { Document } from '@/types/document.types';
 import type { Recipient, SigningOrder } from '@/types/envelope.types';
@@ -250,9 +251,15 @@ function EnvelopeStep({
 
       <div className="rule" />
 
+      {create.error ? (
+        <div className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          Could not create envelope: {extractErrorMessage(create.error)}
+        </div>
+      ) : null}
+
       <div className="flex justify-end">
         <Button type="submit" variant="primary" size="lg" loading={create.isPending}>
-          Continue
+          Continue to recipients
           <ArrowUpRight className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -353,6 +360,21 @@ function RecipientsStep({
   const envelope = useEnvelope(envelopeId);
   const recipients = envelope.data?.recipients ?? [];
 
+  // Scroll to top on step transition so user sees the new section appear.
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  if (envelope.isLoading && !envelope.data) {
+    return (
+      <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute animate-pulse">
+        Loading envelope…
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-10 max-w-3xl animate-fade-up">
       <div className="space-y-2">
@@ -420,52 +442,60 @@ function RecipientForm({
   });
 
   return (
-    <form
-      onSubmit={onAdd}
-      className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 items-start"
-    >
-      <div className="sm:col-span-5">
-        <Label htmlFor="r-name">Full name</Label>
-        <Input
-          id="r-name"
-          placeholder="Ada Lovelace"
-          autoComplete="off"
-          {...form.register('name')}
-        />
-        {form.formState.errors.name ? (
-          <p className="mt-1.5 text-xs text-danger">
-            {form.formState.errors.name.message}
-          </p>
-        ) : null}
-      </div>
+    <div className="space-y-3">
+      <form
+        onSubmit={onAdd}
+        className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 items-start"
+      >
+        <div className="sm:col-span-5">
+          <Label htmlFor="r-name">Full name</Label>
+          <Input
+            id="r-name"
+            placeholder="Ada Lovelace"
+            autoComplete="off"
+            {...form.register('name')}
+          />
+          {form.formState.errors.name ? (
+            <p className="mt-1.5 text-xs text-danger">
+              {form.formState.errors.name.message}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="sm:col-span-5">
-        <Label htmlFor="r-email">Email</Label>
-        <Input
-          id="r-email"
-          type="email"
-          placeholder="ada@analytical.engine"
-          autoComplete="off"
-          {...form.register('email')}
-        />
-        {form.formState.errors.email ? (
-          <p className="mt-1.5 text-xs text-danger">
-            {form.formState.errors.email.message}
-          </p>
-        ) : null}
-      </div>
+        <div className="sm:col-span-5">
+          <Label htmlFor="r-email">Email</Label>
+          <Input
+            id="r-email"
+            type="email"
+            placeholder="ada@analytical.engine"
+            autoComplete="off"
+            {...form.register('email')}
+          />
+          {form.formState.errors.email ? (
+            <p className="mt-1.5 text-xs text-danger">
+              {form.formState.errors.email.message}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="sm:col-span-2 sm:pt-[26px]">
-        <Button
-          type="submit"
-          variant="primary"
-          loading={add.isPending}
-          className="w-full"
-        >
-          <Plus className="h-3.5 w-3.5" /> Add
-        </Button>
-      </div>
-    </form>
+        <div className="sm:col-span-2 sm:pt-[26px]">
+          <Button
+            type="submit"
+            variant="primary"
+            loading={add.isPending}
+            className="w-full"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
+        </div>
+      </form>
+
+      {add.error ? (
+        <div className="rounded-md border border-danger/30 bg-danger/5 px-4 py-2.5 text-xs text-danger">
+          Could not add recipient: {extractErrorMessage(add.error)}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

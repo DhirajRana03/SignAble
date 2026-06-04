@@ -139,6 +139,33 @@
     box-shadow: none;
   }
 
+  /*
+   * Legacy mono label — used by Input <Label> and many form sections.
+   * Smaller + tighter than .eyebrow. No coral dot.
+   */
+  .label-mono {
+    font-family: var(--font-mono), 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--ink-faint));
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .label-mono::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    background: hsl(var(--accent));
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .label-mono.plain::before {
+    display: none;
+  }
+
   /* Eyebrow label — coral dot + mono uppercase. The signature definable mark. */
   .eyebrow {
     font-family: var(--font-mono), 'JetBrains Mono', monospace;
