@@ -3,217 +3,258 @@
 @tailwind utilities;
 
 /*
- * SinAble — design tokens lifted from app.definable.ai.
+ * SinAble — Notion-friendly glassmorphism design system.
  *
- * Paper-on-cream warm UI. Inter Tight everywhere. Terracotta accent
- * reserved for focus, drag, and brand mark only. Headings sans-serif,
- * not display. Compact: 11.5–13px body, sub-px hairlines, small radii.
+ * Atmosphere: warm off-white base with a soft gradient mesh.
+ * Surfaces: layered glass with backdrop blur and hairline edges (no hard
+ * borders or boxes). Single restrained accent: dusty indigo-violet.
+ * Typography: Geist Sans throughout, tight tracking, calm hierarchy.
  */
 @layer base {
   :root {
-    /* Brand accent — terracotta */
-    --accent: 16 56% 50%;            /* #c65d3a */
-    --accent-soft: 16 56% 50% / 0.12;
-    --accent-softer: 16 56% 50% / 0.06;
-    --accent-ink: 16 60% 38%;        /* darker for text-on-cream */
+    /* Surfaces — warm off-white ramp */
+    --surface-0: 30 20% 98%;     /* #FAFAF9 base canvas */
+    --surface-1: 30 25% 99%;     /* lifted card resting state */
+    --surface-2: 0 0% 100%;      /* topmost (popovers, modals) */
+    --surface-sunken: 30 15% 96%; /* recessed inputs / inactive */
+
+    /* Glass — RGB-with-alpha for backdrop blur compositing */
+    --glass-1: 255 255 255;   /* base white for rgba() */
+    --glass-edge: 255 255 255 / 0.6;
+    --glass-tint: 250 250 249 / 0.65;
+    --glass-strong: 255 255 255 / 0.78;
+
+    /* Ink — warm gray ramp (zinc-like) */
+    --ink: 240 10% 10%;           /* #191919 */
+    --ink-2: 240 6% 24%;          /* #3F3F46 */
+    --ink-3: 240 4% 46%;          /* #71717A */
+    --ink-4: 240 5% 64%;          /* #A1A1AA */
+    --ink-5: 240 5% 84%;          /* #D4D4D8 muted */
+
+    /* Hairlines — softer than borders */
+    --hairline: 240 6% 90% / 0.7;
+    --hairline-soft: 240 6% 92% / 0.5;
+    --hairline-strong: 240 5% 80% / 0.7;
+
+    /* Accent — dusty indigo, restrained */
+    --accent: 239 70% 64%;        /* #6366F1 indigo-500 */
+    --accent-deep: 240 60% 54%;   /* #4F46E5 indigo-600 */
+    --accent-soft: 239 70% 64% / 0.10;
+    --accent-glow: 239 70% 64% / 0.18;
     --accent-fg: 0 0% 100%;
 
-    /* Warm page surfaces (HSL) */
-    --ivory: 39 38% 96%;              /* #faf7f2 */
-    --ivory-2: 40 35% 94%;            /* #f6f2eb */
-    --cream: 38 32% 92%;              /* #f3eee5  page bg */
-    --cream-2: 36 28% 89%;            /* #ece5d8 */
-    --paper: 0 0% 100%;               /* #fff   card / input bg */
-
-    /* Ink ramp */
-    --ink: 24 13% 9%;                 /* #1c1917 */
-    --ink-2: 24 10% 15%;               /* #292524 */
-    --ink-3: 24 8% 25%;                /* #44403c */
-    --muted: 24 5% 45%;                 /* #78716c */
-    --muted-2: 30 8% 64%;               /* #a8a29e */
-    --faint: 36 17% 80%;                /* #d6cfc2 */
-
-    /* Lines — hairlines */
-    --line: 24 13% 9% / 0.08;
-    --line-soft: 24 13% 9% / 0.05;
-    --line-strong: 24 13% 9% / 0.14;
-
-    /* Status */
-    --ok: 145 33% 37%;
-    --warn: 30 60% 44%;
-    --err: 8 49% 46%;
+    /* Status — desaturated for calm UI */
+    --ok: 159 50% 42%;            /* emerald-ish */
+    --warn: 38 80% 50%;
+    --err: 0 65% 56%;
 
     /* Radii */
-    --r-sm: 6px;
-    --r-md: 10px;
-    --r-lg: 14px;
-    --r-xl: 20px;
+    --r-xs: 6px;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 22px;
+    --r-2xl: 28px;
 
-    /* Focus ring spec */
-    --ring: 16 56% 50%;
-
-    /* Mapped tokens for components */
-    --bg-page: hsl(var(--cream));
-    --bg-card: hsl(var(--paper));
-    --bg-hover: hsl(var(--ivory-2));
-    --bg-input: hsl(var(--paper));
-    --text-primary: hsl(var(--ink));
-    --text-secondary: hsl(var(--ink-3));
-    --text-tertiary: hsl(var(--muted));
-    --text-muted: hsl(var(--muted-2));
-    --border-primary: hsl(var(--line));
-    --border-secondary: hsl(var(--line-soft));
-    --border-input: hsl(var(--line-strong));
+    --ring: 239 70% 64%;
   }
 
   .dark {
-    --ivory: 30 4% 15%;                  /* #262624 */
-    --ivory-2: 30 4% 17%;
-    --cream: 30 4% 12%;                  /* #1f1e1d */
-    --cream-2: 30 4% 22%;
-    --paper: 30 3% 19%;                   /* #30302e */
+    --surface-0: 240 12% 8%;       /* deep slate */
+    --surface-1: 240 10% 11%;
+    --surface-2: 240 10% 14%;
+    --surface-sunken: 240 12% 6%;
 
-    --ink: 45 26% 95%;
-    --ink-2: 42 14% 90%;
-    --ink-3: 40 9% 77%;
-    --muted: 36 4% 52%;
-    --muted-2: 36 3% 42%;
-    --faint: 36 5% 23%;
+    --glass-1: 30 30 35;
+    --glass-edge: 255 255 255 / 0.08;
+    --glass-tint: 30 30 35 / 0.55;
+    --glass-strong: 30 30 35 / 0.78;
 
-    --line: 45 26% 95% / 0.08;
-    --line-soft: 45 26% 95% / 0.05;
-    --line-strong: 45 26% 95% / 0.14;
+    --ink: 240 20% 96%;
+    --ink-2: 240 12% 86%;
+    --ink-3: 240 6% 68%;
+    --ink-4: 240 4% 52%;
+    --ink-5: 240 4% 32%;
 
-    --ok: 130 24% 60%;
-    --warn: 32 55% 62%;
-    --err: 12 56% 65%;
+    --hairline: 240 4% 24% / 0.7;
+    --hairline-soft: 240 4% 22% / 0.5;
+    --hairline-strong: 240 4% 30% / 0.8;
 
-    --accent: 16 58% 56%;
-    --accent-soft: 16 58% 56% / 0.22;
-    --accent-softer: 16 58% 56% / 0.12;
-    --accent-ink: 16 60% 70%;
-    --accent-fg: 30 4% 12%;
-  }
+    --accent: 239 75% 70%;
+    --accent-deep: 239 70% 64%;
+    --accent-soft: 239 75% 70% / 0.16;
+    --accent-glow: 239 75% 70% / 0.26;
+    --accent-fg: 240 12% 8%;
 
-  * {
-    border-color: hsl(var(--line));
+    --ok: 159 55% 55%;
+    --warn: 38 80% 60%;
+    --err: 0 70% 65%;
   }
 
   html {
-    font-feature-settings: 'ss01', 'cv11', 'kern';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01', 'kern';
   }
 
   body {
-    background: hsl(var(--cream));
+    background: hsl(var(--surface-0));
     color: hsl(var(--ink));
-    font-family: var(--font-sans), 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans), 'Geist', ui-sans-serif, system-ui, sans-serif;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    min-height: 100vh;
+    position: relative;
   }
 
-  /* Headings — sans, not display. Tight letter-spacing. */
-  h1, h2, h3, h4, h5, h6 {
+  /* Gradient mesh — soft, fixed, behind all content */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(60% 50% at 12% 8%, hsl(239 90% 78% / 0.10), transparent 70%),
+      radial-gradient(50% 45% at 92% 18%, hsl(280 80% 75% / 0.07), transparent 70%),
+      radial-gradient(55% 40% at 50% 100%, hsl(180 70% 70% / 0.06), transparent 70%);
+  }
+  .dark body::before {
+    background:
+      radial-gradient(60% 50% at 12% 8%, hsl(239 90% 60% / 0.15), transparent 70%),
+      radial-gradient(50% 45% at 92% 18%, hsl(280 80% 60% / 0.10), transparent 70%),
+      radial-gradient(55% 40% at 50% 100%, hsl(200 70% 50% / 0.08), transparent 70%);
+  }
+
+  /* Make sure content sits above the mesh */
+  #__next, #root, body > * { position: relative; z-index: 1; }
+
+  h1, h2, h3, h4 {
     font-family: inherit;
     font-weight: 600;
     color: hsl(var(--ink));
-    letter-spacing: -0.015em;
-    line-height: 1.2;
+    letter-spacing: -0.022em;
+    line-height: 1.18;
   }
-  h1 { font-size: 22px; letter-spacing: -0.025em; }
-  h2 { font-size: 18px; letter-spacing: -0.02em; }
-  h3 { font-size: 15px; letter-spacing: -0.015em; }
-  h4 { font-size: 13px; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(26px, 2.4vw, 32px); letter-spacing: -0.028em; }
+  h2 { font-size: clamp(20px, 1.6vw, 24px); }
+  h3 { font-size: 17px; }
+  h4 { font-size: 14px; font-weight: 600; }
 
   ::selection {
-    background: hsl(var(--accent) / 0.25);
+    background: hsl(var(--accent) / 0.22);
     color: hsl(var(--ink));
   }
 
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px hsl(var(--accent) / 0.06);
-    border-radius: 4px;
+    box-shadow: 0 0 0 3px hsl(var(--accent) / 0.18);
+    border-radius: 6px;
   }
 }
 
 @layer components {
+  /* ───── Glass surface ─────
+   * Primary card / panel. Translucent, soft hairline edge, gentle shadow.
+   * Uses backdrop-blur — falls back gracefully when unsupported. */
+  .glass {
+    background: rgb(var(--glass-1) / 0.62);
+    border: 1px solid hsl(var(--hairline));
+    border-radius: var(--r-lg);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.5) inset,
+      0 8px 28px -12px hsl(240 10% 10% / 0.08);
+  }
+  .dark .glass {
+    background: rgb(var(--glass-1) / 0.55);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.06) inset,
+      0 10px 32px -12px hsl(0 0% 0% / 0.45);
+  }
+
+  .glass-strong {
+    background: rgb(var(--glass-1) / 0.82);
+    border: 1px solid hsl(var(--hairline-strong));
+    border-radius: var(--r-md);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 14px 40px -16px hsl(240 10% 10% / 0.15);
+  }
+
+  /* Sunken — recessed surface for inputs, inactive items */
+  .sunken {
+    background: hsl(var(--surface-sunken));
+    border: 1px solid hsl(var(--hairline-soft));
+    border-radius: var(--r-sm);
+  }
+
+  /* Hairline rule */
   .rule {
     height: 1px;
-    background: hsl(var(--line));
+    background: hsl(var(--hairline));
+  }
+  .rule-soft {
+    height: 1px;
+    background: hsl(var(--hairline-soft));
   }
 
-  /* Section label — uppercase tight tracking, matches .sb-sect */
-  .sect-label {
-    font-size: 10.5px;
+  /* Eyebrow / section label */
+  .eyebrow {
+    font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: hsl(var(--muted));
+    color: hsl(var(--ink-3));
   }
 
-  /* Hairline-bordered card surface — paper bg, used for menus + popovers */
-  .card {
-    background: hsl(var(--paper));
-    border: 1px solid hsl(var(--line));
-    border-radius: var(--r-md);
+  .lede {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: hsl(var(--ink-2));
+    max-width: 60ch;
   }
 
-  /* Active item — paper chip on cream, inset ring (NEVER accent fill) */
-  .item-active {
-    background: hsl(var(--paper));
-    color: hsl(var(--ink));
-    box-shadow: inset 0 0 0 1px hsl(var(--line));
-  }
-
-  /* Drop target — only place accent fills */
-  .item-drop {
-    background: hsl(var(--accent) / 0.12);
-    box-shadow: inset 0 0 0 1px hsl(var(--accent));
-  }
-
-  /* Legacy compat — kept transparent so callers don't break */
+  /* Backward-compat aliases ─ keep older callers from breaking */
   .sheet { background: transparent; border: 0; box-shadow: none; }
   .label-mono {
-    font-family: var(--font-mono), 'JetBrains Mono', monospace;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: hsl(var(--muted));
-    display: inline-block;
-  }
-  .label-mono.plain { display: inline-block; }
-  .label-mono::before, .label-mono.plain::before { content: none; }
-
-  .eyebrow {
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: 10.5px;
     font-weight: 500;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: hsl(var(--muted));
+    color: hsl(var(--ink-3));
+    display: inline-block;
   }
-  .eyebrow::before { content: none; }
+  .label-mono::before { content: none; }
+  .label-mono.plain::before { content: none; }
   .italic-accent {
-    color: hsl(var(--accent-ink));
+    color: hsl(var(--accent-deep));
     font-style: normal;
     font-weight: 500;
   }
-  .lede {
-    font-size: 13px;
-    line-height: 1.55;
-    color: hsl(var(--ink-3));
-    max-width: 56ch;
+  .card {
+    background: hsl(var(--surface-2));
+    border: 1px solid hsl(var(--hairline));
+    border-radius: var(--r-md);
+  }
+  .item-active {
+    background: hsl(var(--accent-soft));
+    color: hsl(var(--accent-deep));
   }
 }
 
-/* Scrollbar — subtle */
+/* Scrollbar — quiet */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--line-strong));
+  background: hsl(var(--ink-4) / 0.35);
   border-radius: 999px;
-  border: 2px solid hsl(var(--cream));
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-2)); }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--ink-4) / 0.5); background-clip: padding-box; border: 2px solid transparent; }

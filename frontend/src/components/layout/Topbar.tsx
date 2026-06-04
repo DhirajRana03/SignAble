@@ -24,38 +24,38 @@ export function Topbar({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 bg-cream/95 backdrop-blur-md border-b border-border-soft">
-      <div className="flex h-12 items-center gap-2 px-3 md:px-5 lg:px-7">
+    <header className="sticky top-0 z-20 bg-surface-0/70 backdrop-blur-lg backdrop-saturate-150">
+      <div className="flex h-14 items-center gap-3 px-4 md:px-6 lg:px-8">
         {onMenuClick ? (
           <button
             onClick={onMenuClick}
-            className="md:hidden h-7 w-7 grid place-items-center rounded-sm text-muted hover:bg-ivory-2 hover:text-ink"
+            className="md:hidden h-8 w-8 grid place-items-center rounded-md text-ink-3 hover:bg-surface-sunken hover:text-ink"
             aria-label="Open navigation"
           >
-            <Menu className="h-3.5 w-3.5" />
+            <Menu className="h-4 w-4" />
           </button>
         ) : null}
 
         <div className="min-w-0 flex-1">
           {eyebrow ? (
-            <p className="text-[10.5px] uppercase tracking-[0.09em] text-muted hidden sm:block leading-none mb-0.5">
+            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3 hidden sm:block leading-none mb-1">
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="truncate text-[15px] font-semibold text-ink leading-tight">
+          <h1 className="truncate text-[17px] font-semibold tracking-[-0.022em] text-ink leading-tight">
             {title}
           </h1>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <div className="hidden sm:flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2">
             {actions}
             <ThemeToggle />
           </div>
 
           <Link href="/envelopes/new">
-            <Button variant="primary" size="sm">
-              <Plus className="h-3 w-3" />
+            <Button variant="accent" size="sm">
+              <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New envelope</span>
             </Button>
           </Link>
@@ -64,10 +64,10 @@ export function Topbar({
             <button
               onClick={() => setMenuOpen((s) => !s)}
               className={cn(
-                'h-7 w-7 grid place-items-center rounded-sm text-[10px] font-medium uppercase tracking-wide transition-colors',
+                'h-9 w-9 grid place-items-center rounded-pill text-[11px] font-semibold uppercase tracking-tight transition-all',
                 menuOpen
-                  ? 'item-active text-ink'
-                  : 'text-ink-3 hover:bg-ivory-2 hover:text-ink',
+                  ? 'bg-accent text-white'
+                  : 'bg-surface-sunken text-ink-2 hover:bg-surface-1 hover:text-ink',
               )}
               aria-label="Account menu"
               aria-expanded={menuOpen}
@@ -80,28 +80,31 @@ export function Topbar({
                   className="fixed inset-0 z-10"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-9 z-20 w-56 card shadow-popover animate-scale-in p-1">
-                  <div className="px-2.5 py-2 border-b border-border-soft">
-                    <p className="text-[12.5px] font-medium truncate">
+                <div className="absolute right-0 top-12 z-20 w-64 glass-strong shadow-popover animate-scale-in origin-top-right p-1.5">
+                  <div className="px-3 py-2.5">
+                    <p className="text-[13px] font-medium truncate text-ink">
                       {user?.name}
                     </p>
-                    <p className="text-[11px] text-muted truncate">
+                    <p className="text-[11.5px] text-ink-3 truncate">
                       {user?.email}
                     </p>
                   </div>
 
-                  <div className="px-2.5 py-2 sm:hidden border-b border-border-soft">
-                    <p className="text-[10.5px] uppercase tracking-[0.09em] text-muted mb-1.5">
+                  <div className="rule-soft my-1" />
+
+                  <div className="px-3 py-2 sm:hidden">
+                    <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3 mb-2">
                       Theme
                     </p>
                     <ThemeToggle />
+                    <div className="rule-soft mt-2.5" />
                   </div>
 
                   <button
                     onClick={logout}
-                    className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-[12.5px] text-ink-3 hover:bg-ivory-2 hover:text-ink"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-[13px] text-ink-2 hover:bg-surface-sunken hover:text-ink transition-colors"
                   >
-                    <LogOut className="h-3 w-3" />
+                    <LogOut className="h-3.5 w-3.5" />
                     Sign out
                   </button>
                 </div>
@@ -110,6 +113,7 @@ export function Topbar({
           </div>
         </div>
       </div>
+      <div className="rule-soft" />
     </header>
   );
 }

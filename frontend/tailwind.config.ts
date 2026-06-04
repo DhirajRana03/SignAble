@@ -8,32 +8,36 @@ const config: Config = {
     container: {
       center: true,
       padding: '1.5rem',
-      screens: { '2xl': '1200px' },
+      screens: { '2xl': '1280px' },
     },
     extend: {
       fontFamily: {
-        // App uses Inter Tight for everything. Serif kept available for
-        // edge cases but no longer assigned to default headings.
-        sans: ['var(--font-sans)', 'Inter Tight', 'system-ui', 'sans-serif'],
-        display: ['var(--font-sans)', 'Inter Tight', 'system-ui', 'sans-serif'],
-        serif: ['var(--font-serif)', 'Fraunces', 'Georgia', 'serif'],
-        mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
+        sans: ['var(--font-sans)', 'Geist', 'system-ui', 'sans-serif'],
+        display: ['var(--font-sans)', 'Geist', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'Geist Mono', 'ui-monospace', 'monospace'],
+        serif: ['ui-serif', 'Georgia', 'serif'],
       },
       colors: {
-        // Warm cream/ivory/paper surfaces
+        // Surfaces
+        surface: {
+          DEFAULT: 'hsl(var(--surface-0))',
+          1: 'hsl(var(--surface-1))',
+          2: 'hsl(var(--surface-2))',
+          sunken: 'hsl(var(--surface-sunken))',
+        },
+        // Legacy aliases (kept for older callers)
         cream: {
-          DEFAULT: 'hsl(var(--cream))',
-          2: 'hsl(var(--cream-2))',
+          DEFAULT: 'hsl(var(--surface-0))',
+          2: 'hsl(var(--surface-sunken))',
         },
         ivory: {
-          DEFAULT: 'hsl(var(--ivory))',
-          2: 'hsl(var(--ivory-2))',
+          DEFAULT: 'hsl(var(--surface-1))',
+          2: 'hsl(var(--surface-sunken))',
         },
         paper: {
-          DEFAULT: 'hsl(var(--paper))',
-          // Legacy aliases used by older components — pointed at app tokens
-          dim: 'hsl(var(--ivory-2))',
-          deep: 'hsl(var(--paper))',
+          DEFAULT: 'hsl(var(--surface-2))',
+          dim: 'hsl(var(--surface-sunken))',
+          deep: 'hsl(var(--surface-2))',
         },
 
         // Ink ramp
@@ -41,34 +45,36 @@ const config: Config = {
           DEFAULT: 'hsl(var(--ink))',
           2: 'hsl(var(--ink-2))',
           3: 'hsl(var(--ink-3))',
-          soft: 'hsl(var(--ink-3))',
-          faint: 'hsl(var(--muted))',
-          mute: 'hsl(var(--muted-2))',
+          4: 'hsl(var(--ink-4))',
+          5: 'hsl(var(--ink-5))',
+          soft: 'hsl(var(--ink-2))',
+          faint: 'hsl(var(--ink-3))',
+          mute: 'hsl(var(--ink-4))',
           bg: 'hsl(var(--ink))',
           bg2: 'hsl(var(--ink-2))',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          2: 'hsl(var(--muted-2))',
-          foreground: 'hsl(var(--ink-3))',
+          DEFAULT: 'hsl(var(--ink-3))',
+          2: 'hsl(var(--ink-4))',
+          foreground: 'hsl(var(--ink-2))',
         },
-        faint: 'hsl(var(--faint))',
 
-        // Accent — terracotta, mostly for focus/drag/brand
+        // Accent
         accent: {
           DEFAULT: 'hsl(var(--accent))',
-          soft: 'hsl(var(--accent) / 0.12)',
+          deep: 'hsl(var(--accent-deep))',
+          soft: 'hsl(var(--accent) / 0.10)',
           softer: 'hsl(var(--accent) / 0.06)',
-          ink: 'hsl(var(--accent-ink))',
-          tint: 'hsl(var(--accent) / 0.10)',
-          deep: 'hsl(var(--accent-ink))',
+          glow: 'hsl(var(--accent) / 0.18)',
+          tint: 'hsl(var(--accent) / 0.12)',
+          ink: 'hsl(var(--accent-deep))',
           fg: 'hsl(var(--accent-fg))',
         },
 
-        // Lines
-        border: 'hsl(var(--line))',
-        'border-soft': 'hsl(var(--line-soft))',
-        'border-strong': 'hsl(var(--line-strong))',
+        // Hairlines
+        border: 'hsl(var(--hairline))',
+        'border-soft': 'hsl(var(--hairline-soft))',
+        'border-strong': 'hsl(var(--hairline-strong))',
         ring: 'hsl(var(--ring))',
 
         // Status
@@ -77,75 +83,90 @@ const config: Config = {
         danger: 'hsl(var(--err))',
 
         // shadcn compat
-        background: 'hsl(var(--cream))',
+        background: 'hsl(var(--surface-0))',
         foreground: 'hsl(var(--ink))',
         destructive: {
           DEFAULT: 'hsl(var(--err))',
-          foreground: 'hsl(var(--paper))',
+          foreground: 'hsl(0 0% 100%)',
         },
         primary: {
           DEFAULT: 'hsl(var(--ink))',
-          foreground: 'hsl(var(--paper))',
+          foreground: 'hsl(0 0% 100%)',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--ivory))',
+          DEFAULT: 'hsl(var(--surface-1))',
           foreground: 'hsl(var(--ink))',
         },
         card: {
-          DEFAULT: 'hsl(var(--paper))',
+          DEFAULT: 'hsl(var(--surface-2))',
           foreground: 'hsl(var(--ink))',
         },
         popover: {
-          DEFAULT: 'hsl(var(--paper))',
+          DEFAULT: 'hsl(var(--surface-2))',
           foreground: 'hsl(var(--ink))',
         },
-        input: 'hsl(var(--line-strong))',
+        input: 'hsl(var(--hairline-strong))',
       },
       borderRadius: {
-        xs: '4px',
-        sm: '6px',      // --r-sm
-        DEFAULT: '6px',
-        md: '10px',     // --r-md
-        lg: '14px',     // --r-lg
-        xl: '20px',     // --r-xl
+        xs: '6px',
+        sm: '8px',
+        DEFAULT: '8px',
+        md: '12px',
+        lg: '16px',
+        xl: '22px',
+        '2xl': '28px',
         pill: '9999px',
       },
       boxShadow: {
-        xs: '0 1px 2px hsl(var(--ink) / 0.04)',
-        paper: 'none',
-        sheet: 'none',
-        hairline: '0 1px 0 hsl(var(--line))',
-        // Inset ring matches definable active state
-        ring: 'inset 0 0 0 1px hsl(var(--line))',
-        // Card lift (popovers / dropdowns)
-        lifted: '0 5px 20px -5px hsl(var(--ink) / 0.15), 0 0 1px hsl(var(--ink) / 0.10)',
-        popover: '0 12px 28px -14px hsl(var(--ink) / 0.18)',
+        xs: '0 1px 2px hsl(240 10% 10% / 0.04)',
+        soft: '0 2px 8px hsl(240 10% 10% / 0.04), 0 1px 2px hsl(240 10% 10% / 0.04)',
+        glass: '0 8px 28px -12px hsl(240 10% 10% / 0.10)',
+        lifted: '0 14px 40px -16px hsl(240 10% 10% / 0.18), 0 2px 6px hsl(240 10% 10% / 0.04)',
+        popover: '0 18px 48px -16px hsl(240 10% 10% / 0.22)',
+        glow: '0 0 0 4px hsl(var(--accent) / 0.14), 0 8px 24px -8px hsl(var(--accent) / 0.35)',
         focus: '0 0 0 3px hsl(var(--accent) / 0.18)',
-        coral: '0 0 0 3px hsl(var(--accent) / 0.18)',
+        ring: 'inset 0 0 0 1px hsl(var(--hairline-strong))',
+        // Legacy aliases used by older components — point at sensible new values
+        paper: '0 1px 2px hsl(240 10% 10% / 0.04)',
+        sheet: '0 8px 28px -12px hsl(240 10% 10% / 0.10)',
+        hairline: '0 1px 0 hsl(var(--hairline))',
+        coral: '0 0 0 4px hsl(var(--accent) / 0.14), 0 8px 24px -8px hsl(var(--accent) / 0.35)',
+      },
+      backdropBlur: {
+        xs: '4px',
+        sm: '8px',
+        DEFAULT: '14px',
+        md: '14px',
+        lg: '22px',
       },
       keyframes: {
         'fade-up': {
-          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         'scale-in': {
-          '0%': { opacity: '0', transform: 'scale(0.97)' },
+          '0%': { opacity: '0', transform: 'scale(0.96)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
         'pulse-soft': {
           '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.4' },
+          '50%': { opacity: '0.45' },
         },
         'pulse-coral': {
           '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.5' },
+          '50%': { opacity: '0.45' },
+        },
+        'shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
         },
       },
       animation: {
-        'fade-up': 'fade-up 0.2s ease-out',
-        'scale-in': 'scale-in 0.14s ease-out',
-        'pulse-soft': 'pulse-soft 1.8s ease-in-out infinite',
-        'pulse-coral': 'pulse-soft 1.8s ease-in-out infinite',
+        'fade-up': 'fade-up 0.28s cubic-bezier(0.32, 0.72, 0.16, 1)',
+        'scale-in': 'scale-in 0.16s cubic-bezier(0.32, 0.72, 0.16, 1)',
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'pulse-coral': 'pulse-soft 2s ease-in-out infinite',
+        'shimmer': 'shimmer 2.4s linear infinite',
       },
     },
   },

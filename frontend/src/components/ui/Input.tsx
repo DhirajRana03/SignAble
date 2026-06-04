@@ -3,8 +3,8 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Inputs match app.definable.ai — paper container with strong hairline
- * border, terracotta focus ring (3px softer-tint). 13px text, 7×10 pad.
+ * Inputs use a sunken surface with hairline edge. Subtle inset shadow
+ * to read as recessed instead of floating. Indigo focus glow.
  */
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}
@@ -15,12 +15,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       ref={ref}
       type={type}
       className={cn(
-        'flex h-8 w-full rounded-sm bg-paper px-2.5 py-1.5 text-[13px] text-ink',
-        'border border-border-strong',
-        'placeholder:text-muted-2',
+        'flex h-10 w-full rounded-md bg-surface-2 px-3.5 py-2 text-[13.5px] text-ink',
+        'border border-border-strong shadow-[inset_0_1px_2px_hsl(240_10%_10%/0.04)]',
+        'placeholder:text-ink-4',
         'focus-visible:outline-none focus-visible:border-accent focus-visible:shadow-focus',
         'disabled:cursor-not-allowed disabled:opacity-60',
-        'transition-[border-color,box-shadow] duration-[120ms]',
+        'transition-[border-color,box-shadow] duration-150',
         className,
       )}
       {...props}
@@ -36,11 +36,11 @@ export const Textarea = forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'flex min-h-[72px] w-full rounded-sm bg-paper px-2.5 py-2 text-[13px] text-ink',
-      'border border-border-strong',
-      'placeholder:text-muted-2',
+      'flex min-h-[88px] w-full rounded-md bg-surface-2 px-3.5 py-2.5 text-[13.5px] text-ink',
+      'border border-border-strong shadow-[inset_0_1px_2px_hsl(240_10%_10%/0.04)]',
+      'placeholder:text-ink-4',
       'focus-visible:outline-none focus-visible:border-accent focus-visible:shadow-focus',
-      'transition-[border-color,box-shadow] duration-[120ms] resize-y',
+      'transition-[border-color,box-shadow] duration-150 resize-y',
       className,
     )}
     {...props}
@@ -56,7 +56,7 @@ export function Label({
   return (
     <label
       className={cn(
-        'block mb-1.5 text-[11.5px] font-medium text-ink-3',
+        'block mb-2 text-[12.5px] font-medium text-ink-2 tracking-[-0.005em]',
         className,
       )}
       {...props}

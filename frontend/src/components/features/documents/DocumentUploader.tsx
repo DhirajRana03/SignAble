@@ -34,11 +34,11 @@ export function DocumentUploader() {
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        'cursor-pointer rounded-sm bg-paper border border-dashed transition-colors',
-        'flex items-center gap-3 p-4',
+        'relative cursor-pointer rounded-lg border-2 border-dashed transition-all duration-150',
+        'flex items-center gap-4 p-6',
         dragging
-          ? 'border-accent bg-accent/8'
-          : 'border-border-strong hover:border-accent hover:bg-ivory-2/40',
+          ? 'border-accent bg-accent-soft/40'
+          : 'border-border-strong bg-surface-1/40 hover:border-accent hover:bg-accent-soft/20',
         upload.isPending && 'pointer-events-none opacity-60',
       )}
     >
@@ -49,14 +49,24 @@ export function DocumentUploader() {
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
-      <div className="h-8 w-8 grid place-items-center rounded-sm bg-ivory-2 text-muted shrink-0">
-        <UploadCloud className={cn('h-3.5 w-3.5', upload.isPending && 'animate-pulse')} />
+      <div
+        className={cn(
+          'h-11 w-11 grid place-items-center rounded-md transition-all',
+          dragging ? 'bg-accent text-white' : 'bg-accent-soft text-accent-deep',
+        )}
+      >
+        <UploadCloud
+          className={cn('h-5 w-5', upload.isPending && 'animate-pulse')}
+          strokeWidth={2}
+        />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-ink">
+        <p className="text-[14px] font-medium text-ink">
           {upload.isPending ? 'Uploading…' : 'Drop a file or click to browse'}
         </p>
-        <p className="text-[11.5px] text-muted">PDF or image, max 50 MB</p>
+        <p className="text-[12.5px] text-ink-3 mt-0.5">
+          PDF or image · up to 50 MB
+        </p>
       </div>
     </div>
   );

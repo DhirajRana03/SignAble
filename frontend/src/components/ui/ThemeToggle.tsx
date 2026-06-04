@@ -18,7 +18,7 @@ export function ThemeToggle() {
     <div
       role="group"
       aria-label="Theme"
-      className="inline-flex items-center rounded-sm bg-paper border border-border p-[2px]"
+      className="inline-flex items-center rounded-pill bg-surface-sunken p-0.5"
     >
       {OPTIONS.map((o) => {
         const Icon = o.icon;
@@ -28,16 +28,16 @@ export function ThemeToggle() {
             key={o.value}
             onClick={() => setTheme(o.value)}
             className={cn(
-              'h-5 w-5 grid place-items-center rounded-[3px] transition-colors duration-[120ms]',
+              'h-7 w-7 grid place-items-center rounded-pill transition-all duration-150',
               active
-                ? 'bg-ivory-2 text-ink shadow-[inset_0_0_0_1px_hsl(var(--line))]'
-                : 'text-muted hover:text-ink',
+                ? 'bg-surface-2 text-ink shadow-soft'
+                : 'text-ink-3 hover:text-ink',
             )}
             title={o.label}
             aria-label={o.label}
             aria-pressed={active}
           >
-            <Icon className="h-3 w-3" />
+            <Icon className="h-3.5 w-3.5" />
           </button>
         );
       })}

@@ -21,7 +21,7 @@ export function DashboardShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-cream">
+    <div className="flex min-h-screen">
       <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar
@@ -30,8 +30,8 @@ export function DashboardShell({
           actions={actions}
           onMenuClick={() => setDrawerOpen(true)}
         />
-        <main className="flex-1 px-4 md:px-6 lg:px-8 py-6 lg:py-8">
-          <div className="max-w-[920px]">
+        <main className="flex-1 px-5 md:px-8 lg:px-12 py-8 lg:py-10">
+          <div className="max-w-[1080px]">
             <ErrorBoundary>{children}</ErrorBoundary>
           </div>
         </main>

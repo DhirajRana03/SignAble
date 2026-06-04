@@ -4,41 +4,43 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Buttons match app.definable.ai sizing — small (11.5px font, 4×9 padding,
- * 6px radius). Paper bg, hairline border, ink text. Active states use
- * inset ring, never accent fill. Accent reserved for primary CTA only.
+ * Button — Notion-friendly tactile sizing with glass surfaces for
+ * non-primary variants. Primary is solid ink (deep), accent is indigo,
+ * secondary is glass.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm font-medium transition-all duration-[140ms] focus-visible:outline-none focus-visible:shadow-focus disabled:opacity-50 disabled:cursor-not-allowed select-none',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-[-0.005em] transition-all duration-150 select-none ' +
+    'focus-visible:outline-none focus-visible:shadow-focus disabled:opacity-50 disabled:cursor-not-allowed ' +
+    'active:scale-[0.98]',
   {
     variants: {
       variant: {
-        // Primary CTA — ink fill (not accent)
+        // Primary CTA — solid ink
         primary:
-          'bg-ink text-paper hover:bg-ink-2 border border-ink',
-        // Accent — terracotta, used sparingly for distinct actions
+          'bg-ink text-white hover:bg-ink-2 shadow-soft',
+        // Accent — indigo, for distinct "create / continue" actions
         accent:
-          'bg-accent text-accent-fg hover:bg-accent-ink border border-accent',
-        // Secondary — paper chip, hairline
+          'bg-accent text-accent-fg hover:bg-accent-deep shadow-glow',
+        // Glass secondary — translucent, hairline edge
         secondary:
-          'bg-paper text-ink-3 hover:text-ink hover:bg-ivory-2 border border-border',
+          'glass text-ink hover:bg-white/80',
+        // Ghost — borderless, hover surface tint
         ghost:
-          'bg-transparent text-ink-3 hover:text-ink hover:bg-ivory-2 border border-transparent',
+          'bg-transparent text-ink-2 hover:bg-surface-sunken hover:text-ink',
+        // Danger
         danger:
-          'bg-paper text-danger border border-border hover:bg-danger hover:text-paper hover:border-danger',
-        // Legacy alias used by older callers
-        ink:
-          'bg-ink text-paper hover:bg-ink-2 border border-ink',
+          'bg-white text-danger border border-danger/30 hover:bg-danger hover:text-white hover:border-danger',
+        // Legacy alias
+        ink: 'bg-ink text-white hover:bg-ink-2 shadow-soft',
       },
       size: {
-        // App primary size
-        sm: 'h-7 px-2.5 text-[11.5px]',
-        md: 'h-8 px-3 text-[12.5px]',
-        lg: 'h-9 px-4 text-[13px]',
-        icon: 'h-7 w-7',
+        sm: 'h-8 px-3 text-[12.5px] rounded-md',
+        md: 'h-9 px-4 text-[13px] rounded-md',
+        lg: 'h-11 px-5 text-[14px] rounded-lg',
+        icon: 'h-9 w-9 rounded-md',
       },
     },
-    defaultVariants: { variant: 'secondary', size: 'sm' },
+    defaultVariants: { variant: 'secondary', size: 'md' },
   },
 );
 

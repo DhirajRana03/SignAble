@@ -14,17 +14,14 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        'rounded-sm bg-paper border border-border-soft p-8 text-center',
-        className,
-      )}
-    >
-      <p className="text-[13px] font-medium text-ink">{title}</p>
+    <div className={cn('glass p-10 text-center', className)}>
+      <p className="text-[15px] font-medium text-ink">{title}</p>
       {description ? (
-        <p className="mt-1 text-[11.5px] text-muted">{description}</p>
+        <p className="mt-1.5 text-[13px] text-ink-3 max-w-sm mx-auto leading-relaxed">
+          {description}
+        </p>
       ) : null}
-      {action ? <div className="mt-3">{action}</div> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }

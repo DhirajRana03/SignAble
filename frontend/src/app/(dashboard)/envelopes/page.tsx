@@ -10,36 +10,31 @@ export default function EnvelopesPage() {
 
   return (
     <DashboardShell eyebrow="Routing" title="Envelopes">
-      <div className="pb-16">
+      <div className="pb-12">
         {isLoading ? (
-          <div>
-            <div className="rule" />
+          <div className="glass overflow-hidden">
             {[...Array(4)].map((_, i) => (
-              <div key={i}>
-                <div className="py-7 animate-pulse grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-5 space-y-2">
-                    <div className="h-5 w-2/3 bg-paper-dim rounded-pill" />
-                    <div className="h-3 w-1/2 bg-paper-dim rounded-pill" />
-                  </div>
-                  <div className="col-span-4 flex items-center gap-3">
-                    <div className="h-4 w-16 bg-paper-dim rounded-pill" />
-                  </div>
-                  <div className="col-span-2 flex justify-end">
-                    <div className="h-5 w-20 bg-paper-dim rounded-pill" />
-                  </div>
+              <div key={i} className="px-5 py-4 animate-pulse grid grid-cols-12 gap-4 items-center">
+                <div className="col-span-5 space-y-2">
+                  <div className="h-4 w-2/3 bg-surface-sunken rounded-pill" />
+                  <div className="h-3 w-1/2 bg-surface-sunken rounded-pill" />
                 </div>
-                <div className="rule" />
+                <div className="col-span-4 flex items-center gap-3">
+                  <div className="h-4 w-16 bg-surface-sunken rounded-pill" />
+                </div>
+                <div className="col-span-2 flex justify-end">
+                  <div className="h-5 w-20 bg-surface-sunken rounded-pill" />
+                </div>
               </div>
             ))}
           </div>
         ) : !data?.length ? (
           <EmptyState
             title="No envelopes yet"
-            description="Once you send a document for signing, it lives here. Upload a PDF in Documents to begin."
+            description="When you send a document for signature it appears here. Start by uploading a document."
           />
         ) : (
-          <div>
-            <div className="rule" />
+          <div className="glass overflow-hidden">
             {data.map((e, i) => (
               <EnvelopeCard key={e.id} envelope={e} index={i} />
             ))}

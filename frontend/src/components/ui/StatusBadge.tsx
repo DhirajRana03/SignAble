@@ -5,19 +5,19 @@ import type { EnvelopeStatus, RecipientStatus } from '@/types/envelope.types';
 type AnyStatus = DocumentStatus | EnvelopeStatus | RecipientStatus | string;
 
 const PALETTE: Record<string, string> = {
-  PENDING: 'text-muted bg-ivory-2',
-  PROCESSING: 'text-warn bg-warn/10',
-  READY: 'text-success bg-success/10',
-  FAILED: 'text-danger bg-danger/10',
-  DRAFT: 'text-muted bg-ivory-2',
-  SENT: 'text-accent-ink bg-accent/10',
-  IN_PROGRESS: 'text-warn bg-warn/10',
-  COMPLETED: 'text-success bg-success/10',
-  VOIDED: 'text-muted-2 bg-ivory-2',
-  EXPIRED: 'text-muted-2 bg-ivory-2',
-  VIEWED: 'text-accent-ink bg-accent/10',
-  SIGNED: 'text-success bg-success/10',
-  DECLINED: 'text-danger bg-danger/10',
+  PENDING: 'bg-surface-sunken text-ink-3',
+  PROCESSING: 'bg-warn/12 text-warn',
+  READY: 'bg-success/12 text-success',
+  FAILED: 'bg-danger/12 text-danger',
+  DRAFT: 'bg-surface-sunken text-ink-3',
+  SENT: 'bg-accent-soft text-accent-deep',
+  IN_PROGRESS: 'bg-warn/12 text-warn',
+  COMPLETED: 'bg-success/12 text-success',
+  VOIDED: 'bg-surface-sunken text-ink-4',
+  EXPIRED: 'bg-surface-sunken text-ink-4',
+  VIEWED: 'bg-accent-soft text-accent-deep',
+  SIGNED: 'bg-success/12 text-success',
+  DECLINED: 'bg-danger/12 text-danger',
 };
 
 export function StatusBadge({
@@ -27,11 +27,11 @@ export function StatusBadge({
   status: AnyStatus;
   className?: string;
 }) {
-  const palette = PALETTE[status] ?? 'text-muted bg-ivory-2';
+  const palette = PALETTE[status] ?? 'bg-surface-sunken text-ink-3';
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10.5px] uppercase tracking-[0.06em] font-medium',
+        'inline-flex items-center rounded-pill px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-[0.06em]',
         palette,
         className,
       )}

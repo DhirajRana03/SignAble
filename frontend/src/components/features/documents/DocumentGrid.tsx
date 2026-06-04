@@ -9,25 +9,21 @@ export function DocumentGrid() {
 
   if (isLoading) {
     return (
-      <div>
-        <div className="rule" />
+      <div className="glass overflow-hidden">
         {[...Array(3)].map((_, i) => (
-          <div key={i}>
-            <div className="py-6 animate-pulse">
-              <div className="grid grid-cols-12 gap-4 items-center">
-                <div className="col-span-6 flex items-center gap-4">
-                  <div className="h-10 w-9 bg-paper-dim rounded-xs" />
-                  <div className="space-y-2 flex-1">
-                    <div className="h-4 w-1/2 bg-paper-dim rounded-pill" />
-                    <div className="h-3 w-1/3 bg-paper-dim rounded-pill" />
-                  </div>
-                </div>
-                <div className="col-span-3">
-                  <div className="h-5 w-20 bg-paper-dim rounded-pill" />
+          <div key={i} className="px-5 py-4 animate-pulse">
+            <div className="grid grid-cols-12 gap-4 items-center">
+              <div className="col-span-6 flex items-center gap-3">
+                <div className="h-10 w-10 bg-surface-sunken rounded-md" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-3.5 w-1/2 bg-surface-sunken rounded-pill" />
+                  <div className="h-2.5 w-1/3 bg-surface-sunken rounded-pill" />
                 </div>
               </div>
+              <div className="col-span-3">
+                <div className="h-5 w-20 bg-surface-sunken rounded-pill" />
+              </div>
             </div>
-            <div className="rule" />
           </div>
         ))}
       </div>
@@ -37,7 +33,7 @@ export function DocumentGrid() {
   if (error) {
     return (
       <EmptyState
-        title="We couldn't load your documents"
+        title="Could not load documents"
         description="Check your connection and try again."
       />
     );
@@ -47,14 +43,13 @@ export function DocumentGrid() {
     return (
       <EmptyState
         title="No documents yet"
-        description="Upload a PDF above to begin. We render it page by page so you can place signature fields."
+        description="Upload a file above to begin. We render every page so you can place signature fields."
       />
     );
   }
 
   return (
-    <div>
-      <div className="rule" />
+    <div className="glass overflow-hidden">
       {data.map((doc, i) => (
         <DocumentCard key={doc.id} doc={doc} index={i} />
       ))}
