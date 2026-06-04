@@ -81,9 +81,13 @@ export default function PreparePage() {
             <Button
               size="sm"
               loading={save.isPending}
-              disabled={!dirty}
               onClick={onSaveDraft}
-              className="border border-accent/40 text-accent-deep bg-transparent hover:bg-accent-soft hover:border-accent/60 disabled:border-border disabled:text-ink-4 transition-colors"
+              title={
+                dirty
+                  ? 'Save current field layout as draft'
+                  : 'No unsaved changes — save anyway'
+              }
+              className="border border-accent/40 text-accent-deep bg-transparent hover:bg-accent-soft hover:border-accent/60 transition-colors"
             >
               <Save className="h-3.5 w-3.5" /> Save as draft
             </Button>
