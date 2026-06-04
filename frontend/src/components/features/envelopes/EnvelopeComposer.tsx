@@ -32,6 +32,7 @@ import {
   Plus,
   Trash2,
   UploadCloud,
+  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -344,15 +345,62 @@ function DocumentDropzoneCompact({
   const upload = useUploadDocument();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [uploadingName, setUploadingName] = useState<string | null>(null);
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
       const file = files?.[0];
       if (!file) return;
-      upload.mutate(file, { onSuccess: (doc) => onUploaded(doc.id) });
+      setUploadingName(file.name);
+      upload.mutate(file, {
+        onSuccess: (doc) => {
+          setUploadingName(null);
+          onUploaded(doc.id);
+        },
+        onError: () => setUploadingName(null),
+      });
     },
     [upload, onUploaded],
   );
+
+  // Active upload view: filename + progress + cancel.
+  if (upload.isPending) {
+    return (
+      <div className="rounded-md border-2 border-dashed border-accent bg-accent-soft/30 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 grid place-items-center rounded-pill bg-accent text-white shrink-0">
+            <UploadCloud className="h-4 w-4 animate-pulse" strokeWidth={2} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-medium text-ink truncate">
+              {uploadingName ?? 'Uploading…'}
+            </p>
+            <p className="text-[11.5px] text-ink-3 mt-0.5">
+              {upload.progress}% uploaded
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              upload.cancel();
+              setUploadingName(null);
+            }}
+            className="h-8 px-2.5 inline-flex items-center gap-1 rounded-md text-[12px] font-medium text-ink-3 hover:text-danger hover:bg-danger/10 transition-colors shrink-0"
+            aria-label="Cancel upload"
+          >
+            <X className="h-3.5 w-3.5" /> Cancel
+          </button>
+        </div>
+        <div className="mt-2.5 h-1 rounded-full bg-white/60 overflow-hidden">
+          <div
+            className="h-full bg-accent transition-[width] duration-200 ease-out"
+            style={{ width: `${upload.progress}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -373,7 +421,6 @@ function DocumentDropzoneCompact({
         dragging
           ? 'border-accent bg-accent-soft/40'
           : 'border-border-strong bg-surface-1/40 hover:border-accent hover:bg-accent-soft/20',
-        upload.isPending && 'pointer-events-none opacity-60',
       )}
     >
       <input
@@ -389,14 +436,11 @@ function DocumentDropzoneCompact({
           dragging ? 'bg-accent text-white' : 'bg-accent-soft text-accent-deep',
         )}
       >
-        <UploadCloud
-          className={cn('h-4 w-4', upload.isPending && 'animate-pulse')}
-          strokeWidth={2}
-        />
+        <UploadCloud className="h-4 w-4" strokeWidth={2} />
       </div>
       <div className="min-w-0">
         <p className="text-[13.5px] font-medium text-ink">
-          {upload.isPending ? 'Uploading…' : 'Drop a file or click to browse'}
+          Drop a file or click to browse
         </p>
         <p className="text-[11.5px] text-ink-3 mt-0.5">
           PDF or image · up to 50 MB

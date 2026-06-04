@@ -3,11 +3,22 @@ import type { PageMeta } from '@/types/envelope.types';
 import { apiClient } from './api-client';
 
 export const documentService = {
-  async upload(file: File): Promise<Document> {
+  async upload(
+    file: File,
+    options: {
+      signal?: AbortSignal;
+      onProgress?: (pct: number) => void;
+    } = {},
+  ): Promise<Document> {
     const form = new FormData();
     form.append('file', file);
     const { data } = await apiClient.post<Document>('/documents', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      signal: options.signal,
+      onUploadProgress: (e) => {
+        if (!options.onProgress || !e.total) return;
+        options.onProgress(Math.round((e.loaded / e.total) * 100));
+      },
     });
     return data;
   },

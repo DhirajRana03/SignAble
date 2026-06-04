@@ -1,6 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { extractErrorMessage } from '@/services/api-client';
@@ -59,16 +61,47 @@ export function useDocumentPagesMeta(
   });
 }
 
+/**
+ * Upload with cancel + progress. Returns mutation + progress state +
+ * cancel handle. `cancel()` aborts in-flight request; useMutation receives
+ * `CanceledError` and onError branch ignores it (cancellation is intent,
+ * not failure).
+ */
 export function useUploadDocument() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (file: File) => documentService.upload(file),
+  const controllerRef = useRef<AbortController | null>(null);
+  const [progress, setProgress] = useState(0);
+
+  const mutation = useMutation({
+    mutationFn: (file: File) => {
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      setProgress(0);
+      return documentService.upload(file, {
+        signal: controller.signal,
+        onProgress: setProgress,
+      });
+    },
     onSuccess: () => {
+      setProgress(0);
+      controllerRef.current = null;
       toast.success('Upload complete — processing');
       qc.invalidateQueries({ queryKey: ['documents'] });
     },
-    onError: (err) => toast.error(extractErrorMessage(err)),
+    onError: (err) => {
+      controllerRef.current = null;
+      setProgress(0);
+      if (axios.isCancel(err)) return; // user-initiated, silent
+      toast.error(extractErrorMessage(err));
+    },
   });
+
+  const cancel = useCallback(() => {
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+  }, []);
+
+  return Object.assign(mutation, { progress, cancel });
 }
 
 export function useDeleteDocument() {
