@@ -113,7 +113,7 @@ export default function DashboardHome() {
           <ArrowUpRight className="h-4 w-4 text-ink-4 group-hover:text-accent-deep group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
         </Link>
 
-        <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {NAV_CARDS.map((card, i) => (
             <NavTile
               key={card.href}

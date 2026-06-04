@@ -87,27 +87,34 @@ export function Sidebar({
               key={item.href}
               href={item.href}
               onClick={onClose}
+              aria-current={active ? 'page' : undefined}
               className={cn(
-                'group relative flex items-center gap-3 rounded-md px-3 py-2 text-[14px] transition-all duration-150',
+                'group relative flex items-center gap-3 rounded-md pl-3 pr-3 py-2 text-[14px]',
+                'transition-all duration-200 ease-out',
                 active
-                  ? 'bg-accent-soft text-accent-deep font-medium'
-                  : 'text-ink-2 hover:bg-surface-sunken/70 hover:text-ink',
+                  ? 'bg-accent-soft text-accent-deep font-medium translate-x-0.5'
+                  : 'text-ink-2 hover:bg-surface-sunken/70 hover:text-ink hover:translate-x-0.5',
               )}
             >
+              {/* Active rail — animates in with scaleY */}
+              <span
+                aria-hidden
+                className={cn(
+                  'absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-pill bg-accent',
+                  'origin-center transition-transform duration-200 ease-out',
+                  active ? 'scale-y-100' : 'scale-y-0',
+                )}
+              />
               <Icon
                 className={cn(
-                  'h-4 w-4 shrink-0 transition-colors',
-                  active ? 'text-accent-deep' : 'text-ink-3 group-hover:text-ink-2',
+                  'h-4 w-4 shrink-0 transition-all duration-200',
+                  active
+                    ? 'text-accent-deep scale-110'
+                    : 'text-ink-3 group-hover:text-ink-2 group-hover:scale-105',
                 )}
                 strokeWidth={2}
               />
-              <span className="tracking-[-0.005em]">{item.label}</span>
-              {active ? (
-                <span
-                  aria-hidden
-                  className="ml-auto h-1.5 w-1.5 rounded-pill bg-accent"
-                />
-              ) : null}
+              <span className="tracking-[-0.005em] truncate">{item.label}</span>
             </Link>
           );
         })}
