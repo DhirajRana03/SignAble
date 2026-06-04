@@ -79,12 +79,20 @@ export function EnvelopeComposer({
   const [signingOrder, setSigningOrder] = useState<SigningOrder>('SEQUENTIAL');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(!draftId);
+  // Only mark hydrated when draftId resolves and load succeeds. Avoid
+  // initializing from !draftId since useParams returns undefined on first
+  // render, which would skip hydration when draftId arrives later.
+  const [hydrated, setHydrated] = useState(false);
 
   // Hydrate from existing draft. Loads envelope + attached docs once.
   // Skips when draftId absent (fresh create flow).
   useEffect(() => {
-    if (!draftId || hydrated) return;
+    // Create mode: nothing to hydrate, mark ready.
+    if (!draftId) {
+      setHydrated(true);
+      return;
+    }
+    if (hydrated) return;
     let cancelled = false;
     (async () => {
       try {
