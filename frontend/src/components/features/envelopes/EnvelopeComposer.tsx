@@ -203,19 +203,6 @@ export function EnvelopeComposer() {
             ) : null}
           </div>
 
-          {documentIds.length > 0 ? (
-            <ul className="space-y-2 mb-3">
-              {documentIds.map((id, idx) => (
-                <DocumentRow
-                  key={id}
-                  documentId={id}
-                  primary={idx === 0}
-                  onRemove={() => handleRemoveDoc(id)}
-                />
-              ))}
-            </ul>
-          ) : null}
-
           <DocumentDropzoneCompact
             hasExisting={documentIds.length > 0}
             onUploaded={(id) =>
@@ -224,6 +211,19 @@ export function EnvelopeComposer() {
               )
             }
           />
+
+          {documentIds.length > 0 ? (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              {documentIds.map((id, idx) => (
+                <DocumentCard
+                  key={id}
+                  documentId={id}
+                  primary={idx === 0}
+                  onRemove={() => handleRemoveDoc(id)}
+                />
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         {/* Recipients + signing-order header */}
@@ -518,9 +518,9 @@ function DocumentDropzoneCompact({
   );
 }
 
-/* ─────────────── Document row (live status from server) ─────────────── */
+/* ─────────────── Document card ─────────────── */
 
-function DocumentRow({
+function DocumentCard({
   documentId,
   primary,
   onRemove,
@@ -533,82 +533,75 @@ function DocumentRow({
   const doc = docQuery.data;
   const status = doc?.status ?? 'PENDING';
   const failed = status === 'FAILED';
+  const isProcessing = status === 'PENDING' || status === 'PROCESSING';
+  const isReady = status === 'READY';
 
   return (
-    <li className="relative pr-2">
-      <DocumentLine
-        filename={doc?.filename ?? 'Loading…'}
-        pageCount={doc?.pageCount ?? 0}
-        status={status}
-        errorMessage={failed ? doc?.errorMessage ?? null : null}
-        primary={primary}
-      />
+    <li
+      className={cn(
+        'relative rounded-lg sunken p-4 pr-9 transition-shadow',
+        primary && 'ring-1 ring-accent/30',
+      )}
+    >
       <button
         type="button"
         onClick={onRemove}
         aria-label="Delete document"
         title="Delete document"
         className={cn(
-          'absolute -top-2 -right-2 h-6 w-6 grid place-items-center rounded-full',
-          'bg-danger text-white shadow-md ring-2 ring-paper',
+          'absolute top-2 right-2 h-7 w-7 grid place-items-center rounded-full',
+          'bg-danger text-white shadow-md ring-2 ring-paper z-10',
           'hover:bg-danger/90 hover:scale-105 active:scale-95',
           'focus:outline-none focus:ring-2 focus:ring-danger/50',
           'transition-all',
         )}
       >
-        <Trash2 className="h-3 w-3" strokeWidth={2.5} />
+        <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
       </button>
-    </li>
-  );
-}
 
-/* ─────────────── Document line ─────────────── */
-
-function DocumentLine({
-  filename,
-  pageCount,
-  status,
-  errorMessage,
-  primary = false,
-}: {
-  filename: string;
-  pageCount: number;
-  status: string;
-  errorMessage: string | null;
-  primary?: boolean;
-}) {
-  const isProcessing = status === 'PENDING' || status === 'PROCESSING';
-  const isReady = status === 'READY';
-  const isFailed = status === 'FAILED';
-
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-md sunken">
-      <div className="h-9 w-9 grid place-items-center rounded-md bg-accent-soft text-accent-deep shrink-0">
-        <FileText className="h-4 w-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-[13.5px] font-medium text-ink truncate">
-            {filename}
-          </p>
-          {primary ? (
-            <span className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-accent-deep bg-accent-soft px-1.5 py-0.5 rounded-pill shrink-0">
-              Primary
-            </span>
-          ) : null}
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            'h-10 w-10 grid place-items-center rounded-md shrink-0',
+            isReady
+              ? 'bg-accent-soft text-accent-deep'
+              : failed
+                ? 'bg-danger/10 text-danger'
+                : 'bg-surface-sunken text-ink-3',
+          )}
+        >
+          <FileText className="h-5 w-5" />
         </div>
-        <p className="text-[11.5px] text-ink-3 mt-0.5">
-          {isProcessing
-            ? 'Processing pages…'
-            : isReady
-              ? `${pageCount} page${pageCount === 1 ? '' : 's'} · ready`
-              : isFailed
-                ? errorMessage ?? 'Failed'
-                : status.toLowerCase()}
-        </p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            {primary ? (
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-accent-deep bg-accent-soft px-1.5 py-0.5 rounded-pill shrink-0">
+                Primary
+              </span>
+            ) : null}
+          </div>
+          <p
+            className="text-[13.5px] font-medium text-ink truncate"
+            title={doc?.filename}
+          >
+            {doc?.filename ?? 'Loading…'}
+          </p>
+          <p className="text-[11.5px] text-ink-3 mt-1">
+            {isProcessing
+              ? 'Processing pages…'
+              : isReady
+                ? `${doc?.pageCount ?? 0} page${doc?.pageCount === 1 ? '' : 's'}`
+                : failed
+                  ? doc?.errorMessage ?? 'Failed'
+                  : String(status).toLowerCase()}
+          </p>
+        </div>
       </div>
-      <StatusChip status={status} />
-    </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <StatusChip status={status} />
+      </div>
+    </li>
   );
 }
 
