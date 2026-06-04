@@ -131,6 +131,11 @@ export class EnvelopesController {
     return this.envelopesService.detachDocument(user.id, id, documentId);
   }
 
+  @Get('inbox')
+  inbox(@CurrentUser() user: User) {
+    return this.envelopesService.inbox(user.id, user.email);
+  }
+
   @Get('activity/recent')
   recentActivity(
     @CurrentUser() user: User,

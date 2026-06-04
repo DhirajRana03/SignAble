@@ -6,6 +6,7 @@ import {
   Envelope,
   EnvelopeStatus,
   Prisma,
+  RecipientStatus,
   SigningOrder,
 } from '@prisma/client';
 
@@ -111,6 +112,28 @@ export class EnvelopesService {
         : undefined;
     return this.prisma.envelope.findMany({
       where: { userId, ...(statusFilter ? { status: statusFilter } : {}) },
+      orderBy: { createdAt: 'desc' },
+      include: { recipients: true },
+    });
+  }
+
+  /**
+   * Inbox: envelopes where the current user is listed as a recipient
+   * pending action. Excludes envelopes the user owns (those belong to
+   * Sent for Signature). Matches recipient.email to user.email.
+   */
+  async inbox(userId: string, userEmail: string): Promise<Envelope[]> {
+    return this.prisma.envelope.findMany({
+      where: {
+        userId: { not: userId },
+        status: { in: [EnvelopeStatus.SENT, EnvelopeStatus.IN_PROGRESS] },
+        recipients: {
+          some: {
+            email: userEmail,
+            status: { in: [RecipientStatus.PENDING, RecipientStatus.VIEWED] },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       include: { recipients: true },
     });

@@ -4,17 +4,16 @@ import { EnvelopeListView } from '@/components/features/envelopes/EnvelopeListVi
 import { DashboardShell } from '@/components/layout/DashboardShell';
 
 /**
- * Inbox — documents others sent to current user awaiting signature.
- * Backend currently lists only envelopes user owns; recipient-side
- * inbox needs a dedicated endpoint. Placeholder empty state until then.
+ * Inbox: envelopes others sent to the current user awaiting signature.
+ * Sourced from the recipient-side /envelopes/inbox endpoint.
  */
 export default function InboxPage() {
   return (
     <DashboardShell eyebrow="Action required" title="Inbox">
       <EnvelopeListView
-        status="SENT,IN_PROGRESS"
+        source="inbox"
         emptyTitle="Inbox empty"
-        emptyDescription="Documents waiting for your signature will appear here."
+        emptyDescription="Documents waiting for your signature appear here."
       />
     </DashboardShell>
   );

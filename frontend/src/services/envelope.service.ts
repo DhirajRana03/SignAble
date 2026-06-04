@@ -93,6 +93,10 @@ export const envelopeService = {
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/envelopes/${id}`);
   },
+  async inbox(): Promise<Envelope[]> {
+    const { data } = await apiClient.get<Envelope[]>('/envelopes/inbox');
+    return data;
+  },
   async recentActivity(limit = 10): Promise<ActivityItem[]> {
     const { data } = await apiClient.get<ActivityItem[]>(
       '/envelopes/activity/recent',

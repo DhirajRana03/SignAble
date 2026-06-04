@@ -2,25 +2,33 @@
 
 import { EnvelopeCard } from '@/components/features/envelopes/EnvelopeCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useEnvelopes } from '@/hooks/useEnvelopes';
+import { useEnvelopes, useInboxEnvelopes } from '@/hooks/useEnvelopes';
 
 interface Props {
+  /**
+   * 'owned' — envelopes user created. Filter by status.
+   * 'inbox' — envelopes others sent to user awaiting signature.
+   */
+  source?: 'owned' | 'inbox';
   status?: string | string[];
   emptyTitle: string;
   emptyDescription: string;
 }
 
 /**
- * Shared list renderer for envelope buckets (Inbox, Sent, Completed,
- * Drafts, Archive). Status filter passed through to the list query;
- * empty-state copy varies per bucket.
+ * Shared list renderer for envelope buckets. Sent / Completed / Drafts /
+ * Archive filter user-owned envelopes by status. Inbox lists envelopes
+ * routed to the user as a recipient via a dedicated endpoint.
  */
 export function EnvelopeListView({
+  source = 'owned',
   status,
   emptyTitle,
   emptyDescription,
 }: Props) {
-  const { data, isLoading } = useEnvelopes(status);
+  const owned = useEnvelopes(source === 'owned' ? status : undefined);
+  const inbox = useInboxEnvelopes();
+  const { data, isLoading } = source === 'inbox' ? inbox : owned;
 
   if (isLoading) {
     return (

@@ -21,6 +21,13 @@ export function useEnvelopes(status?: string | string[]) {
   });
 }
 
+export function useInboxEnvelopes() {
+  return useQuery({
+    queryKey: ['envelopes', 'inbox'],
+    queryFn: () => envelopeService.inbox(),
+  });
+}
+
 export function useRecentActivity(limit = 10) {
   return useQuery({
     queryKey: ['envelopes', 'activity', limit],
