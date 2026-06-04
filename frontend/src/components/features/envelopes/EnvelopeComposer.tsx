@@ -20,10 +20,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  ArrowRight,
   Check,
   ChevronDown,
   Eye,
   FileText,
+  GitBranch,
   GripVertical,
   Mail,
   Pen,
@@ -472,9 +474,13 @@ function SigningOrderToggle({
   value: SigningOrder;
   onChange: (v: SigningOrder) => void;
 }) {
-  const opts: { value: SigningOrder; label: string }[] = [
-    { value: 'SEQUENTIAL', label: 'Sequential' },
-    { value: 'PARALLEL', label: 'Parallel' },
+  const opts: {
+    value: SigningOrder;
+    label: string;
+    icon: typeof ArrowRight;
+  }[] = [
+    { value: 'SEQUENTIAL', label: 'Sequential', icon: ArrowRight },
+    { value: 'PARALLEL', label: 'Parallel', icon: GitBranch },
   ];
   const activeIdx = opts.findIndex((o) => o.value === value);
 
@@ -482,19 +488,36 @@ function SigningOrderToggle({
     <div
       role="radiogroup"
       aria-label="Signing order"
-      className="relative inline-flex items-center rounded-pill bg-surface-sunken p-0.5 border border-border-soft"
+      className={cn(
+        // Elliptical glass track — frosted, hairline edge, soft inner shadow
+        'relative inline-flex items-center rounded-pill p-1',
+        'bg-white/35 backdrop-blur-xl backdrop-saturate-150',
+        'border border-white/50',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(99,102,241,0.05),0_1px_2px_rgba(15,15,15,0.04)]',
+      )}
     >
-      {/* Sliding indicator — animates left/right between options */}
+      {/*
+        Sliding glass pill — gradient surface + rim light + inner highlight.
+        Animates with a longer spring-like easing for tactile feel.
+      */}
       <span
         aria-hidden
-        className="absolute top-0.5 bottom-0.5 rounded-pill bg-white shadow-[0_2px_8px_-2px_hsl(var(--accent)/0.45),0_0_0_1px_hsl(var(--accent)/0.35)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0.16,1)]"
+        className={cn(
+          'absolute top-1 bottom-1 rounded-pill',
+          'bg-gradient-to-b from-white to-white/85',
+          'border border-white',
+          'shadow-[0_2px_6px_-1px_rgba(99,102,241,0.30),0_8px_22px_-8px_rgba(99,102,241,0.45),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(99,102,241,0.10)]',
+          'transition-[left,transform,box-shadow] duration-[420ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+        )}
         style={{
-          width: `calc(50% - 2px)`,
-          left: activeIdx === 0 ? '2px' : 'calc(50% + 0px)',
+          width: `calc(50% - 4px)`,
+          left: activeIdx === 0 ? '4px' : 'calc(50% + 0px)',
         }}
       />
+
       {opts.map((o) => {
         const active = value === o.value;
+        const Icon = o.icon;
         return (
           <button
             key={o.value}
@@ -503,11 +526,24 @@ function SigningOrderToggle({
             aria-checked={active}
             onClick={() => onChange(o.value)}
             className={cn(
-              'relative z-[1] h-8 px-4 rounded-pill text-[12px] font-semibold transition-colors duration-200 min-w-[88px]',
-              active ? 'text-accent-deep' : 'text-ink-3 hover:text-ink',
+              'relative z-[1] inline-flex items-center justify-center gap-1.5',
+              'h-9 px-4 rounded-pill text-[13px] font-semibold min-w-[120px]',
+              'transition-all duration-300',
+              active
+                ? 'text-accent-deep scale-[1.02]'
+                : 'text-ink-3 hover:text-ink',
             )}
           >
-            {o.label}
+            <Icon
+              className={cn(
+                'h-3.5 w-3.5 transition-all duration-300',
+                active
+                  ? 'text-accent-deep scale-110'
+                  : 'text-ink-4 scale-100',
+              )}
+              strokeWidth={2.2}
+            />
+            <span className="tracking-[-0.005em]">{o.label}</span>
           </button>
         );
       })}
