@@ -237,6 +237,19 @@ export class EnvelopesService {
     return updated;
   }
 
+  /**
+   * Hard-delete draft envelope. Cascades through recipients, fields,
+   * attachments, audit events via schema FK rules. Sent envelopes must
+   * use void() — deletion would break audit chain.
+   */
+  async deleteDraft(userId: string, envelopeId: string): Promise<void> {
+    const env = await this.get(userId, envelopeId);
+    if (env.status !== EnvelopeStatus.DRAFT) {
+      throw new InvalidStateTransitionError(env.status, 'delete');
+    }
+    await this.prisma.envelope.delete({ where: { id: envelopeId } });
+  }
+
   async void(
     userId: string,
     userEmail: string,

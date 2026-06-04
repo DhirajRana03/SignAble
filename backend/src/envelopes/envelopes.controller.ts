@@ -77,6 +77,15 @@ export class EnvelopesController {
     return this.envelopesService.void(user.id, user.email, id, dto.reason);
   }
 
+  @Delete(':id')
+  @HttpCode(204)
+  deleteDraft(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.envelopesService.deleteDraft(user.id, id);
+  }
+
   @Get(':id/documents')
   listDocuments(
     @Param('id', new ParseUUIDPipe()) id: string,

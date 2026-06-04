@@ -39,6 +39,7 @@ describe('EnvelopesService', () => {
         count: jest.fn(),
       },
     };
+    prisma.envelope.delete = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -357,6 +358,36 @@ describe('EnvelopesService', () => {
         data: { envelopeId: 'env-1', documentId: 'doc-2', orderIndex: 2 },
       });
       expect(result.orderIndex).toBe(2);
+    });
+  });
+
+  describe('deleteDraft', () => {
+    it('deletes DRAFT envelope', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.DRAFT,
+      });
+      (prisma.envelope.delete as jest.Mock).mockResolvedValue({});
+
+      await service.deleteDraft(USER_ID, 'env-1');
+
+      expect(prisma.envelope.delete).toHaveBeenCalledWith({
+        where: { id: 'env-1' },
+      });
+    });
+
+    it('rejects non-DRAFT envelope', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+        status: EnvelopeStatus.SENT,
+      });
+
+      await expect(
+        service.deleteDraft(USER_ID, 'env-1'),
+      ).rejects.toBeInstanceOf(InvalidStateTransitionError);
+      expect(prisma.envelope.delete).not.toHaveBeenCalled();
     });
   });
 });

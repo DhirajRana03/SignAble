@@ -70,6 +70,19 @@ export function useSendEnvelope() {
   });
 }
 
+export function useDeleteEnvelope() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => envelopeService.delete(id),
+    onSuccess: (_, id) => {
+      toast.success('Draft deleted');
+      qc.invalidateQueries({ queryKey: ['envelopes'] });
+      qc.removeQueries({ queryKey: ['envelopes', id] });
+    },
+    onError: (err) => toast.error(extractErrorMessage(err)),
+  });
+}
+
 export function useVoidEnvelope() {
   const qc = useQueryClient();
   return useMutation({

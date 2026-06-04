@@ -1,9 +1,12 @@
 'use client';
 
-import { ChevronRight, Users } from 'lucide-react';
+import { ChevronRight, Trash2, Users } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
+import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useDeleteEnvelope } from '@/hooks/useEnvelopes';
 import { cn, formatRelative, recipientColor } from '@/lib/utils';
 import type { Envelope } from '@/types/envelope.types';
 
@@ -16,16 +19,21 @@ export function EnvelopeCard({
 }) {
   const recipients = envelope.recipients ?? [];
   const signed = recipients.filter((r) => r.status === 'SIGNED').length;
-  // Hide trailing rule on last visible row (consumer handles by passing isLast)
   const isLast = false;
+  const isDraft = envelope.status === 'DRAFT';
+  const del = useDeleteEnvelope();
+  const [confirming, setConfirming] = useState(false);
 
   return (
     <>
-      <Link
-        href={`/envelopes/${envelope.id}`}
-        className="group block px-4 lg:px-5 py-3.5 hover:bg-surface-sunken/60 transition-colors duration-150 animate-fade-up"
+      <div
+        className="group relative animate-fade-up"
         style={{ animationDelay: `${index * 24}ms` }}
       >
+        <Link
+          href={`/envelopes/${envelope.id}`}
+          className="block px-4 lg:px-5 py-3.5 hover:bg-surface-sunken/60 transition-colors duration-150"
+        >
         <div className="grid grid-cols-12 gap-3 items-center">
           <div className="col-span-12 md:col-span-5 min-w-0">
             <p className="text-[14px] font-medium text-ink truncate tracking-[-0.005em]">
@@ -85,7 +93,59 @@ export function EnvelopeCard({
             {formatRelative(envelope.createdAt)}
           </span>
         </div>
-      </Link>
+        </Link>
+
+        {isDraft ? (
+          <div className="absolute top-2 right-2 z-10">
+            {!confirming ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setConfirming(true);
+                }}
+                aria-label="Delete draft"
+                title="Delete draft"
+                className="h-7 w-7 grid place-items-center rounded-md text-ink-4 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-danger hover:bg-danger/10 transition-all"
+              >
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            ) : (
+              <div
+                className="flex items-center gap-1 bg-paper border border-border-strong rounded-md shadow-sheet px-1.5 py-1"
+                onClick={(e) => e.preventDefault()}
+              >
+                <span className="text-[11px] text-ink-2 px-1">Delete?</span>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    del.mutate(envelope.id);
+                  }}
+                  loading={del.isPending}
+                  className="h-6 px-2 text-[11px]"
+                >
+                  Yes
+                </Button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setConfirming(false);
+                  }}
+                  className="text-[11px] text-ink-3 hover:text-ink px-1.5 h-6"
+                >
+                  No
+                </button>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
       {!isLast ? <div className="rule-soft" /> : null}
     </>
   );

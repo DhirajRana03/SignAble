@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Download, Send, XCircle } from 'lucide-react';
+import { Copy, Download, Send, Trash2, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import {
+  useDeleteEnvelope,
   useEnvelope,
   useSendEnvelope,
   useVoidEnvelope,
@@ -23,6 +24,7 @@ export default function EnvelopeDetailPage() {
   const envelope = useEnvelope(id);
   const send = useSendEnvelope();
   const voidIt = useVoidEnvelope();
+  const del = useDeleteEnvelope();
 
   if (envelope.isLoading || !envelope.data) {
     return (
@@ -169,19 +171,35 @@ export default function EnvelopeDetailPage() {
           <AuditTrail envelopeId={env.id} />
 
           {!isCompleted && env.status !== 'VOIDED' ? (
-            <div className="sheet p-5">
-              <p className="label-mono mb-3">Danger zone</p>
-              <Button
-                variant="danger"
-                className="w-full"
-                loading={voidIt.isPending}
-                onClick={() => {
-                  const reason = prompt('Reason for voiding?');
-                  if (reason) voidIt.mutate({ id: env.id, reason });
-                }}
-              >
-                <XCircle className="h-3.5 w-3.5" /> Void envelope
-              </Button>
+            <div className="sheet p-5 space-y-2">
+              <p className="label-mono mb-1">Danger zone</p>
+              {isDraft ? (
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  loading={del.isPending}
+                  onClick={() => {
+                    if (!confirm('Delete this draft permanently?')) return;
+                    del.mutate(env.id, {
+                      onSuccess: () => router.push('/envelopes'),
+                    });
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete draft
+                </Button>
+              ) : (
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  loading={voidIt.isPending}
+                  onClick={() => {
+                    const reason = prompt('Reason for voiding?');
+                    if (reason) voidIt.mutate({ id: env.id, reason });
+                  }}
+                >
+                  <XCircle className="h-3.5 w-3.5" /> Void envelope
+                </Button>
+              )}
             </div>
           ) : null}
         </div>
