@@ -216,6 +216,36 @@ export function EnvelopeComposer() {
     [setDirty, setSaveDraftHandler],
   );
 
+  /**
+   * Intercept browser back/forward. Push dummy entry on mount so first
+   * popstate consumes dummy without leaving composer. When dirty, push
+   * dummy again to cancel pop, then surface guard modal via sentinel
+   * href. Modal resolves with router.back() after clearing dirty flag.
+   */
+  const requestNavigate = useComposerGuardStore((s) => s.requestNavigate);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.history.pushState({ composerGuard: true }, '');
+    const handler = () => {
+      if (!useComposerGuardStore.getState().dirty) return;
+      window.history.pushState({ composerGuard: true }, '');
+      requestNavigate('__BACK__');
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [requestNavigate]);
+
+  // Native beforeunload covers tab close + full reload.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
+
   const sequential = signingOrder === 'SEQUENTIAL';
 
   return (

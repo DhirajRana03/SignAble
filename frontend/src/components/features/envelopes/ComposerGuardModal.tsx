@@ -26,7 +26,12 @@ export function ComposerGuardModal() {
     const href = pendingHref;
     setDirty(false);
     clearPending();
-    router.push(href);
+    if (href === '__BACK__') {
+      // Pop the dummy entry pushed by guard, then pop the real previous.
+      window.history.go(-2);
+    } else {
+      router.push(href);
+    }
   };
 
   const onSave = async () => {
