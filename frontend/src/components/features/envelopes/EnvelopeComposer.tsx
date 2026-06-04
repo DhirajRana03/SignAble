@@ -42,7 +42,11 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
-import { useDocument, useUploadDocument } from '@/hooks/useDocuments';
+import {
+  useDeleteDocument,
+  useDocument,
+  useUploadDocument,
+} from '@/hooks/useDocuments';
 import { useCreateEnvelope } from '@/hooks/useEnvelopes';
 import { cn } from '@/lib/utils';
 import { extractErrorMessage } from '@/services/api-client';
@@ -63,29 +67,42 @@ type RecipientFormValues = z.infer<typeof recipientSchema>;
 
 export function EnvelopeComposer() {
   const router = useRouter();
-  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [recipients, setRecipients] = useState<DraftRecipient[]>([]);
   const [title, setTitle] = useState('');
   const [signingOrder, setSigningOrder] = useState<SigningOrder>('SEQUENTIAL');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const docQuery = useDocument(documentId ?? undefined);
-  const document = docQuery.data;
-  const docReady = document?.status === 'READY';
-  const docFailed = document?.status === 'FAILED';
+  // Primary document: first in list. Drives envelope creation + title seed.
+  const primaryId = documentIds[0] ?? null;
+  const docQuery = useDocument(primaryId ?? undefined);
+  const primaryDoc = docQuery.data;
+  const docReady = primaryDoc?.status === 'READY';
 
   useEffect(() => {
-    if (document && !title) {
+    if (primaryDoc && !title) {
       setTitle(
-        document.filename.replace(/\.(pdf|png|jpe?g|tiff?|bmp|gif|heic)$/i, ''),
+        primaryDoc.filename.replace(
+          /\.(pdf|png|jpe?g|tiff?|bmp|gif|heic)$/i,
+          '',
+        ),
       );
     }
-  }, [document, title]);
+  }, [primaryDoc, title]);
 
   const createEnvelope = useCreateEnvelope();
+  const deleteDoc = useDeleteDocument();
   const signerCount = recipients.filter((r) => r.role === 'SIGNER').length;
   const canSubmit = docReady && signerCount > 0 && !!title && !submitting;
+
+  const handleRemoveDoc = (id: string) => {
+    setDocumentIds((ids) => ids.filter((d) => d !== id));
+    if (primaryId === id && documentIds.length === 1 && !title) {
+      // Optional: clear title if user never edited it. Simpler: keep title.
+    }
+    deleteDoc.mutate(id);
+  };
 
   // Sortable sensors — pointer for mouse/touch, keyboard for a11y
   const sensors = useSensors(
@@ -110,7 +127,7 @@ export function EnvelopeComposer() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!documentId || !docReady) {
+    if (!primaryId || !docReady) {
       setSubmitError('Wait for document to finish processing.');
       return;
     }
@@ -126,7 +143,7 @@ export function EnvelopeComposer() {
     setSubmitting(true);
     try {
       const envelope = await createEnvelope.mutateAsync({
-        documentId,
+        documentId: primaryId,
         title: title.trim(),
         signingOrder,
       });
@@ -168,33 +185,40 @@ export function EnvelopeComposer() {
           />
         </div>
 
-        {/* Document */}
+        {/* Documents */}
         <div className="glass p-4 lg:p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[15px] font-semibold tracking-[-0.018em]">
-              Document
+              Documents
             </h3>
-            {documentId ? (
-              <button
-                type="button"
-                onClick={() => setDocumentId(null)}
-                className="text-[11.5px] text-ink-3 hover:text-danger transition-colors"
-              >
-                Replace
-              </button>
+            {documentIds.length > 0 ? (
+              <span className="text-[11.5px] text-ink-3">
+                {documentIds.length} file{documentIds.length === 1 ? '' : 's'}
+              </span>
             ) : null}
           </div>
 
-          {!documentId ? (
-            <DocumentDropzoneCompact onUploaded={(id) => setDocumentId(id)} />
-          ) : (
-            <DocumentLine
-              filename={document?.filename ?? 'Loading…'}
-              pageCount={document?.pageCount ?? 0}
-              status={document?.status ?? 'PENDING'}
-              errorMessage={docFailed ? document?.errorMessage ?? null : null}
-            />
-          )}
+          {documentIds.length > 0 ? (
+            <ul className="space-y-2 mb-3">
+              {documentIds.map((id, idx) => (
+                <DocumentRow
+                  key={id}
+                  documentId={id}
+                  primary={idx === 0}
+                  onRemove={() => handleRemoveDoc(id)}
+                />
+              ))}
+            </ul>
+          ) : null}
+
+          <DocumentDropzoneCompact
+            hasExisting={documentIds.length > 0}
+            onUploaded={(id) =>
+              setDocumentIds((ids) =>
+                ids.includes(id) ? ids : [...ids, id],
+              )
+            }
+          />
         </div>
 
         {/* Recipients + signing-order header */}
@@ -290,15 +314,21 @@ export function EnvelopeComposer() {
               state={title ? 'ok' : 'todo'}
             />
             <ReviewRow
-              label="Document"
+              label="Documents"
               value={
-                docReady
-                  ? document!.filename
-                  : documentId
-                    ? 'Processing…'
-                    : 'Not uploaded'
+                documentIds.length === 0
+                  ? 'Not uploaded'
+                  : docReady
+                    ? `${primaryDoc!.filename}${
+                        documentIds.length > 1
+                          ? ` +${documentIds.length - 1} more`
+                          : ''
+                      }`
+                    : 'Processing…'
               }
-              state={docReady ? 'ok' : documentId ? 'pending' : 'todo'}
+              state={
+                docReady ? 'ok' : documentIds.length > 0 ? 'pending' : 'todo'
+              }
             />
             <ReviewRow
               label="Signers"
@@ -339,26 +369,41 @@ export function EnvelopeComposer() {
 
 function DocumentDropzoneCompact({
   onUploaded,
+  hasExisting = false,
 }: {
   onUploaded: (id: string) => void;
+  hasExisting?: boolean;
 }) {
   const upload = useUploadDocument();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [uploadingName, setUploadingName] = useState<string | null>(null);
+  const [queueCount, setQueueCount] = useState(0); // remaining files in batch
 
+  /**
+   * Upload files sequentially. Sequential keeps progress UI coherent
+   * (one bar) and avoids hammering the processor with parallel jobs.
+   */
   const handleFiles = useCallback(
-    (files: FileList | null) => {
-      const file = files?.[0];
-      if (!file) return;
-      setUploadingName(file.name);
-      upload.mutate(file, {
-        onSuccess: (doc) => {
-          setUploadingName(null);
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const list = Array.from(files);
+      setQueueCount(list.length);
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        setUploadingName(file.name);
+        setQueueCount(list.length - i);
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const doc = await upload.mutateAsync(file);
           onUploaded(doc.id);
-        },
-        onError: () => setUploadingName(null),
-      });
+        } catch {
+          // Cancel or error: stop the batch.
+          break;
+        }
+      }
+      setUploadingName(null);
+      setQueueCount(0);
     },
     [upload, onUploaded],
   );
@@ -377,6 +422,7 @@ function DocumentDropzoneCompact({
             </p>
             <p className="text-[11.5px] text-ink-3 mt-0.5">
               {upload.progress}% uploaded
+              {queueCount > 1 ? ` · ${queueCount} remaining` : ''}
             </p>
           </div>
           <button
@@ -426,9 +472,14 @@ function DocumentDropzoneCompact({
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.gif,.heic,.heif,application/pdf,image/*"
         className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          // Reset so re-selecting same file triggers change
+          e.target.value = '';
+        }}
       />
       <div
         className={cn(
@@ -440,13 +491,58 @@ function DocumentDropzoneCompact({
       </div>
       <div className="min-w-0">
         <p className="text-[13.5px] font-medium text-ink">
-          Drop a file or click to browse
+          {hasExisting
+            ? 'Add another file'
+            : 'Drop files or click to browse'}
         </p>
         <p className="text-[11.5px] text-ink-3 mt-0.5">
-          PDF or image · up to 50 MB
+          PDF or image · up to 50 MB · multiple allowed
         </p>
       </div>
     </div>
+  );
+}
+
+/* ─────────────── Document row (live status from server) ─────────────── */
+
+function DocumentRow({
+  documentId,
+  primary,
+  onRemove,
+}: {
+  documentId: string;
+  primary: boolean;
+  onRemove: () => void;
+}) {
+  const docQuery = useDocument(documentId);
+  const doc = docQuery.data;
+  const status = doc?.status ?? 'PENDING';
+  const failed = status === 'FAILED';
+
+  return (
+    <li className="relative group">
+      <DocumentLine
+        filename={doc?.filename ?? 'Loading…'}
+        pageCount={doc?.pageCount ?? 0}
+        status={status}
+        errorMessage={failed ? doc?.errorMessage ?? null : null}
+        primary={primary}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Remove document"
+        title="Remove document"
+        className={cn(
+          'absolute -top-1.5 -right-1.5 h-5 w-5 grid place-items-center rounded-full',
+          'bg-danger text-white shadow-sm',
+          'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity',
+          'hover:bg-danger/90 focus:outline-none focus:ring-2 focus:ring-danger/40',
+        )}
+      >
+        <X className="h-3 w-3" strokeWidth={2.5} />
+      </button>
+    </li>
   );
 }
 
@@ -457,11 +553,13 @@ function DocumentLine({
   pageCount,
   status,
   errorMessage,
+  primary = false,
 }: {
   filename: string;
   pageCount: number;
   status: string;
   errorMessage: string | null;
+  primary?: boolean;
 }) {
   const isProcessing = status === 'PENDING' || status === 'PROCESSING';
   const isReady = status === 'READY';
@@ -473,7 +571,16 @@ function DocumentLine({
         <FileText className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13.5px] font-medium text-ink truncate">{filename}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-[13.5px] font-medium text-ink truncate">
+            {filename}
+          </p>
+          {primary ? (
+            <span className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-accent-deep bg-accent-soft px-1.5 py-0.5 rounded-pill shrink-0">
+              Primary
+            </span>
+          ) : null}
+        </div>
         <p className="text-[11.5px] text-ink-3 mt-0.5">
           {isProcessing
             ? 'Processing pages…'
