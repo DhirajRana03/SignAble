@@ -139,7 +139,7 @@ export function FieldChip({
       <div className="flex items-center gap-1 pointer-events-none px-1.5 min-w-0">
         <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} />
         <span className="text-[10px] font-semibold uppercase tracking-wider truncate">
-          {FIELD_LABEL[field.fieldType]}
+          {field.label ?? FIELD_LABEL[field.fieldType]}
         </span>
         {field.required ? (
           <span className="text-current opacity-80">*</span>

@@ -75,6 +75,7 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
       widthPct,
       heightPct,
       fieldType: def.type,
+      label: def.label,
       required: true,
       options: defaultOptionsFor(def),
     });
@@ -123,16 +124,17 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   const pageUrls = (pagesMeta.data ?? []).map((p) => p.imageUrl);
 
   return (
-    <>
-      <div className="flex gap-4 items-start">
-        <FieldToolbar
-          recipients={envelope.recipients ?? []}
-          onDragStart={(def) => {
-            draggingDefRef.current = def;
-          }}
-        />
+    <div className="h-full flex gap-3 px-3 pb-3">
+      <FieldToolbar
+        recipients={envelope.recipients ?? []}
+        onDragStart={(def) => {
+          draggingDefRef.current = def;
+        }}
+      />
 
-        <div className="flex-1 min-w-0 relative">
+      {/* Doc scroll container — owns vertical scroll */}
+      <div className="flex-1 min-w-0 h-full overflow-y-auto relative bg-slate-100 rounded-lg">
+        <div className="relative">
           <DocumentViewer
             pageUrls={pageUrls}
             authed
@@ -153,20 +155,20 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
 
           {fieldCount === 0 ? <EmptyHint /> : null}
         </div>
-
-        <FieldInspector
-          filename={docQuery.data?.filename ?? 'Document'}
-          pageUrls={pageUrls}
-          activePage={activePage}
-          totalPages={pageUrls.length}
-        />
-
-        <ThumbnailStrip
-          pageUrls={pageUrls}
-          activePage={activePage}
-          onJump={jumpToPage}
-        />
       </div>
+
+      <FieldInspector
+        filename={docQuery.data?.filename ?? 'Document'}
+        pageUrls={pageUrls}
+        activePage={activePage}
+        totalPages={pageUrls.length}
+      />
+
+      <ThumbnailStrip
+        pageUrls={pageUrls}
+        activePage={activePage}
+        onJump={jumpToPage}
+      />
 
       <ZoomControls
         zoom={zoom}
@@ -174,7 +176,7 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
         snap={snap}
         onToggleSnap={() => setSnap((s) => !s)}
       />
-    </>
+    </div>
   );
 }
 

@@ -41,7 +41,7 @@ export function DocumentViewer({
   }, [pageUrls.length]);
 
   return (
-    <div className="flex flex-col items-center gap-6 py-4">
+    <div className="flex flex-col items-center gap-6 py-6 px-6">
       {pageUrls.map((url, i) => (
         <PageImage
           key={i}

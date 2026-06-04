@@ -63,7 +63,7 @@ export function FieldInspector({
   const activeUrl = pageUrls[activePage - 1];
 
   return (
-    <aside className="sticky top-20 self-start w-72 shrink-0 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 pb-2">
+    <aside className="self-start w-72 shrink-0 h-full overflow-y-auto pr-1 py-2">
       {selected ? (
         <FieldEditor
           field={selected}

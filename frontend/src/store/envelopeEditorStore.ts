@@ -24,6 +24,8 @@ export interface EditorField {
   widthPct: number;
   heightPct: number;
   fieldType: FieldType;
+  /** Display label from palette tile (Name, Email, etc) — overrides generic type label on chip. */
+  label?: string;
   required: boolean;
   readOnly?: boolean;
   options: FieldOptions;

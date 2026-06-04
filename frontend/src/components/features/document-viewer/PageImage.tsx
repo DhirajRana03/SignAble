@@ -35,7 +35,7 @@ export const PageImage = forwardRef<HTMLDivElement, Props>(function PageImage(
         ref={ref}
         style={{ width: `${width}px` }}
         className={cn(
-          'relative bg-paper border border-border shadow-md rounded-sm',
+          'relative bg-white shadow-md rounded-sm',
           'overflow-hidden transition-[width] duration-150',
         )}
       >

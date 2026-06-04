@@ -27,7 +27,7 @@ export function ThumbnailStrip({
   return (
     <aside
       className={cn(
-        'sticky top-20 self-start shrink-0 transition-all duration-200',
+        'self-start shrink-0 h-full overflow-y-auto py-2 transition-all duration-200',
         collapsed ? 'w-8' : 'w-24',
       )}
     >

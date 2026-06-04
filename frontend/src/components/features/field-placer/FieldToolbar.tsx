@@ -5,7 +5,6 @@ import {
   Briefcase,
   Building2,
   Calendar,
-  CheckCircle2,
   CheckSquare,
   ChevronDown,
   Hash,
@@ -16,7 +15,6 @@ import {
   PenLine,
   Phone,
   Search,
-  Stamp,
   StickyNote,
   Type,
   User,
@@ -46,7 +44,6 @@ export const FIELDS: FieldDef[] = [
   // Signing
   { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', defaultSize: { widthPct: 0.22, heightPct: 0.07 } },
   { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', defaultSize: { widthPct: 0.1, heightPct: 0.05 } },
-  { id: 'stamp', type: 'SIGNATURE', label: 'Stamp', icon: Stamp, group: 'signing', defaultSize: { widthPct: 0.18, heightPct: 0.07 } },
   { id: 'date', type: 'DATE', label: 'Date Signed', icon: Calendar, group: 'signing', defaultSize: { widthPct: 0.18, heightPct: 0.04 } },
   // Identity
   { id: 'name', type: 'TEXT', label: 'Name', icon: User, group: 'identity', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
@@ -62,7 +59,6 @@ export const FIELDS: FieldDef[] = [
   { id: 'dropdown', type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
   // Advanced
   { id: 'note', type: 'TEXT', label: 'Note', icon: StickyNote, group: 'advanced', defaultSize: { widthPct: 0.26, heightPct: 0.06 } },
-  { id: 'approve', type: 'CHECKBOX', label: 'Approve', icon: CheckCircle2, group: 'advanced', defaultSize: { widthPct: 0.04, heightPct: 0.03 } },
   { id: 'decline', type: 'CHECKBOX', label: 'Decline', icon: XCircle, group: 'advanced', defaultSize: { widthPct: 0.04, heightPct: 0.03 } },
 ];
 
@@ -84,6 +80,9 @@ export function FieldToolbar({
   const fields = useEnvelopeEditorStore((s) => s.fields);
   const [query, setQuery] = useState('');
 
+  const activeIdx = recipients.findIndex((r) => r.id === activeRecipientId);
+  const activeColor = recipientColor(Math.max(0, activeIdx));
+
   const q = query.trim().toLowerCase();
   const filtered = q
     ? FIELDS.filter((f) => f.label.toLowerCase().includes(q))
@@ -97,7 +96,7 @@ export function FieldToolbar({
   ];
 
   return (
-    <aside className="sticky top-20 self-start w-64 shrink-0 flex flex-col gap-3 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 pb-2">
+    <aside className="self-start w-56 shrink-0 flex flex-col gap-3 h-full overflow-y-auto pr-1 py-2">
       <RecipientDropdown
         recipients={recipients}
         activeRecipientId={activeRecipientId}
@@ -140,6 +139,8 @@ export function FieldToolbar({
                   def={f}
                   disabled={!activeRecipientId || !!f.disabled}
                   locked={!!f.disabled}
+                  bgClass={activeColor.bg}
+                  fgClass={activeColor.fg}
                   onDragStart={onDragStart}
                 />
               ))}
@@ -259,11 +260,15 @@ function FieldRow({
   def,
   disabled,
   locked,
+  bgClass,
+  fgClass,
   onDragStart,
 }: {
   def: FieldDef;
   disabled: boolean;
   locked: boolean;
+  bgClass: string;
+  fgClass: string;
   onDragStart: (def: FieldDef) => void;
 }) {
   const Icon = def.icon;
@@ -284,23 +289,24 @@ function FieldRow({
       }}
       title={locked ? `${def.label} (unavailable)` : def.label}
       className={cn(
-        'w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5',
+        'w-full flex items-center gap-2 rounded-lg px-1.5 py-1.5',
         'transition-colors duration-100',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         !disabled &&
-          'hover:bg-accent-soft/40 cursor-grab active:cursor-grabbing',
+          'hover:bg-white/60 cursor-grab active:cursor-grabbing',
         locked && 'opacity-50',
       )}
     >
       <span
         className={cn(
-          'h-8 w-8 grid place-items-center rounded-md shrink-0',
-          'bg-sky-100 text-sky-700 border border-sky-200/60',
+          'h-7 w-7 grid place-items-center rounded-md shrink-0 border border-current/20',
+          bgClass,
+          fgClass,
         )}
       >
-        <Icon className="h-4 w-4" strokeWidth={2} />
+        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
       </span>
-      <span className="flex-1 text-left text-[12.5px] font-medium text-ink-2 truncate">
+      <span className="flex-1 text-left text-[12px] font-medium text-ink-2 truncate">
         {def.label}
       </span>
       {locked ? (
