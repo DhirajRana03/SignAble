@@ -1,6 +1,6 @@
 'use client';
 
-import { type RefObject } from 'react';
+import { type RefObject, useMemo } from 'react';
 
 import { useElementSize } from '@/hooks/useElementSize';
 import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
@@ -23,8 +23,13 @@ export function FieldOverlay({
   recipients: Recipient[];
   onPagePointerDown: (e: React.PointerEvent, pageRef: RefObject<HTMLDivElement>) => void;
 }) {
-  const fields = useEnvelopeEditorStore((s) =>
-    s.fields.filter((f) => f.pageNumber === pageIndex + 1),
+  // Subscribe to whole fields array (stable ref from Zustand); derive
+  // the page-scoped slice via useMemo. Returning a fresh array from the
+  // selector breaks Zustand's strict-equality bail-out and infinite-loops.
+  const allFields = useEnvelopeEditorStore((s) => s.fields);
+  const fields = useMemo(
+    () => allFields.filter((f) => f.pageNumber === pageIndex + 1),
+    [allFields, pageIndex],
   );
   const select = useEnvelopeEditorStore((s) => s.select);
   const { width, height } = useElementSize(pageRef);
