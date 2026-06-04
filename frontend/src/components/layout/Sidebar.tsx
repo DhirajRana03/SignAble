@@ -128,9 +128,11 @@ export function Sidebar({
           aria-label="Open account menu"
           className={cn(
             'w-full flex items-center gap-2.5 rounded-md px-2 py-2',
-            'border transition-colors duration-150',
+            'border bg-transparent transition-colors duration-150',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
+            'active:bg-transparent',
             profileOpen
-              ? 'border-accent/40 bg-transparent'
+              ? 'border-accent/40'
               : 'border-transparent hover:bg-surface-sunken/70',
           )}
         >
@@ -138,11 +140,9 @@ export function Sidebar({
             className={cn(
               'h-10 w-10 grid place-items-center rounded-full shrink-0',
               'text-[12px] font-semibold uppercase tracking-tight text-white',
-              'bg-accent shadow-paper',
-              'transition-all duration-150 ease-out',
-              profileOpen
-                ? 'scale-105 bg-accent-deep ring-2 ring-accent/40'
-                : 'group-hover:scale-105',
+              'shadow-paper',
+              'transition-transform duration-150 ease-out',
+              profileOpen ? 'bg-accent-deep scale-105' : 'bg-accent',
             )}
           >
             {user ? initials(user.name) : '?'}
