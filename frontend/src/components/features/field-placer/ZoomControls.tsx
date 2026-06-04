@@ -1,22 +1,25 @@
 'use client';
 
-import { Maximize2, Minus, Plus } from 'lucide-react';
+import { Grid3x3, Maximize2, Minus, Plus } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5];
 
 /**
- * Floating zoom pill. Fixed bottom-right of viewport. Steps through
- * preset zoom levels via plus/minus buttons; current percent displayed
- * inline; reset returns to 100%.
+ * Floating glass pill anchored bottom-right. Zoom presets, reset, and
+ * grid-snap toggle.
  */
 export function ZoomControls({
   zoom,
   onChange,
+  snap,
+  onToggleSnap,
 }: {
   zoom: number;
   onChange: (z: number) => void;
+  snap: boolean;
+  onToggleSnap: () => void;
 }) {
   const stepIndex = ZOOM_LEVELS.findIndex((z) => z >= zoom);
   const safeIndex = stepIndex === -1 ? ZOOM_LEVELS.length - 1 : stepIndex;
@@ -35,9 +38,18 @@ export function ZoomControls({
       className={cn(
         'fixed bottom-6 right-6 z-30',
         'flex items-center gap-0.5 p-1 rounded-pill',
-        'bg-surface-1 border border-border shadow-lg',
+        'bg-white/70 backdrop-blur-md border border-white/60 shadow-lg',
       )}
     >
+      <ZoomButton
+        onClick={onToggleSnap}
+        aria-label={snap ? 'Disable grid snap' : 'Enable grid snap'}
+        title={snap ? 'Grid snap on' : 'Grid snap off'}
+        active={snap}
+      >
+        <Grid3x3 className="h-3.5 w-3.5" />
+      </ZoomButton>
+      <div className="w-px h-5 bg-border mx-0.5" />
       <ZoomButton onClick={dec} aria-label="Zoom out" disabled={safeIndex === 0}>
         <Minus className="h-3.5 w-3.5" />
       </ZoomButton>
@@ -63,16 +75,19 @@ function ZoomButton({
   children,
   onClick,
   disabled,
+  active,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'h-7 w-7 grid place-items-center rounded-full text-ink-2',
-        'hover:bg-surface-sunken hover:text-ink transition-colors',
+        'h-7 w-7 grid place-items-center rounded-full transition-colors',
+        active
+          ? 'bg-accent text-white'
+          : 'text-ink-2 hover:bg-white/80 hover:text-ink',
         'disabled:opacity-30 disabled:cursor-not-allowed',
       )}
       {...props}

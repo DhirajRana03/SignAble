@@ -87,7 +87,7 @@ export default function PreparePage() {
                   ? 'Save current field layout as draft'
                   : 'No unsaved changes — save anyway'
               }
-              className="border border-accent/40 text-accent-deep bg-transparent hover:bg-accent-soft hover:border-accent/60 transition-colors"
+              className="bg-white/60 backdrop-blur-md border border-white/60 text-accent-deep hover:bg-white/80 hover:border-accent/40 transition-colors"
             >
               <Save className="h-3.5 w-3.5" /> Save as draft
             </Button>

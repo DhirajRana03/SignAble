@@ -1,6 +1,6 @@
 'use client';
 
-import { type RefObject, useMemo } from 'react';
+import { type RefObject, useMemo, useState } from 'react';
 
 import { useElementSize } from '@/hooks/useElementSize';
 import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
@@ -9,23 +9,28 @@ import type { Recipient } from '@/types/envelope.types';
 import { FieldChip } from './FieldChip';
 
 /**
- * Renders all editor fields for a single page as absolute-positioned chips.
- * Pure presentation — coordinate math lives in FieldChip + useFieldEditor.
+ * Renders editor fields for one page as absolute-positioned chips.
+ * Accepts drag-drop from palette; raises drop event with page-relative
+ * percent coords. Optional grid overlay when snap enabled.
  */
 export function FieldOverlay({
   pageIndex,
   pageRef,
   recipients,
-  onPagePointerDown,
+  snap,
+  onDrop,
 }: {
   pageIndex: number;
   pageRef: RefObject<HTMLDivElement>;
   recipients: Recipient[];
-  onPagePointerDown: (e: React.PointerEvent, pageRef: RefObject<HTMLDivElement>) => void;
+  snap: boolean;
+  onDrop: (
+    pageIndex: number,
+    pageRef: RefObject<HTMLDivElement>,
+    xPct: number,
+    yPct: number,
+  ) => void;
 }) {
-  // Subscribe to whole fields array (stable ref from Zustand); derive
-  // the page-scoped slice via useMemo. Returning a fresh array from the
-  // selector breaks Zustand's strict-equality bail-out and infinite-loops.
   const allFields = useEnvelopeEditorStore((s) => s.fields);
   const fields = useMemo(
     () => allFields.filter((f) => f.pageNumber === pageIndex + 1),
@@ -33,6 +38,7 @@ export function FieldOverlay({
   );
   const select = useEnvelopeEditorStore((s) => s.select);
   const { width, height } = useElementSize(pageRef);
+  const [dragOver, setDragOver] = useState(false);
 
   const recipientIndex = (id: string) =>
     recipients.findIndex((r) => r.id === id);
@@ -40,12 +46,49 @@ export function FieldOverlay({
   return (
     <div
       onPointerDown={(e) => {
-        // Deselect when clicking blank area
         if (e.target === e.currentTarget) select(null);
-        onPagePointerDown(e, pageRef);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        if (!dragOver) setDragOver(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.target === e.currentTarget) setDragOver(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const el = pageRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const xPct = (e.clientX - rect.left) / rect.width;
+        const yPct = (e.clientY - rect.top) / rect.height;
+        onDrop(pageIndex, pageRef, xPct, yPct);
       }}
       className="absolute inset-0"
     >
+      {/* Grid overlay */}
+      {snap ? (
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none opacity-30"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(99,102,241,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(99,102,241,0.15) 1px, transparent 1px)',
+            backgroundSize: '5% 5%',
+          }}
+        />
+      ) : null}
+
+      {/* Drop highlight */}
+      {dragOver ? (
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none border-2 border-dashed border-accent rounded-sm bg-accent/5"
+        />
+      ) : null}
+
       {fields.map((f) => (
         <FieldChip
           key={f.tempId}

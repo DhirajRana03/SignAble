@@ -33,14 +33,14 @@ export function ThumbnailStrip({
     >
       <div
         className={cn(
-          'rounded-lg bg-surface-1 border border-border shadow-sm overflow-hidden',
+          'rounded-xl bg-white/55 backdrop-blur-md border border-white/40 shadow-sm overflow-hidden',
           'flex flex-col',
         )}
       >
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="h-7 w-full grid place-items-center text-ink-3 hover:text-ink hover:bg-surface-sunken transition-colors border-b border-border"
+          className="h-7 w-full grid place-items-center text-ink-3 hover:text-ink hover:bg-white/60 transition-colors border-b border-white/40"
           aria-label={collapsed ? 'Expand thumbnails' : 'Collapse thumbnails'}
         >
           {collapsed ? (

@@ -2,17 +2,22 @@
 
 import {
   AtSign,
+  Briefcase,
   Calendar,
   CheckSquare,
   ChevronDown,
-  Edit3,
   Hash,
+  Home,
+  IdCard,
+  Image as ImageIcon,
   type LucideIcon,
   PenLine,
+  Phone,
   Plus,
   Save,
   Trash2,
   Type,
+  User,
   Users,
 } from 'lucide-react';
 
@@ -26,41 +31,138 @@ import {
 } from '@/store/envelopeEditorStore';
 import type { FieldType, Recipient } from '@/types/envelope.types';
 
-interface FieldDef {
+export interface FieldDef {
+  id: string;
   type: FieldType;
   label: string;
   icon: LucideIcon;
-  group: 'signing' | 'data';
-  hint?: string;
+  group: 'signing' | 'identity' | 'data';
+  defaultSize: { widthPct: number; heightPct: number };
 }
 
-const FIELDS: FieldDef[] = [
-  { type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing' },
-  { type: 'INITIALS', label: 'Initials', icon: Edit3, group: 'signing' },
-  { type: 'DATE', label: 'Date signed', icon: Calendar, group: 'signing' },
-  { type: 'TEXT', label: 'Text', icon: Type, group: 'data' },
-  { type: 'TEXT', label: 'Name', icon: Users, group: 'data', hint: 'name' },
-  { type: 'TEXT', label: 'Email', icon: AtSign, group: 'data', hint: 'email' },
-  { type: 'TEXT', label: 'Number', icon: Hash, group: 'data', hint: 'number' },
-  { type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data' },
-  { type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare, group: 'data' },
+export const FIELDS: FieldDef[] = [
+  // Signing block
+  {
+    id: 'signature',
+    type: 'SIGNATURE',
+    label: 'Signature',
+    icon: PenLine,
+    group: 'signing',
+    defaultSize: { widthPct: 0.22, heightPct: 0.07 },
+  },
+  {
+    id: 'initials',
+    type: 'INITIALS',
+    label: 'Initials',
+    icon: IdCard,
+    group: 'signing',
+    defaultSize: { widthPct: 0.1, heightPct: 0.05 },
+  },
+  {
+    id: 'date',
+    type: 'DATE',
+    label: 'Date',
+    icon: Calendar,
+    group: 'signing',
+    defaultSize: { widthPct: 0.18, heightPct: 0.04 },
+  },
+  // Identity block
+  {
+    id: 'name',
+    type: 'TEXT',
+    label: 'Name',
+    icon: User,
+    group: 'identity',
+    defaultSize: { widthPct: 0.24, heightPct: 0.04 },
+  },
+  {
+    id: 'email',
+    type: 'TEXT',
+    label: 'Email',
+    icon: AtSign,
+    group: 'identity',
+    defaultSize: { widthPct: 0.28, heightPct: 0.04 },
+  },
+  {
+    id: 'title',
+    type: 'TEXT',
+    label: 'Title',
+    icon: Briefcase,
+    group: 'identity',
+    defaultSize: { widthPct: 0.22, heightPct: 0.04 },
+  },
+  {
+    id: 'company',
+    type: 'TEXT',
+    label: 'Company',
+    icon: ImageIcon,
+    group: 'identity',
+    defaultSize: { widthPct: 0.24, heightPct: 0.04 },
+  },
+  {
+    id: 'phone',
+    type: 'TEXT',
+    label: 'Phone',
+    icon: Phone,
+    group: 'identity',
+    defaultSize: { widthPct: 0.2, heightPct: 0.04 },
+  },
+  {
+    id: 'address',
+    type: 'TEXT',
+    label: 'Address',
+    icon: Home,
+    group: 'identity',
+    defaultSize: { widthPct: 0.3, heightPct: 0.05 },
+  },
+  // Data block
+  {
+    id: 'text',
+    type: 'TEXT',
+    label: 'Text',
+    icon: Type,
+    group: 'data',
+    defaultSize: { widthPct: 0.22, heightPct: 0.04 },
+  },
+  {
+    id: 'number',
+    type: 'TEXT',
+    label: 'Number',
+    icon: Hash,
+    group: 'data',
+    defaultSize: { widthPct: 0.14, heightPct: 0.04 },
+  },
+  {
+    id: 'dropdown',
+    type: 'DROPDOWN',
+    label: 'Dropdown',
+    icon: ChevronDown,
+    group: 'data',
+    defaultSize: { widthPct: 0.22, heightPct: 0.04 },
+  },
+  {
+    id: 'checkbox',
+    type: 'CHECKBOX',
+    label: 'Checkbox',
+    icon: CheckSquare,
+    group: 'data',
+    defaultSize: { widthPct: 0.03, heightPct: 0.025 },
+  },
 ];
 
 /**
- * Field toolbar. Linear/Notion-inspired card stack: recipient picker,
- * grouped field palette (Standard / Data), inline properties panel,
- * pinned save bar.
+ * Glassmorphic field toolbar. Recipient picker with validation badges,
+ * draggable field palette grouped by purpose, inline properties
+ * inspector, save bar.
  */
 export function FieldToolbar({
   envelopeId,
   recipients,
-  pendingFieldType,
-  setPendingFieldType,
+  onDragStart,
 }: {
   envelopeId: string;
   recipients: Recipient[];
-  pendingFieldType: FieldType | null;
-  setPendingFieldType: (t: FieldType | null) => void;
+  onDragStart: (def: FieldDef) => void;
 }) {
   const activeRecipientId = useEnvelopeEditorStore((s) => s.activeRecipientId);
   const setActiveRecipient = useEnvelopeEditorStore(
@@ -75,8 +177,6 @@ export function FieldToolbar({
 
   const selected = fields.find((f) => f.tempId === selectedTempId) ?? null;
   const save = useBulkSaveFields(envelopeId);
-  const signingFields = FIELDS.filter((f) => f.group === 'signing');
-  const dataFields = FIELDS.filter((f) => f.group === 'data');
 
   const onSave = () => {
     save.mutate(
@@ -95,8 +195,14 @@ export function FieldToolbar({
     );
   };
 
+  const activeRecipientIndex = Math.max(
+    0,
+    recipients.findIndex((r) => r.id === activeRecipientId),
+  );
+  const activeColor = recipientColor(activeRecipientIndex);
+
   return (
-    <aside className="sticky top-20 self-start w-72 shrink-0 flex flex-col gap-3 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+    <aside className="sticky top-20 self-start w-72 shrink-0 flex flex-col gap-3 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 pb-2">
       <RecipientCard
         recipients={recipients}
         activeRecipientId={activeRecipientId}
@@ -105,11 +211,9 @@ export function FieldToolbar({
       />
 
       <PaletteCard
-        signingFields={signingFields}
-        dataFields={dataFields}
         activeRecipientId={activeRecipientId}
-        pendingFieldType={pendingFieldType}
-        setPendingFieldType={setPendingFieldType}
+        activeColor={activeColor}
+        onDragStart={onDragStart}
       />
 
       {selected ? (
@@ -120,7 +224,7 @@ export function FieldToolbar({
         />
       ) : null}
 
-      <section className="rounded-xl bg-white border border-border/80 shadow-sm p-3">
+      <section className="rounded-xl bg-white/60 backdrop-blur-md border border-white/40 shadow-sm p-3">
         <div className="flex items-center justify-between text-[11px] mb-2">
           <span className="text-ink-3 uppercase tracking-[0.06em] font-semibold">
             Fields placed
@@ -131,6 +235,7 @@ export function FieldToolbar({
         </div>
         <Button
           variant="accent"
+          size="sm"
           className="w-full"
           loading={save.isPending}
           disabled={!dirty}
@@ -158,8 +263,8 @@ function RecipientCard({
   fields: EditorField[];
 }) {
   return (
-    <section className="rounded-xl bg-white border border-border/80 shadow-sm overflow-hidden">
-      <header className="flex items-center gap-2 px-3 py-2.5 border-b border-border/60 bg-surface-sunken/30">
+    <section className="rounded-xl bg-white/55 backdrop-blur-md border border-white/40 shadow-sm overflow-hidden">
+      <header className="flex items-center gap-2 px-3 py-2 border-b border-white/40 bg-white/30">
         <Users className="h-3.5 w-3.5 text-ink-3" strokeWidth={2} />
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-2">
           Recipients
@@ -172,50 +277,66 @@ function RecipientCard({
         {recipients.map((r, i) => {
           const color = recipientColor(i);
           const active = r.id === activeRecipientId;
-          const count = fields.filter((f) => f.recipientId === r.id).length;
+          const userFields = fields.filter((f) => f.recipientId === r.id);
+          const hasSigning = userFields.some(
+            (f) => f.fieldType === 'SIGNATURE' || f.fieldType === 'INITIALS',
+          );
+          const incomplete = userFields.length === 0 || !hasSigning;
           return (
             <button
               key={r.id}
               onClick={() => setActiveRecipient(r.id)}
               className={cn(
-                'group relative w-full flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-left',
+                'group relative w-full flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-1.5 text-left',
                 'transition-all duration-150',
                 active
-                  ? 'bg-accent-soft'
-                  : 'hover:bg-surface-sunken/60',
+                  ? 'bg-accent-soft/70'
+                  : 'hover:bg-white/60',
               )}
             >
-              {/* Active accent rail */}
               <span
                 aria-hidden
                 className={cn(
-                  'absolute left-0 top-2 bottom-2 w-[3px] rounded-r-pill bg-accent',
+                  'absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-pill bg-accent',
                   'origin-center transition-transform duration-200',
                   active ? 'scale-y-100' : 'scale-y-0',
                 )}
               />
-              <span
-                className={cn(
-                  'h-8 w-8 grid place-items-center rounded-full shrink-0 text-[10.5px] font-semibold uppercase tracking-tight',
-                  color.bg,
-                  color.fg,
+              <span className="relative shrink-0">
+                <span
+                  className={cn(
+                    'h-7 w-7 grid place-items-center rounded-full text-[10px] font-semibold uppercase tracking-tight',
+                    color.bg,
+                    color.fg,
+                  )}
+                >
+                  {initials(r.name)}
+                </span>
+                {incomplete ? (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-white"
+                    title="Recipient needs at least one signature field"
+                  />
+                ) : (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+                    title="All required fields placed"
+                  />
                 )}
-              >
-                {initials(r.name)}
               </span>
               <span className="min-w-0 flex-1">
                 <span
                   className={cn(
-                    'block text-[13px] font-medium truncate leading-tight',
+                    'block text-[12.5px] font-medium truncate leading-tight',
                     active ? 'text-ink' : 'text-ink-2',
                   )}
                 >
                   {r.name}
                 </span>
-                <span className="block text-[10.5px] text-ink-4 truncate mt-0.5">
-                  {count === 0
+                <span className="block text-[10px] text-ink-4 truncate mt-0.5">
+                  {userFields.length === 0
                     ? 'No fields'
-                    : `${count} field${count === 1 ? '' : 's'}`}
+                    : `${userFields.length} field${userFields.length === 1 ? '' : 's'}${hasSigning ? '' : ' · needs signature'}`}
                 </span>
               </span>
             </button>
@@ -229,109 +350,123 @@ function RecipientCard({
 /* ─────────────── Palette card ─────────────── */
 
 function PaletteCard({
-  signingFields,
-  dataFields,
   activeRecipientId,
-  pendingFieldType,
-  setPendingFieldType,
+  activeColor,
+  onDragStart,
 }: {
-  signingFields: FieldDef[];
-  dataFields: FieldDef[];
   activeRecipientId: string | null;
-  pendingFieldType: FieldType | null;
-  setPendingFieldType: (t: FieldType | null) => void;
+  activeColor: ReturnType<typeof recipientColor>;
+  onDragStart: (def: FieldDef) => void;
 }) {
-  return (
-    <section className="rounded-xl bg-white border border-border/80 shadow-sm overflow-hidden">
-      <header className="px-3 py-2.5 border-b border-border/60 bg-surface-sunken/30">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-2">
-          Standard fields
-        </p>
-      </header>
-      <div className="p-2.5">
-        <FieldPalette
-          fields={signingFields}
-          activeRecipientId={activeRecipientId}
-          pendingFieldType={pendingFieldType}
-          onPick={setPendingFieldType}
-        />
-      </div>
+  const groups: { id: string; title: string; items: FieldDef[] }[] = [
+    {
+      id: 'signing',
+      title: 'Signing',
+      items: FIELDS.filter((f) => f.group === 'signing'),
+    },
+    {
+      id: 'identity',
+      title: 'Identity',
+      items: FIELDS.filter((f) => f.group === 'identity'),
+    },
+    {
+      id: 'data',
+      title: 'Data',
+      items: FIELDS.filter((f) => f.group === 'data'),
+    },
+  ];
 
-      <header className="px-3 py-2.5 border-y border-border/60 bg-surface-sunken/30">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-2">
-          Data fields
-        </p>
-      </header>
-      <div className="p-2.5 pb-3">
-        <FieldPalette
-          fields={dataFields}
-          activeRecipientId={activeRecipientId}
-          pendingFieldType={pendingFieldType}
-          onPick={setPendingFieldType}
-        />
-        <p className="mt-2.5 text-[10.5px] text-ink-4 leading-snug">
-          {pendingFieldType
-            ? 'Click anywhere on document to drop field.'
-            : activeRecipientId
-              ? 'Tap a field type, then click document.'
-              : 'Select recipient above to start.'}
-        </p>
-      </div>
+  return (
+    <section className="rounded-xl bg-white/55 backdrop-blur-md border border-white/40 shadow-sm overflow-hidden">
+      {groups.map((g, idx) => (
+        <div key={g.id}>
+          <header
+            className={cn(
+              'px-3 py-2 bg-white/30',
+              idx > 0 ? 'border-t border-white/40' : 'border-b border-white/40',
+            )}
+          >
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ink-2">
+              {g.title}
+            </p>
+          </header>
+          <div className="p-2 grid grid-cols-3 gap-1.5">
+            {g.items.map((f) => (
+              <FieldTile
+                key={f.id}
+                def={f}
+                disabled={!activeRecipientId}
+                colorClass={activeColor.bg}
+                onDragStart={onDragStart}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+      <p className="px-3 py-2 text-[10.5px] text-ink-4 leading-snug bg-white/30 border-t border-white/40">
+        {activeRecipientId
+          ? 'Drag tile onto document to place field.'
+          : 'Select recipient above to start.'}
+      </p>
     </section>
   );
 }
 
-/* ─────────────── Palette grid ─────────────── */
+/* ─────────────── Field tile (draggable) ─────────────── */
 
-function FieldPalette({
-  fields,
-  activeRecipientId,
-  pendingFieldType,
-  onPick,
+function FieldTile({
+  def,
+  disabled,
+  colorClass,
+  onDragStart,
 }: {
-  fields: FieldDef[];
-  activeRecipientId: string | null;
-  pendingFieldType: FieldType | null;
-  onPick: (t: FieldType | null) => void;
+  def: FieldDef;
+  disabled: boolean;
+  colorClass: string;
+  onDragStart: (def: FieldDef) => void;
 }) {
+  const Icon = def.icon;
   return (
-    <div className="grid grid-cols-3 gap-1.5">
-      {fields.map((f) => {
-        const Icon = f.icon;
-        const isSelected = pendingFieldType === f.type;
-        const disabled = !activeRecipientId;
-        return (
-          <button
-            key={`${f.type}-${f.label}`}
-            disabled={disabled}
-            onClick={() => onPick(isSelected ? null : f.type)}
-            title={f.label}
-            className={cn(
-              'group/tile relative flex flex-col items-center justify-center gap-1 rounded-lg py-2.5 px-1.5',
-              'border transition-all duration-150',
-              'disabled:opacity-40 disabled:cursor-not-allowed',
-              isSelected
-                ? 'border-accent bg-gradient-to-b from-accent-soft to-accent-soft/30 text-accent-deep shadow-inner'
-                : 'border-border/70 text-ink-2 hover:border-accent/40 hover:bg-accent-soft/30 hover:text-accent-deep hover:-translate-y-0.5',
-            )}
-          >
-            <span
-              className={cn(
-                'h-7 w-7 grid place-items-center rounded-md transition-colors',
-                isSelected
-                  ? 'bg-accent text-white'
-                  : 'bg-surface-sunken text-ink-3 group-hover/tile:bg-accent-soft group-hover/tile:text-accent-deep',
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-            </span>
-            <span className="text-[10.5px] font-medium leading-tight truncate w-full text-center">
-              {f.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      disabled={disabled}
+      draggable={!disabled}
+      onDragStart={(e) => {
+        if (disabled) return;
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('text/plain', def.id);
+        // Hide native ghost; FieldPlacer renders custom preview.
+        const img = new Image();
+        img.src =
+          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        e.dataTransfer.setDragImage(img, 0, 0);
+        onDragStart(def);
+      }}
+      title={def.label}
+      className={cn(
+        'group/tile relative flex flex-col items-center justify-center gap-1 rounded-lg py-2 px-1',
+        'border border-white/50 bg-white/40 backdrop-blur-sm',
+        'transition-all duration-150',
+        'disabled:opacity-40 disabled:cursor-not-allowed',
+        !disabled &&
+          'hover:border-accent/40 hover:bg-white/70 hover:-translate-y-0.5 hover:shadow-sm cursor-grab active:cursor-grabbing',
+      )}
+    >
+      {/* Recipient color swatch */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute top-1 right-1 h-1.5 w-1.5 rounded-full',
+          colorClass,
+        )}
+      />
+      <span className="h-7 w-7 grid place-items-center rounded-md bg-white/70 text-ink-2 border border-white/50">
+        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+      </span>
+      <span className="text-[10px] font-medium leading-tight truncate w-full text-center text-ink-2">
+        {def.label}
+      </span>
+    </button>
   );
 }
 
@@ -347,8 +482,8 @@ function FieldPropertiesPanel({
   onRemove: () => void;
 }) {
   return (
-    <section className="rounded-xl bg-white border border-accent/40 shadow-sm overflow-hidden">
-      <header className="flex items-center justify-between px-3 py-2.5 border-b border-border/60 bg-accent-soft/40">
+    <section className="rounded-xl bg-white/70 backdrop-blur-md border border-accent/30 shadow-sm overflow-hidden">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-accent/20 bg-accent-soft/50">
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-accent-deep">
           Field properties
         </p>
