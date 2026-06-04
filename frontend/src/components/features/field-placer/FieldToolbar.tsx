@@ -151,32 +151,6 @@ export const FIELDS: FieldDef[] = [
 ];
 
 /**
- * Tile background by group. Soft, low-saturation tints so palette
- * reads as colored cards without overpowering the document area.
- */
-function groupBgFor(group: FieldDef['group']): string {
-  switch (group) {
-    case 'signing':
-      return 'bg-indigo-50/80';
-    case 'identity':
-      return 'bg-amber-50/80';
-    case 'data':
-      return 'bg-emerald-50/80';
-  }
-}
-
-function groupIconBgFor(group: FieldDef['group']): string {
-  switch (group) {
-    case 'signing':
-      return 'bg-white/85 text-indigo-700';
-    case 'identity':
-      return 'bg-white/85 text-amber-700';
-    case 'data':
-      return 'bg-white/85 text-emerald-700';
-  }
-}
-
-/**
  * Glassmorphic field toolbar. Recipient picker with validation badges,
  * draggable field palette grouped by purpose, inline properties
  * inspector, save bar.
@@ -422,7 +396,8 @@ function PaletteCard({
                 key={f.id}
                 def={f}
                 disabled={!activeRecipientId}
-                colorClass={activeColor.bg}
+                bgClass={activeColor.bg}
+                fgClass={activeColor.fg}
                 onDragStart={onDragStart}
               />
             ))}
@@ -443,12 +418,14 @@ function PaletteCard({
 function FieldTile({
   def,
   disabled,
-  colorClass,
+  bgClass,
+  fgClass,
   onDragStart,
 }: {
   def: FieldDef;
   disabled: boolean;
-  colorClass: string;
+  bgClass: string;
+  fgClass: string;
   onDragStart: (def: FieldDef) => void;
 }) {
   const Icon = def.icon;
@@ -461,7 +438,6 @@ function FieldTile({
         if (disabled) return;
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', def.id);
-        // Hide native ghost; FieldPlacer renders custom preview.
         const img = new Image();
         img.src =
           'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -473,28 +449,26 @@ function FieldTile({
         'group/tile relative flex flex-col items-center justify-center gap-1.5 rounded-lg py-2.5 px-1.5',
         'border border-white/60 backdrop-blur-sm',
         'transition-all duration-150',
-        groupBgFor(def.group),
+        bgClass,
         'disabled:opacity-40 disabled:cursor-not-allowed',
         !disabled &&
-          'hover:border-accent/50 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing',
+          'hover:border-current/50 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing',
       )}
     >
       <span
-        aria-hidden
         className={cn(
-          'absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2 ring-white/70',
-          colorClass,
-        )}
-      />
-      <span
-        className={cn(
-          'h-9 w-9 grid place-items-center rounded-lg border border-white/70 shadow-sm',
-          groupIconBgFor(def.group),
+          'h-9 w-9 grid place-items-center rounded-lg bg-white/85 border border-white/70 shadow-sm',
+          fgClass,
         )}
       >
-        <Icon className="h-4.5 w-4.5" strokeWidth={2.2} style={{ width: 18, height: 18 }} />
+        <Icon strokeWidth={2.2} style={{ width: 18, height: 18 }} />
       </span>
-      <span className="text-[11px] font-medium leading-tight truncate w-full text-center text-ink-2">
+      <span
+        className={cn(
+          'text-[11px] font-medium leading-tight truncate w-full text-center',
+          fgClass,
+        )}
+      >
         {def.label}
       </span>
     </button>
