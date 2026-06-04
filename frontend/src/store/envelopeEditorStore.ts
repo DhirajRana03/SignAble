@@ -25,6 +25,7 @@ export interface EditorField {
   heightPct: number;
   fieldType: FieldType;
   required: boolean;
+  readOnly?: boolean;
   options: FieldOptions;
 }
 

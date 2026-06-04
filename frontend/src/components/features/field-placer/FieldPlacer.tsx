@@ -9,6 +9,7 @@ import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
 import { cn } from '@/lib/utils';
 import type { Envelope, FieldOptions } from '@/types/envelope.types';
 
+import { FieldInspector } from './FieldInspector';
 import { FieldOverlay } from './FieldOverlay';
 import { FieldToolbar, type FieldDef } from './FieldToolbar';
 import { ThumbnailStrip } from './ThumbnailStrip';
@@ -131,12 +132,6 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
           }}
         />
 
-        <ThumbnailStrip
-          pageUrls={pageUrls}
-          activePage={activePage}
-          onJump={jumpToPage}
-        />
-
         <div className="flex-1 min-w-0 relative">
           <DocumentViewer
             pageUrls={pageUrls}
@@ -158,6 +153,14 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
 
           {fieldCount === 0 ? <EmptyHint /> : null}
         </div>
+
+        <FieldInspector />
+
+        <ThumbnailStrip
+          pageUrls={pageUrls}
+          activePage={activePage}
+          onJump={jumpToPage}
+        />
       </div>
 
       <ZoomControls

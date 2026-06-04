@@ -15,12 +15,10 @@ import {
   type LucideIcon,
   PenLine,
   Phone,
-  Plus,
   Save,
   Search,
   Stamp,
   StickyNote,
-  Trash2,
   Type,
   User,
   Users,
@@ -29,7 +27,6 @@ import {
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
-import { Input, Label } from '@/components/ui/Input';
 import { useBulkSaveFields } from '@/hooks/useEnvelopes';
 import { cn, initials, recipientColor } from '@/lib/utils';
 import {
@@ -90,14 +87,10 @@ export function FieldToolbar({
     (s) => s.setActiveRecipient,
   );
   const fields = useEnvelopeEditorStore((s) => s.fields);
-  const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
-  const updateField = useEnvelopeEditorStore((s) => s.updateField);
-  const removeField = useEnvelopeEditorStore((s) => s.removeField);
   const dirty = useEnvelopeEditorStore((s) => s.dirty);
   const markClean = useEnvelopeEditorStore((s) => s.markClean);
   const [query, setQuery] = useState('');
 
-  const selected = fields.find((f) => f.tempId === selectedTempId) ?? null;
   const save = useBulkSaveFields(envelopeId);
 
   const onSave = () => {
@@ -180,14 +173,6 @@ export function FieldToolbar({
           ),
         )}
       </section>
-
-      {selected ? (
-        <FieldPropertiesPanel
-          field={selected}
-          onUpdate={(patch) => updateField(selected.tempId, patch)}
-          onRemove={() => removeField(selected.tempId)}
-        />
-      ) : null}
 
       <section className="rounded-xl bg-white/70 backdrop-blur-md border border-white/60 shadow-sm p-3">
         <div className="flex items-center justify-between text-[11px] mb-2">
@@ -372,127 +357,4 @@ function FieldRow({
   );
 }
 
-/* ─────────────── Properties panel ─────────────── */
 
-function FieldPropertiesPanel({
-  field,
-  onUpdate,
-  onRemove,
-}: {
-  field: EditorField;
-  onUpdate: (patch: Partial<EditorField>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <section className="rounded-xl bg-white/80 backdrop-blur-md border border-accent/30 shadow-sm overflow-hidden">
-      <header className="flex items-center justify-between px-3 py-2 border-b border-accent/20 bg-accent-soft/50">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-accent-deep">
-          Field properties
-        </p>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="h-6 w-6 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 transition-colors"
-          aria-label="Delete field"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
-      </header>
-      <div className="p-3 space-y-3">
-        <div className="flex items-center justify-between text-[12px]">
-          <span className="text-ink-3">Type</span>
-          <span className="font-mono text-ink-2">{field.fieldType}</span>
-        </div>
-
-        <label className="flex items-center justify-between cursor-pointer text-[12px] text-ink-2">
-          <span>Required</span>
-          <input
-            type="checkbox"
-            checked={field.required}
-            onChange={(e) => onUpdate({ required: e.target.checked })}
-            className="h-3.5 w-3.5 accent-accent"
-          />
-        </label>
-
-        {field.fieldType === 'DROPDOWN' ? (
-          <DropdownChoicesEditor
-            choices={
-              (field.options && 'choices' in field.options
-                ? field.options.choices
-                : undefined) ?? []
-            }
-            onChange={(choices) => onUpdate({ options: { choices } })}
-          />
-        ) : null}
-
-        {field.fieldType === 'CHECKBOX' ? (
-          <div>
-            <Label htmlFor="cb-label">Checkbox label</Label>
-            <Input
-              id="cb-label"
-              placeholder="Agree to terms"
-              value={
-                (field.options && 'label' in field.options
-                  ? field.options.label
-                  : '') ?? ''
-              }
-              onChange={(e) => onUpdate({ options: { label: e.target.value } })}
-            />
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────── Dropdown choices editor ─────────────── */
-
-function DropdownChoicesEditor({
-  choices,
-  onChange,
-}: {
-  choices: string[];
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <div>
-      <Label>Choices</Label>
-      <div className="space-y-1.5 mt-1">
-        {choices.map((c, i) => (
-          <div key={i} className="flex gap-1.5">
-            <Input
-              value={c}
-              onChange={(e) => {
-                const next = [...choices];
-                next[i] = e.target.value;
-                onChange(next);
-              }}
-              className="text-[12.5px]"
-            />
-            <button
-              type="button"
-              onClick={() => onChange(choices.filter((_, idx) => idx !== i))}
-              disabled={choices.length <= 1}
-              className="h-9 w-9 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              aria-label="Remove choice"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={() => onChange([...choices, `Option ${choices.length + 1}`])}
-        className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-accent hover:text-accent-deep transition-colors"
-      >
-        <Plus className="h-3 w-3" /> Add choice
-      </button>
-      {choices.length === 0 ? (
-        <p className="mt-1.5 text-[11px] text-danger">
-          Dropdown requires at least one choice.
-        </p>
-      ) : null}
-    </div>
-  );
-}
