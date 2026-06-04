@@ -136,15 +136,36 @@ export function FieldChip({
           : 'border border-dashed border-current/60 hover:shadow-md z-10',
       )}
     >
-      <div className="flex items-center gap-1 pointer-events-none px-1.5 min-w-0">
-        <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} />
-        <span className="text-[10px] font-semibold uppercase tracking-wider truncate">
-          {field.label ?? FIELD_LABEL[field.fieldType]}
-        </span>
-        {field.required ? (
-          <span className="text-current opacity-80">*</span>
-        ) : null}
-      </div>
+      {(() => {
+        // TEXT fields: display the user-entered Add Text value when present.
+        // Other types + empty TEXT: render the icon + label badge.
+        const textValue =
+          field.fieldType === 'TEXT' &&
+          field.options &&
+          'placeholder' in field.options
+            ? ((field.options as { placeholder?: string }).placeholder ?? '')
+            : '';
+        if (textValue) {
+          return (
+            <div className="pointer-events-none w-full h-full px-1.5 py-1 flex items-center overflow-hidden">
+              <span className="text-[11px] font-normal normal-case tracking-normal text-ink truncate w-full">
+                {textValue}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <div className="flex items-center gap-1 pointer-events-none px-1.5 min-w-0">
+            <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+            <span className="text-[10px] font-semibold uppercase tracking-wider truncate">
+              {field.label ?? FIELD_LABEL[field.fieldType]}
+            </span>
+            {field.required ? (
+              <span className="text-current opacity-80">*</span>
+            ) : null}
+          </div>
+        );
+      })()}
 
       {selected ? (
         <>
