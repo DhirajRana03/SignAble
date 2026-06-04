@@ -1,18 +1,18 @@
 'use client';
 
-import { ArrowRight, FileText, Trash2, Users } from 'lucide-react';
+import { FileText, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useDeleteEnvelope } from '@/hooks/useEnvelopes';
-import { cn, formatRelative, recipientColor } from '@/lib/utils';
+import { cn, formatDate, formatRelative } from '@/lib/utils';
 import type { Envelope } from '@/types/envelope.types';
 
 /**
- * Draft envelope card. Clicking opens prepare workspace where user
- * places fields and sends. Trash icon deletes draft inline with
- * confirm gate.
+ * Draft envelope card. Clicking opens the edit composer where the
+ * user can finalize documents, recipients, and metadata before sending.
+ * Missing values render as em-dash.
  */
 export function DraftCard({
   envelope,
@@ -22,130 +22,110 @@ export function DraftCard({
   index: number;
 }) {
   const recipients = envelope.recipients ?? [];
+  const fields = envelope.fields ?? [];
+  const fieldCount = fields.length;
+  const signedCount = fields.filter((f) => !!f.value).length;
+  const progressPct =
+    fieldCount > 0 ? Math.round((signedCount / fieldCount) * 100) : 0;
+  const editHref = `/envelopes/${envelope.id}/edit`;
   const del = useDeleteEnvelope();
   const [confirming, setConfirming] = useState(false);
 
+  const dash = '—';
+  const recipientLabel =
+    recipients.length > 0
+      ? recipients.map((r) => r.name).join(', ')
+      : dash;
+  const fieldsLabel = fieldCount > 0 ? `${fieldCount} signature fields` : dash;
+  const progressLabel = fieldCount > 0 ? `${progressPct}% complete` : dash;
+  const pagesLabel = dash; // page count not yet exposed on Envelope DTO
+
   return (
-    <Link
-      href={`/envelopes/${envelope.id}/edit`}
-      className="group relative block animate-fade-up"
+    <article
+      className={cn(
+        'glass p-5 flex flex-col gap-3 animate-fade-up',
+        'transition-all duration-200',
+        'hover:-translate-y-0.5 hover:shadow-lifted hover:border-accent/40',
+      )}
       style={{ animationDelay: `${index * 40}ms` }}
     >
-      <article
-        className={cn(
-          'glass p-5 h-full flex flex-col gap-4',
-          'transition-all duration-200',
-          'hover:-translate-y-0.5 hover:shadow-lifted hover:border-accent/40',
-        )}
-      >
-        <header className="flex items-start gap-3">
-          <span className="h-10 w-10 grid place-items-center rounded-md bg-accent-soft text-accent-deep shrink-0">
-            <FileText className="h-4 w-4" strokeWidth={2} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-ink truncate leading-tight">
-              {envelope.title || 'Untitled draft'}
-            </h3>
-            <p className="text-[11px] text-ink-4 mt-1">
-              Updated {formatRelative(envelope.createdAt)}
-            </p>
-          </div>
-        </header>
-
-        <div className="flex items-center gap-2 text-[12px] text-ink-3">
-          <Users className="h-3.5 w-3.5" />
-          {recipients.length > 0 ? (
-            <>
-              <span>
-                <span className="text-ink font-medium">
-                  {recipients.length}
-                </span>{' '}
-                signer{recipients.length === 1 ? '' : 's'}
-              </span>
-              <div className="flex -space-x-1.5 ml-1">
-                {recipients.slice(0, 4).map((r, i) => {
-                  const color = recipientColor(i);
-                  return (
-                    <span
-                      key={r.id}
-                      className={cn(
-                        'inline-flex h-5 w-5 items-center justify-center rounded-pill text-[9px] font-semibold uppercase ring-2 ring-surface-0',
-                        color.bg,
-                        color.fg,
-                      )}
-                      title={r.name}
-                    >
-                      {r.name[0]}
-                    </span>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <span className="text-ink-4">No signers yet</span>
-          )}
-        </div>
-
-        <footer className="mt-auto flex items-center justify-between pt-2">
-          <span className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-accent-deep bg-accent-soft px-2 py-0.5 rounded-pill">
+      {/* Title row */}
+      <header className="flex items-start gap-3">
+        <span className="h-9 w-9 grid place-items-center rounded-md bg-accent-soft text-accent-deep shrink-0">
+          <FileText className="h-4 w-4" strokeWidth={2} />
+        </span>
+        <div className="min-w-0 flex-1 flex items-start justify-between gap-2">
+          <h3 className="text-[14.5px] font-semibold text-ink truncate leading-tight">
+            {envelope.title || 'Untitled draft'}
+          </h3>
+          <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-accent-deep bg-accent-soft px-2 py-0.5 rounded-pill shrink-0">
             Draft
           </span>
-          <span className="inline-flex items-center gap-1 text-[12px] font-medium text-accent-deep group-hover:gap-2 transition-all">
-            Continue
-            <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </span>
-        </footer>
-      </article>
+        </div>
+      </header>
 
-      {/* Delete affordance */}
-      <div className="absolute top-3 right-3 z-10">
+      {/* Recipients */}
+      <p className="text-[12px] text-ink-3 truncate">
+        <span className="text-ink-4">Signers · </span>
+        <span className={recipients.length > 0 ? 'text-ink-2' : 'text-ink-4'}>
+          {recipientLabel}
+        </span>
+      </p>
+
+      {/* Dates */}
+      <p className="text-[11.5px] text-ink-4">
+        Created {formatDate(envelope.createdAt)}
+        <span className="px-1.5">·</span>
+        Modified {formatRelative(envelope.createdAt)}
+      </p>
+
+      {/* Stats */}
+      <p className="text-[11.5px] text-ink-3 flex flex-wrap gap-x-3 gap-y-1">
+        <span>{fieldsLabel}</span>
+        <span className="text-ink-5">·</span>
+        <span>{progressLabel}</span>
+        <span className="text-ink-5">·</span>
+        <span>{pagesLabel}</span>
+      </p>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 pt-2 mt-auto">
+        <Link href={editHref} className="flex-1">
+          <Button variant="accent" size="sm" className="w-full">
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
+        </Link>
         {!confirming ? (
-          <button
+          <Button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setConfirming(true);
-            }}
+            size="sm"
+            variant="ghost"
+            onClick={() => setConfirming(true)}
             aria-label="Delete draft"
-            title="Delete draft"
-            className="h-7 w-7 grid place-items-center rounded-md text-ink-4 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-danger hover:bg-danger/10 transition-all"
+            className="text-ink-3 hover:text-danger hover:bg-danger/10"
           >
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-          </button>
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
         ) : (
-          <div
-            className="flex items-center gap-1 bg-paper border border-border-strong rounded-md shadow-sheet px-1.5 py-1"
-            onClick={(e) => e.preventDefault()}
-          >
-            <span className="text-[11px] text-ink-2 px-1">Delete?</span>
+          <div className="flex items-center gap-1">
             <Button
               size="sm"
               variant="danger"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                del.mutate(envelope.id);
-              }}
+              onClick={() => del.mutate(envelope.id)}
               loading={del.isPending}
-              className="h-6 px-2 text-[11px]"
             >
-              Yes
+              Confirm
             </Button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setConfirming(false);
-              }}
-              className="text-[11px] text-ink-3 hover:text-ink px-1.5 h-6"
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirming(false)}
             >
-              No
-            </button>
+              Cancel
+            </Button>
           </div>
         )}
       </div>
-    </Link>
+    </article>
   );
 }
