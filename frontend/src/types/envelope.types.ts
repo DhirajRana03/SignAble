@@ -100,3 +100,13 @@ export interface AuditEvent {
   ipAddress: string | null;
   createdAt: string;
 }
+
+export interface ActivityItem {
+  id: string;
+  envelopeId: string;
+  envelopeTitle: string;
+  eventType: AuditEventType;
+  actorEmail: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}

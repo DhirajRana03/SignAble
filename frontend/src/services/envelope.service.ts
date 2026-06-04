@@ -1,4 +1,5 @@
 import type {
+  ActivityItem,
   AuditEvent,
   AuditEventType,
   Envelope,
@@ -76,6 +77,13 @@ export const envelopeService = {
   },
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/envelopes/${id}`);
+  },
+  async recentActivity(limit = 10): Promise<ActivityItem[]> {
+    const { data } = await apiClient.get<ActivityItem[]>(
+      '/envelopes/activity/recent',
+      { params: { limit } },
+    );
+    return data;
   },
   async void(id: string, reason: string): Promise<Envelope> {
     const { data } = await apiClient.post<Envelope>(`/envelopes/${id}/void`, {

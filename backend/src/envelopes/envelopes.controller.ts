@@ -131,6 +131,15 @@ export class EnvelopesController {
     return this.envelopesService.detachDocument(user.id, id, documentId);
   }
 
+  @Get('activity/recent')
+  recentActivity(
+    @CurrentUser() user: User,
+    @Query('limit', new DefaultValuePipe(10), new ParseIntPipe())
+    limit?: number,
+  ) {
+    return this.envelopesService.recentActivity(user.id, limit);
+  }
+
   @Get(':id/audit')
   audit(
     @Param('id', new ParseUUIDPipe()) id: string,

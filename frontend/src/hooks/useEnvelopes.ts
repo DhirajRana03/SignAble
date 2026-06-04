@@ -21,6 +21,14 @@ export function useEnvelopes(status?: string | string[]) {
   });
 }
 
+export function useRecentActivity(limit = 10) {
+  return useQuery({
+    queryKey: ['envelopes', 'activity', limit],
+    queryFn: () => envelopeService.recentActivity(limit),
+    refetchInterval: 30_000,
+  });
+}
+
 export function useEnvelope(id: string | undefined) {
   return useQuery({
     queryKey: ['envelopes', id],

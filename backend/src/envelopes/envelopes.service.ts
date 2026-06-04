@@ -284,6 +284,43 @@ export class EnvelopesService {
   }
 
   /**
+   * Recent activity across all envelopes owned by user. Hydrates each
+   * event with envelope title so frontend can render a self-contained
+   * feed without N+1 fetches. Default 10 events, max 50.
+   */
+  async recentActivity(
+    userId: string,
+    limit = 10,
+  ): Promise<
+    Array<{
+      id: string;
+      envelopeId: string;
+      envelopeTitle: string;
+      eventType: AuditEventType;
+      actorEmail: string;
+      metadata: Prisma.JsonValue;
+      createdAt: Date;
+    }>
+  > {
+    const take = Math.min(Math.max(limit, 1), 50);
+    const rows = await this.prisma.auditEvent.findMany({
+      where: { envelope: { userId } },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: { envelope: { select: { id: true, title: true } } },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      envelopeId: r.envelope.id,
+      envelopeTitle: r.envelope.title,
+      eventType: r.eventType,
+      actorEmail: r.actorEmail,
+      metadata: r.metadata,
+      createdAt: r.createdAt,
+    }));
+  }
+
+  /**
    * Paginated audit log. Cursor-based on AuditEvent.id (uuid) so callers
    * can fetch next page deterministically without offset drift. Optional
    * eventType filter narrows to one event class. Default page size 50,

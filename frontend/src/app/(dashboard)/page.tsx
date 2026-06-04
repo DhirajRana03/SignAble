@@ -12,9 +12,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-import { EnvelopeCard } from '@/components/features/envelopes/EnvelopeCard';
+import { ActivityFeed } from '@/components/features/dashboard/ActivityFeed';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { Button } from '@/components/ui/Button';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
@@ -87,7 +86,6 @@ function countByStatus(
 export default function DashboardHome() {
   const user = useAuthStore((s) => s.user);
   const { data: envelopes = [] } = useEnvelopes();
-  const recent = envelopes.slice(0, 5);
 
   return (
     <DashboardShell
@@ -124,34 +122,7 @@ export default function DashboardHome() {
           ))}
         </section>
 
-        <section>
-          <div className="flex items-baseline justify-between mb-4">
-            <div>
-              <span className="eyebrow">Recently</span>
-              <h2 className="mt-1.5">Envelopes in flight</h2>
-            </div>
-            <Link href="/sent">
-              <Button variant="ghost" size="sm">
-                View all
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
-
-          {recent.length === 0 ? (
-            <div className="glass p-10 text-center">
-              <p className="text-[14px] text-ink-3">
-                No envelopes yet. Use button above to create one.
-              </p>
-            </div>
-          ) : (
-            <div className="glass overflow-hidden">
-              {recent.map((e, i) => (
-                <EnvelopeCard key={e.id} envelope={e} index={i} />
-              ))}
-            </div>
-          )}
-        </section>
+        <ActivityFeed />
       </div>
     </DashboardShell>
   );
