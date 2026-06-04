@@ -119,25 +119,40 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="mt-auto px-4 pb-4 pt-2 relative">
+      <div className="mt-auto px-3 pb-4 pt-2 relative">
         <button
           type="button"
           onClick={() => setProfileOpen((s) => !s)}
           aria-expanded={profileOpen}
           aria-haspopup="menu"
           aria-label="Open account menu"
-          title={user?.name ?? 'Account'}
           className={cn(
-            'h-10 w-10 grid place-items-center rounded-full',
-            'text-[12px] font-semibold uppercase tracking-tight text-white',
-            'bg-accent shadow-paper ring-2 ring-paper',
-            'transition-transform duration-150 ease-out',
-            'hover:scale-110 hover:bg-accent-deep',
-            'focus:outline-none focus:ring-2 focus:ring-accent/50',
-            profileOpen && 'scale-110 bg-accent-deep',
+            'w-full flex items-center gap-2.5 rounded-md px-2 py-2',
+            'border transition-colors duration-150',
+            profileOpen
+              ? 'border-accent/40 bg-transparent'
+              : 'border-transparent hover:bg-surface-sunken/70',
           )}
         >
-          {user ? initials(user.name) : '?'}
+          <span
+            className={cn(
+              'h-10 w-10 grid place-items-center rounded-full shrink-0',
+              'text-[12px] font-semibold uppercase tracking-tight text-white',
+              'bg-accent shadow-paper ring-2 ring-paper',
+              'transition-transform duration-150 ease-out',
+              profileOpen ? 'scale-105 bg-accent-deep' : 'group-hover:scale-105',
+            )}
+          >
+            {user ? initials(user.name) : '?'}
+          </span>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="text-[12.5px] font-medium text-ink truncate leading-tight">
+              {user?.name ?? 'Account'}
+            </p>
+            <p className="text-[10.5px] text-ink-3 truncate">
+              {user?.email ?? ''}
+            </p>
+          </div>
         </button>
 
         {profileOpen ? (
@@ -146,16 +161,7 @@ export function Sidebar({
               className="fixed inset-0 z-10"
               onClick={() => setProfileOpen(false)}
             />
-            <div className="absolute bottom-full left-4 mb-2 z-20 w-60 glass-strong shadow-popover animate-scale-in origin-bottom-left p-1.5">
-              <div className="px-3 py-2">
-                <p className="text-[13px] font-medium text-ink truncate">
-                  {user?.name ?? 'Account'}
-                </p>
-                <p className="text-[11px] text-ink-3 truncate">
-                  {user?.email ?? ''}
-                </p>
-              </div>
-              <div className="rule-soft my-1" />
+            <div className="absolute bottom-full left-3 right-3 mb-2 z-20 glass-strong shadow-popover animate-scale-in origin-bottom p-1.5">
               <Link
                 href="/settings"
                 onClick={() => {
