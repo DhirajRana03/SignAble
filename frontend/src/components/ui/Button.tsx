@@ -29,7 +29,7 @@ const buttonVariants = cva(
           'bg-transparent text-ink-2 hover:bg-surface-sunken hover:text-ink',
         // Danger
         danger:
-          'bg-white text-danger border border-danger/30 hover:bg-danger hover:text-white hover:border-danger',
+          'bg-white text-danger border border-danger/40 hover:bg-danger/10 hover:text-danger hover:border-danger transition-colors',
         // Legacy alias
         ink: 'bg-ink text-white hover:bg-ink-2 shadow-soft',
       },
