@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 
 import { AccountSection } from '@/components/features/settings/AccountSection';
-import { AppearanceSection } from '@/components/features/settings/AppearanceSection';
 import {
   type SettingsSection as Section,
   SettingsNav,
@@ -26,15 +25,9 @@ const SECTIONS: Section[] = [
     description: 'Listen for envelope events.',
   },
   {
-    id: 'appearance',
-    label: 'Appearance',
-    roman: 'III',
-    description: 'Workspace tone & theme.',
-  },
-  {
     id: 'signing',
     label: 'Signing defaults',
-    roman: 'IV',
+    roman: 'III',
     description: 'Pre-fill new envelopes.',
   },
 ];
@@ -78,7 +71,6 @@ export default function SettingsPage() {
         <div className="min-w-0">
           {active === 'account' && <AccountSection />}
           {active === 'webhooks' && <WebhooksSection />}
-          {active === 'appearance' && <AppearanceSection />}
           {active === 'signing' && <SigningDefaultsSection />}
         </div>
       </div>

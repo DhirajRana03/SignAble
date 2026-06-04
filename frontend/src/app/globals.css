@@ -59,38 +59,6 @@
     --ring: 239 70% 64%;
   }
 
-  .dark {
-    --surface-0: 240 12% 8%;       /* deep slate */
-    --surface-1: 240 10% 11%;
-    --surface-2: 240 10% 14%;
-    --surface-sunken: 240 12% 6%;
-
-    --glass-1: 30 30 35;
-    --glass-edge: 255 255 255 / 0.08;
-    --glass-tint: 30 30 35 / 0.55;
-    --glass-strong: 30 30 35 / 0.78;
-
-    --ink: 240 20% 96%;
-    --ink-2: 240 12% 86%;
-    --ink-3: 240 6% 68%;
-    --ink-4: 240 4% 52%;
-    --ink-5: 240 4% 32%;
-
-    --hairline: 240 4% 24% / 0.7;
-    --hairline-soft: 240 4% 22% / 0.5;
-    --hairline-strong: 240 4% 30% / 0.8;
-
-    --accent: 239 75% 70%;
-    --accent-deep: 239 70% 64%;
-    --accent-soft: 239 75% 70% / 0.16;
-    --accent-glow: 239 75% 70% / 0.26;
-    --accent-fg: 240 12% 8%;
-
-    --ok: 159 55% 55%;
-    --warn: 38 80% 60%;
-    --err: 0 70% 65%;
-  }
-
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -120,13 +88,6 @@
       radial-gradient(50% 45% at 92% 18%, hsl(280 80% 75% / 0.07), transparent 70%),
       radial-gradient(55% 40% at 50% 100%, hsl(180 70% 70% / 0.06), transparent 70%);
   }
-  .dark body::before {
-    background:
-      radial-gradient(60% 50% at 12% 8%, hsl(239 90% 60% / 0.15), transparent 70%),
-      radial-gradient(50% 45% at 92% 18%, hsl(280 80% 60% / 0.10), transparent 70%),
-      radial-gradient(55% 40% at 50% 100%, hsl(200 70% 50% / 0.08), transparent 70%);
-  }
-
   /* Make sure content sits above the mesh */
   #__next, #root, body > * { position: relative; z-index: 1; }
 
@@ -168,13 +129,6 @@
       0 1px 0 hsl(0 0% 100% / 0.5) inset,
       0 8px 28px -12px hsl(240 10% 10% / 0.08);
   }
-  .dark .glass {
-    background: rgb(var(--glass-1) / 0.55);
-    box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.06) inset,
-      0 10px 32px -12px hsl(0 0% 0% / 0.45);
-  }
-
   .glass-strong {
     background: rgb(var(--glass-1) / 0.82);
     border: 1px solid hsl(var(--hairline-strong));

@@ -1,10 +1,12 @@
 'use client';
 
 import {
-  FileText,
+  Archive,
+  CheckCircle2,
+  FileEdit,
   Inbox,
   LayoutDashboard,
-  Mail,
+  Send,
   Settings,
   X,
 } from 'lucide-react';
@@ -16,10 +18,12 @@ import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
-  { href: '/documents', label: 'Documents', icon: FileText },
-  { href: '/envelopes', label: 'Envelopes', icon: Mail },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
+  { href: '/sent', label: 'Sent for Signature', icon: Send },
+  { href: '/completed', label: 'Completed', icon: CheckCircle2 },
+  { href: '/drafts', label: 'Drafts', icon: FileEdit },
+  { href: '/archive', label: 'Archive', icon: Archive },
 ];
 
 /**

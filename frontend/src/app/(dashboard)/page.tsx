@@ -59,7 +59,7 @@ export default function DashboardHome() {
   return (
     <DashboardShell
       eyebrow={`Welcome back, ${user?.name?.split(' ')[0] ?? 'there'}`}
-      title="Overview"
+      title="Dashboard"
     >
       <div className="space-y-10 pb-16">
         {/* Stat bento — glass tiles with big numbers */}

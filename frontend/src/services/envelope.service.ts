@@ -58,8 +58,12 @@ export const envelopeService = {
     const { data } = await apiClient.post<Envelope>('/envelopes', input);
     return data;
   },
-  async list(): Promise<Envelope[]> {
-    const { data } = await apiClient.get<Envelope[]>('/envelopes');
+  async list(status?: string | string[]): Promise<Envelope[]> {
+    const params: Record<string, string> = {};
+    if (status) {
+      params.status = Array.isArray(status) ? status.join(',') : status;
+    }
+    const { data } = await apiClient.get<Envelope[]>('/envelopes', { params });
     return data;
   },
   async get(id: string): Promise<Envelope> {

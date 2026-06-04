@@ -14,10 +14,10 @@ import {
   envelopeService,
 } from '@/services/envelope.service';
 
-export function useEnvelopes() {
+export function useEnvelopes(status?: string | string[]) {
   return useQuery({
-    queryKey: ['envelopes'],
-    queryFn: () => envelopeService.list(),
+    queryKey: ['envelopes', { status: status ?? null }],
+    queryFn: () => envelopeService.list(status),
   });
 }
 

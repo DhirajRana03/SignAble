@@ -15,7 +15,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { AuditEventType, User } from '@prisma/client';
+import { AuditEventType, EnvelopeStatus, User } from '@prisma/client';
 import { Response } from 'express';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -39,8 +39,25 @@ export class EnvelopesController {
   }
 
   @Get()
-  list(@CurrentUser() user: User) {
-    return this.envelopesService.list(user.id);
+  list(
+    @CurrentUser() user: User,
+    @Query('status') status?: string,
+  ) {
+    // status query accepts comma-separated list (e.g. "VOIDED,EXPIRED")
+    // for combined buckets like Archive.
+    if (!status) return this.envelopesService.list(user.id);
+    const validStatuses = Object.values(EnvelopeStatus);
+    const parsed = status
+      .split(',')
+      .map((s) => s.trim().toUpperCase())
+      .filter((s): s is EnvelopeStatus =>
+        validStatuses.includes(s as EnvelopeStatus),
+      );
+    if (parsed.length === 0) return this.envelopesService.list(user.id);
+    return this.envelopesService.list(
+      user.id,
+      parsed.length === 1 ? parsed[0] : parsed,
+    );
   }
 
   @Get(':id')

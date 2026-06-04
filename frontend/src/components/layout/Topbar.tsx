@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, initials } from '@/lib/utils';
 
@@ -48,10 +47,7 @@ export function Topbar({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-2">
-            {actions}
-            <ThemeToggle />
-          </div>
+          <div className="hidden sm:flex items-center gap-2">{actions}</div>
 
           <Link href="/envelopes/new">
             <Button variant="accent" size="sm">
@@ -91,14 +87,6 @@ export function Topbar({
                   </div>
 
                   <div className="rule-soft my-1" />
-
-                  <div className="px-3 py-2 sm:hidden">
-                    <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3 mb-2">
-                      Theme
-                    </p>
-                    <ThemeToggle />
-                    <div className="rule-soft mt-2.5" />
-                  </div>
 
                   <button
                     onClick={logout}

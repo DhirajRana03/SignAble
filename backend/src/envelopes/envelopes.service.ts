@@ -96,9 +96,21 @@ export class EnvelopesService {
     return env;
   }
 
-  async list(userId: string): Promise<Envelope[]> {
+  /**
+   * List envelopes owned by user. Optional status filter accepts single
+   * status or array (for Archive bucket combining VOIDED + EXPIRED).
+   */
+  async list(
+    userId: string,
+    status?: EnvelopeStatus | EnvelopeStatus[],
+  ): Promise<Envelope[]> {
+    const statusFilter = Array.isArray(status)
+      ? { in: status }
+      : status
+        ? { equals: status }
+        : undefined;
     return this.prisma.envelope.findMany({
-      where: { userId },
+      where: { userId, ...(statusFilter ? { status: statusFilter } : {}) },
       orderBy: { createdAt: 'desc' },
       include: { recipients: true },
     });
