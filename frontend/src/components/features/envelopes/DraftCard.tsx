@@ -98,9 +98,9 @@ export function DraftCard({
           <div className="flex items-center gap-1">
             <Button
               size="sm"
-              variant="danger"
               onClick={() => del.mutate(envelope.id)}
               loading={del.isPending}
+              className="bg-red-600 text-white border border-red-600 hover:bg-red-700 hover:border-red-700"
             >
               Confirm
             </Button>
