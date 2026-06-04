@@ -39,6 +39,7 @@ export class RecipientsService {
         email: dto.email.toLowerCase(),
         name: dto.name,
         orderIndex: dto.orderIndex,
+        role: dto.role ?? undefined,
       },
     });
   }
@@ -62,6 +63,7 @@ export class RecipientsService {
         email: dto.email?.toLowerCase() ?? undefined,
         name: dto.name ?? undefined,
         orderIndex: dto.orderIndex ?? undefined,
+        role: dto.role ?? undefined,
       },
     });
   }

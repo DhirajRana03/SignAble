@@ -3,30 +3,35 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Check,
+  ChevronDown,
+  Eye,
   FileText,
+  Mail,
+  Pen,
   Plus,
   Trash2,
   UploadCloud,
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/Button';
-import { Input, Label, Textarea } from '@/components/ui/Input';
+import { Input, Label } from '@/components/ui/Input';
 import { useDocument, useUploadDocument } from '@/hooks/useDocuments';
 import { useCreateEnvelope } from '@/hooks/useEnvelopes';
 import { cn } from '@/lib/utils';
 import { extractErrorMessage } from '@/services/api-client';
-import type { SigningOrder } from '@/types/envelope.types';
+import type { RecipientRole, SigningOrder } from '@/types/envelope.types';
 
 interface DraftRecipient {
   id: string;
   name: string;
   email: string;
+  role: RecipientRole;
 }
 
 const recipientSchema = z.object({
@@ -35,17 +40,22 @@ const recipientSchema = z.object({
 });
 type RecipientFormValues = z.infer<typeof recipientSchema>;
 
-const envelopeSchema = z.object({
-  title: z.string().min(1, 'Required').max(500),
-  message: z.string().max(5000).optional(),
-  signingOrder: z.enum(['SEQUENTIAL', 'PARALLEL']),
-});
-type EnvelopeFormValues = z.infer<typeof envelopeSchema>;
-
+/**
+ * Envelope composer — compact create flow.
+ *
+ * Layout:
+ *   - Title inline at top
+ *   - Document upload (small)
+ *   - Recipients section with signing-order toggle in its header
+ *     Each recipient has Name + Email + Action dropdown (signer/cc/viewer)
+ *   - Sticky review sidebar with submit
+ */
 export function EnvelopeComposer() {
   const router = useRouter();
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [recipients, setRecipients] = useState<DraftRecipient[]>([]);
+  const [title, setTitle] = useState('');
+  const [signingOrder, setSigningOrder] = useState<SigningOrder>('SEQUENTIAL');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -54,37 +64,32 @@ export function EnvelopeComposer() {
   const docReady = document?.status === 'READY';
   const docFailed = document?.status === 'FAILED';
 
-  const envelopeForm = useForm<EnvelopeFormValues>({
-    resolver: zodResolver(envelopeSchema),
-    defaultValues: { title: '', message: '', signingOrder: 'SEQUENTIAL' },
-  });
-
-  if (
-    document &&
-    !envelopeForm.getValues('title') &&
-    !envelopeForm.formState.isDirty
-  ) {
-    envelopeForm.setValue(
-      'title',
-      document.filename.replace(/\.(pdf|png|jpe?g|tiff?|bmp|gif|heic)$/i, ''),
-      { shouldDirty: false },
-    );
-  }
+  // Prefill title from filename when document arrives
+  useEffect(() => {
+    if (document && !title) {
+      setTitle(
+        document.filename.replace(/\.(pdf|png|jpe?g|tiff?|bmp|gif|heic)$/i, ''),
+      );
+    }
+  }, [document, title]);
 
   const createEnvelope = useCreateEnvelope();
-  const canSubmit =
-    docReady &&
-    recipients.length > 0 &&
-    !!envelopeForm.watch('title') &&
-    !submitting;
+  const signerCount = recipients.filter((r) => r.role === 'SIGNER').length;
+  const canSubmit = docReady && signerCount > 0 && !!title && !submitting;
 
-  const onSubmit = envelopeForm.handleSubmit(async (values) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!documentId || !docReady) {
-      setSubmitError('Upload and wait for the document to finish processing.');
+      setSubmitError('Wait for document to finish processing.');
       return;
     }
-    if (recipients.length === 0) {
-      setSubmitError('Add at least one recipient.');
+    if (signerCount === 0) {
+      setSubmitError('Add at least one signer.');
+      return;
+    }
+    if (!title.trim()) {
+      setSubmitError('Title required.');
       return;
     }
 
@@ -94,9 +99,8 @@ export function EnvelopeComposer() {
     try {
       const envelope = await createEnvelope.mutateAsync({
         documentId,
-        title: values.title,
-        message: values.message?.trim() || undefined,
-        signingOrder: values.signingOrder as SigningOrder,
+        title: title.trim(),
+        signingOrder,
       });
 
       const { envelopeService } = await import('@/services/envelope.service');
@@ -106,6 +110,7 @@ export function EnvelopeComposer() {
           name: r.name,
           email: r.email,
           orderIndex: i,
+          role: r.role,
         });
       }
 
@@ -115,52 +120,96 @@ export function EnvelopeComposer() {
       setSubmitError(extractErrorMessage(err));
       setSubmitting(false);
     }
-  });
+  };
 
   return (
-    <form onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8 pb-12">
+    <form
+      onSubmit={onSubmit}
+      className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 pb-12"
+    >
       {/* Main column */}
-      <div className="space-y-6">
-        {/* Document section */}
-        <Section
-          step="1"
-          title="Document"
-          hint="Upload the file you want signed."
-        >
+      <div className="space-y-5">
+        {/* Title — inline at top */}
+        <div className="glass p-4 lg:p-5">
+          <Label htmlFor="env-title">Envelope title</Label>
+          <Input
+            id="env-title"
+            placeholder="Q4 vendor agreement"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-[15px]"
+          />
+        </div>
+
+        {/* Document — small uploader */}
+        <div className="glass p-4 lg:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[15px] font-semibold tracking-[-0.018em]">
+              Document
+            </h3>
+            {documentId ? (
+              <button
+                type="button"
+                onClick={() => setDocumentId(null)}
+                className="text-[11.5px] text-ink-3 hover:text-danger transition-colors"
+              >
+                Replace
+              </button>
+            ) : null}
+          </div>
+
           {!documentId ? (
-            <DocumentDropzone onUploaded={(id) => setDocumentId(id)} />
+            <DocumentDropzoneCompact onUploaded={(id) => setDocumentId(id)} />
           ) : (
             <DocumentLine
               filename={document?.filename ?? 'Loading…'}
               pageCount={document?.pageCount ?? 0}
               status={document?.status ?? 'PENDING'}
               errorMessage={docFailed ? document?.errorMessage ?? null : null}
-              onReplace={() => setDocumentId(null)}
             />
           )}
-        </Section>
+        </div>
 
-        {/* Recipients section */}
-        <Section
-          step="2"
-          title="Recipients"
-          hint="Add everyone who needs to sign. They will receive a personal signing link via email."
-        >
+        {/* Recipients + signing-order in header */}
+        <div className="glass p-4 lg:p-5">
+          <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+            <div>
+              <h3 className="text-[15px] font-semibold tracking-[-0.018em]">
+                Recipients
+              </h3>
+              <p className="text-[12px] text-ink-3 mt-0.5">
+                Add everyone who needs to sign, review, or get a copy.
+              </p>
+            </div>
+            <SigningOrderToggle value={signingOrder} onChange={setSigningOrder} />
+          </div>
+
           <RecipientAddForm
             onAdd={(v) =>
               setRecipients((rs) => [
                 ...rs,
-                { id: tempId(), name: v.name, email: v.email },
+                {
+                  id: tempId(),
+                  name: v.name,
+                  email: v.email,
+                  role: 'SIGNER',
+                },
               ])
             }
           />
+
           {recipients.length > 0 ? (
-            <ul className="mt-4 space-y-1">
+            <ul className="mt-3 space-y-1">
               {recipients.map((r, i) => (
                 <RecipientItem
                   key={r.id}
                   index={i}
                   recipient={r}
+                  onChangeRole={(role) =>
+                    setRecipients((rs) =>
+                      rs.map((x) => (x.id === r.id ? { ...x, role } : x)),
+                    )
+                  }
                   onRemove={() =>
                     setRecipients((rs) => rs.filter((x) => x.id !== r.id))
                   }
@@ -168,48 +217,7 @@ export function EnvelopeComposer() {
               ))}
             </ul>
           ) : null}
-        </Section>
-
-        {/* Details section */}
-        <Section
-          step="3"
-          title="Details"
-          hint="What signers will see in their email and on the signing page."
-        >
-          <div className="space-y-5">
-            <div>
-              <Label>Title</Label>
-              <Input
-                placeholder="Q4 vendor agreement"
-                {...envelopeForm.register('title')}
-              />
-              {envelopeForm.formState.errors.title ? (
-                <p className="mt-1.5 text-[11.5px] text-danger">
-                  {envelopeForm.formState.errors.title.message}
-                </p>
-              ) : null}
-            </div>
-
-            <div>
-              <Label>
-                Message <span className="text-ink-4 font-normal">optional</span>
-              </Label>
-              <Textarea
-                rows={3}
-                placeholder="A short note that appears in every signing email."
-                {...envelopeForm.register('message')}
-              />
-            </div>
-
-            <div>
-              <Label>Signing order</Label>
-              <SigningOrderPicker
-                value={envelopeForm.watch('signingOrder')}
-                onChange={(v) => envelopeForm.setValue('signingOrder', v)}
-              />
-            </div>
-          </div>
-        </Section>
+        </div>
 
         {submitError ? (
           <div className="rounded-md border border-danger/30 bg-danger/8 px-4 py-3 text-[13px] text-danger">
@@ -222,27 +230,36 @@ export function EnvelopeComposer() {
       <aside className="lg:sticky lg:top-20 lg:self-start">
         <div className="glass p-5">
           <span className="eyebrow">Review</span>
-          <h2 className="mt-2 text-[18px]">Almost there</h2>
+          <h2 className="mt-2 text-[18px]">Ready to create</h2>
           <p className="text-[13px] text-ink-3 mt-1.5 leading-relaxed">
-            We will create your envelope, then take you to place signature
-            fields on the document.
+            We will create the envelope, then take you to place signature
+            fields.
           </p>
 
           <div className="mt-5 space-y-2.5">
             <ReviewRow
+              label="Title"
+              value={title || 'Untitled'}
+              state={title ? 'ok' : 'todo'}
+            />
+            <ReviewRow
               label="Document"
-              value={docReady ? document!.filename : documentId ? 'Processing…' : 'Not uploaded'}
+              value={
+                docReady ? document!.filename : documentId ? 'Processing…' : 'Not uploaded'
+              }
               state={docReady ? 'ok' : documentId ? 'pending' : 'todo'}
             />
             <ReviewRow
-              label="Recipients"
-              value={`${recipients.length} signer${recipients.length === 1 ? '' : 's'}`}
-              state={recipients.length > 0 ? 'ok' : 'todo'}
+              label="Signers"
+              value={`${signerCount} of ${recipients.length}`}
+              state={signerCount > 0 ? 'ok' : 'todo'}
             />
             <ReviewRow
-              label="Title"
-              value={envelopeForm.watch('title') || 'Untitled'}
-              state={envelopeForm.watch('title') ? 'ok' : 'todo'}
+              label="Order"
+              value={
+                signingOrder === 'SEQUENTIAL' ? 'Sequential' : 'Parallel'
+              }
+              state="ok"
             />
           </div>
 
@@ -267,42 +284,9 @@ export function EnvelopeComposer() {
   );
 }
 
-/* ─────────────── Section wrapper ─────────────── */
+/* ─────────────── Compact dropzone ─────────────── */
 
-function Section({
-  step,
-  title,
-  hint,
-  children,
-}: {
-  step: string;
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="glass p-5 lg:p-6 animate-fade-up">
-      <header className="flex items-start gap-3 mb-5">
-        <span className="h-7 w-7 grid place-items-center rounded-pill bg-accent-soft text-accent-deep text-[12px] font-semibold shrink-0">
-          {step}
-        </span>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[17px] font-semibold tracking-[-0.022em] leading-tight">
-            {title}
-          </h3>
-          {hint ? (
-            <p className="text-[13px] text-ink-3 mt-0.5 leading-relaxed">{hint}</p>
-          ) : null}
-        </div>
-      </header>
-      {children}
-    </section>
-  );
-}
-
-/* ─────────────── Dropzone ─────────────── */
-
-function DocumentDropzone({
+function DocumentDropzoneCompact({
   onUploaded,
 }: {
   onUploaded: (id: string) => void;
@@ -334,10 +318,10 @@ function DocumentDropzone({
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        'relative cursor-pointer rounded-lg border-2 border-dashed transition-all duration-150',
-        'flex flex-col items-center justify-center gap-3 py-12 px-6 text-center',
+        'relative cursor-pointer rounded-md border-2 border-dashed transition-all duration-150',
+        'flex items-center gap-3 px-4 py-3',
         dragging
-          ? 'border-accent bg-accent-soft/40 scale-[1.01]'
+          ? 'border-accent bg-accent-soft/40'
           : 'border-border-strong bg-surface-1/40 hover:border-accent hover:bg-accent-soft/20',
         upload.isPending && 'pointer-events-none opacity-60',
       )}
@@ -351,44 +335,39 @@ function DocumentDropzone({
       />
       <div
         className={cn(
-          'h-12 w-12 grid place-items-center rounded-pill transition-all',
-          dragging
-            ? 'bg-accent text-white scale-110'
-            : 'bg-accent-soft text-accent-deep',
+          'h-9 w-9 grid place-items-center rounded-pill transition-all shrink-0',
+          dragging ? 'bg-accent text-white' : 'bg-accent-soft text-accent-deep',
         )}
       >
         <UploadCloud
-          className={cn('h-5 w-5', upload.isPending && 'animate-pulse')}
+          className={cn('h-4 w-4', upload.isPending && 'animate-pulse')}
           strokeWidth={2}
         />
       </div>
-      <div>
-        <p className="text-[14px] font-medium text-ink">
-          {upload.isPending ? 'Uploading…' : 'Drop your file here'}
+      <div className="min-w-0">
+        <p className="text-[13.5px] font-medium text-ink">
+          {upload.isPending ? 'Uploading…' : 'Drop a file or click to browse'}
         </p>
-        <p className="text-[12.5px] text-ink-3 mt-1">
-          or <span className="text-accent-deep font-medium">click to browse</span>
-          {' '}— PDF or image, up to 50 MB
+        <p className="text-[11.5px] text-ink-3 mt-0.5">
+          PDF or image · up to 50 MB
         </p>
       </div>
     </div>
   );
 }
 
-/* ─────────────── Document line ─────────────── */
+/* ─────────────── Document line (after upload) ─────────────── */
 
 function DocumentLine({
   filename,
   pageCount,
   status,
   errorMessage,
-  onReplace,
 }: {
   filename: string;
   pageCount: number;
   status: string;
   errorMessage: string | null;
-  onReplace: () => void;
 }) {
   const isProcessing = status === 'PENDING' || status === 'PROCESSING';
   const isReady = status === 'READY';
@@ -396,30 +375,22 @@ function DocumentLine({
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-md sunken">
-      <div className="h-10 w-10 grid place-items-center rounded-md bg-accent-soft text-accent-deep shrink-0">
+      <div className="h-9 w-9 grid place-items-center rounded-md bg-accent-soft text-accent-deep shrink-0">
         <FileText className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-medium text-ink truncate">{filename}</p>
-        <p className="text-[12px] text-ink-3 mt-0.5">
+        <p className="text-[13.5px] font-medium text-ink truncate">{filename}</p>
+        <p className="text-[11.5px] text-ink-3 mt-0.5">
           {isProcessing
             ? 'Processing pages…'
             : isReady
-              ? `${pageCount} page${pageCount === 1 ? '' : 's'} · ready to send`
+              ? `${pageCount} page${pageCount === 1 ? '' : 's'} · ready`
               : isFailed
                 ? errorMessage ?? 'Failed'
                 : status.toLowerCase()}
         </p>
       </div>
       <StatusChip status={status} />
-      <button
-        type="button"
-        onClick={onReplace}
-        className="h-8 w-8 grid place-items-center rounded-md text-ink-3 hover:text-ink hover:bg-surface-2"
-        aria-label="Replace document"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
     </div>
   );
 }
@@ -441,6 +412,44 @@ function StatusChip({ status }: { status: string }) {
     >
       {m.label}
     </span>
+  );
+}
+
+/* ─────────────── Signing order toggle (segment control) ─────────────── */
+
+function SigningOrderToggle({
+  value,
+  onChange,
+}: {
+  value: SigningOrder;
+  onChange: (v: SigningOrder) => void;
+}) {
+  const opts: { value: SigningOrder; label: string }[] = [
+    { value: 'SEQUENTIAL', label: 'Sequential' },
+    { value: 'PARALLEL', label: 'Parallel' },
+  ];
+  return (
+    <div className="inline-flex items-center rounded-pill bg-surface-sunken p-0.5">
+      {opts.map((o) => {
+        const active = value === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(o.value)}
+            className={cn(
+              'h-7 px-3 rounded-pill text-[11.5px] font-medium transition-all duration-150',
+              active
+                ? 'bg-surface-2 text-ink shadow-soft'
+                : 'text-ink-3 hover:text-ink',
+            )}
+            aria-pressed={active}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -472,53 +481,56 @@ function RecipientAddForm({
       className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2.5 items-start"
     >
       <div>
-        <Label>Name</Label>
         <Input
-          placeholder="Ada Lovelace"
+          placeholder="Name"
           autoComplete="off"
           {...form.register('name')}
         />
         {form.formState.errors.name ? (
-          <p className="mt-1.5 text-[11px] text-danger">
+          <p className="mt-1 text-[11px] text-danger">
             {form.formState.errors.name.message}
           </p>
         ) : null}
       </div>
       <div>
-        <Label>Email</Label>
         <Input
           type="email"
-          placeholder="ada@analytical.engine"
+          placeholder="email@example.com"
           autoComplete="off"
           {...form.register('email')}
         />
         {form.formState.errors.email ? (
-          <p className="mt-1.5 text-[11px] text-danger">
+          <p className="mt-1 text-[11px] text-danger">
             {form.formState.errors.email.message}
           </p>
         ) : null}
       </div>
-      <div className="sm:pt-[30px]">
-        <Button type="button" variant="secondary" size="md" onClick={submit}>
-          <Plus className="h-3.5 w-3.5" /> Add
-        </Button>
-      </div>
+      <Button type="button" variant="secondary" size="md" onClick={submit}>
+        <Plus className="h-3.5 w-3.5" /> Add
+      </Button>
     </div>
   );
 }
 
-/* ─────────────── Recipient list item ─────────────── */
+/* ─────────────── Recipient row with action dropdown ─────────────── */
+
+const ROLE_OPTIONS: { value: RecipientRole; label: string; icon: typeof Pen; hint: string }[] = [
+  { value: 'SIGNER', label: 'Needs to sign', icon: Pen, hint: 'Must sign the document' },
+  { value: 'CC', label: 'Receives a copy', icon: Mail, hint: 'Gets a copy when complete' },
+  { value: 'VIEWER', label: 'Needs to view', icon: Eye, hint: 'Must view before completion' },
+];
 
 function RecipientItem({
   index,
   recipient,
+  onChangeRole,
   onRemove,
 }: {
   index: number;
   recipient: DraftRecipient;
+  onChangeRole: (role: RecipientRole) => void;
   onRemove: () => void;
 }) {
-  // Soft pastel rotation per signer
   const tones = [
     'from-violet-400/30 to-indigo-500/30 text-indigo-700',
     'from-amber-400/30 to-orange-500/30 text-orange-700',
@@ -532,7 +544,7 @@ function RecipientItem({
     <li className="group flex items-center gap-3 py-2 px-2 -mx-2 rounded-md hover:bg-surface-sunken/60 transition-colors">
       <span
         className={cn(
-          'h-8 w-8 grid place-items-center rounded-pill bg-gradient-to-br text-[12px] font-semibold uppercase',
+          'h-8 w-8 grid place-items-center rounded-pill bg-gradient-to-br text-[12px] font-semibold uppercase shrink-0',
           tone,
         )}
       >
@@ -544,13 +556,13 @@ function RecipientItem({
         </p>
         <p className="text-[12px] text-ink-3 truncate">{recipient.email}</p>
       </div>
-      <span className="font-mono text-[10.5px] text-ink-4 mr-1">
-        {String(index + 1).padStart(2, '0')}
-      </span>
+
+      <ActionDropdown value={recipient.role} onChange={onChangeRole} />
+
       <button
         type="button"
         onClick={onRemove}
-        className="h-7 w-7 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="h-7 w-7 grid place-items-center rounded-md text-ink-4 hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
         aria-label="Remove recipient"
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -559,45 +571,90 @@ function RecipientItem({
   );
 }
 
-/* ─────────────── Signing order picker ─────────────── */
+/* ─────────────── Action dropdown ─────────────── */
 
-function SigningOrderPicker({
+function ActionDropdown({
   value,
   onChange,
 }: {
-  value: SigningOrder;
-  onChange: (v: SigningOrder) => void;
+  value: RecipientRole;
+  onChange: (v: RecipientRole) => void;
 }) {
-  const opts: { value: SigningOrder; label: string; hint: string }[] = [
-    { value: 'SEQUENTIAL', label: 'Sequential', hint: 'One at a time, in order' },
-    { value: 'PARALLEL', label: 'Parallel', hint: 'Everyone at once' },
-  ];
+  const [open, setOpen] = useState(false);
+  const current = ROLE_OPTIONS.find((o) => o.value === value) ?? ROLE_OPTIONS[0];
+  const Icon = current.icon;
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {opts.map((o) => {
-        const active = value === o.value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            onClick={() => onChange(o.value)}
-            className={cn(
-              'relative text-left rounded-md p-4 transition-all duration-150',
-              active
-                ? 'bg-accent-soft border border-accent shadow-[0_0_0_3px_hsl(var(--accent)/0.12)]'
-                : 'sunken border border-border-soft hover:border-border-strong',
-            )}
-          >
-            <p className={cn('text-[13.5px] font-medium', active ? 'text-accent-deep' : 'text-ink')}>
-              {o.label}
-            </p>
-            <p className="text-[11.5px] text-ink-3 mt-0.5">{o.hint}</p>
-            {active ? (
-              <span className="absolute right-3 top-3 h-1.5 w-1.5 rounded-pill bg-accent" />
-            ) : null}
-          </button>
-        );
-      })}
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((s) => !s)}
+        className={cn(
+          'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium transition-colors',
+          'bg-surface-2 border border-border-strong text-ink-2 hover:border-accent hover:text-ink',
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <Icon className="h-3.5 w-3.5 text-ink-3" />
+        <span className="hidden sm:inline">{current.label}</span>
+        <ChevronDown className="h-3 w-3 text-ink-3" />
+      </button>
+
+      {open ? (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-10 z-20 w-56 glass-strong shadow-popover animate-scale-in origin-top-right p-1">
+            {ROLE_OPTIONS.map((o) => {
+              const O = o.icon;
+              const active = o.value === value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors',
+                    active
+                      ? 'bg-accent-soft text-accent-deep'
+                      : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
+                  )}
+                >
+                  <O
+                    className={cn(
+                      'h-3.5 w-3.5 mt-0.5 shrink-0',
+                      active ? 'text-accent-deep' : 'text-ink-3',
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12.5px] font-medium">{o.label}</p>
+                    <p
+                      className={cn(
+                        'text-[11px] mt-0.5',
+                        active ? 'text-accent-deep/80' : 'text-ink-3',
+                      )}
+                    >
+                      {o.hint}
+                    </p>
+                  </div>
+                  {active ? (
+                    <Check
+                      className="h-3 w-3 text-accent-deep mt-1 shrink-0"
+                      strokeWidth={3}
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -630,7 +687,9 @@ function ReviewRow({
         ) : null}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] uppercase tracking-[0.08em] text-ink-3">{label}</p>
+        <p className="text-[11px] uppercase tracking-[0.08em] text-ink-3">
+          {label}
+        </p>
         <p className="text-[13px] text-ink truncate">{value}</p>
       </div>
     </div>

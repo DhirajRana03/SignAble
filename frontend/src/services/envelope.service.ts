@@ -2,6 +2,7 @@ import type {
   AuditEvent,
   Envelope,
   Recipient,
+  RecipientRole,
   SignatureField,
   SigningOrder,
 } from '@/types/envelope.types';
@@ -18,6 +19,7 @@ export interface RecipientInput {
   email: string;
   name: string;
   orderIndex: number;
+  role?: RecipientRole;
 }
 
 export interface FieldInput {

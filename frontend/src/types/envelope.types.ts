@@ -7,6 +7,7 @@ export type EnvelopeStatus =
   | 'VOIDED'
   | 'EXPIRED';
 export type RecipientStatus = 'PENDING' | 'VIEWED' | 'SIGNED' | 'DECLINED';
+export type RecipientRole = 'SIGNER' | 'CC' | 'VIEWER';
 export type FieldType = 'SIGNATURE' | 'INITIALS' | 'DATE' | 'TEXT';
 
 export interface Recipient {
@@ -15,6 +16,7 @@ export interface Recipient {
   email: string;
   name: string;
   orderIndex: number;
+  role: RecipientRole;
   status: RecipientStatus;
   signingToken?: string;
   signedAt: string | null;

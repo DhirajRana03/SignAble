@@ -94,6 +94,7 @@ model Recipient {
   email         String
   name          String
   orderIndex    Int             @default(0)
+  role          RecipientRole   @default(SIGNER)
   status        RecipientStatus @default(PENDING)
   signingToken  String          @unique @default(cuid())
   signedAt      DateTime?
@@ -106,6 +107,12 @@ model Recipient {
 
   @@index([envelopeId])
   @@map("recipients")
+}
+
+enum RecipientRole {
+  SIGNER
+  CC
+  VIEWER
 }
 
 enum RecipientStatus {

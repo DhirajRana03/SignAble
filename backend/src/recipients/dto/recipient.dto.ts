@@ -1,5 +1,7 @@
+import { RecipientRole } from '@prisma/client';
 import {
   IsEmail,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -19,6 +21,10 @@ export class CreateRecipientDto {
   @IsInt()
   @Min(0)
   orderIndex!: number;
+
+  @IsOptional()
+  @IsEnum(RecipientRole)
+  role?: RecipientRole;
 }
 
 export class UpdateRecipientDto {
@@ -36,4 +42,8 @@ export class UpdateRecipientDto {
   @IsInt()
   @Min(0)
   orderIndex?: number;
+
+  @IsOptional()
+  @IsEnum(RecipientRole)
+  role?: RecipientRole;
 }
