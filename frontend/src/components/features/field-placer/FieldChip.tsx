@@ -5,7 +5,6 @@ import {
   CheckSquare,
   ChevronDown,
   Edit3,
-  GripVertical,
   Type as TypeIcon,
   X,
 } from 'lucide-react';
@@ -16,12 +15,12 @@ import { cn, recipientColor } from '@/lib/utils';
 import type { FieldType } from '@/types/envelope.types';
 
 const FIELD_LABEL: Record<FieldType, string> = {
-  SIGNATURE: 'Signature',
-  INITIALS: 'Initials',
+  SIGNATURE: 'Sign',
+  INITIALS: 'Initial',
   DATE: 'Date',
   TEXT: 'Text',
   DROPDOWN: 'Dropdown',
-  CHECKBOX: 'Checkbox',
+  CHECKBOX: 'Check',
 };
 
 const FIELD_ICON: Record<FieldType, typeof TypeIcon> = {
@@ -42,8 +41,8 @@ interface Props {
 }
 
 /**
- * Draggable + resizable signature field chip overlaid on a page.
- * Uses pointer events for portability (mouse + touch).
+ * DocuSign-style draggable/resizable field chip. Filled recipient color
+ * with dashed border at rest; accent ring + corner handle when selected.
  */
 export function FieldChip({
   field,
@@ -55,7 +54,9 @@ export function FieldChip({
   const select = useEnvelopeEditorStore((s) => s.select);
   const update = useEnvelopeEditorStore((s) => s.updateField);
   const remove = useEnvelopeEditorStore((s) => s.removeField);
-  const selected = useEnvelopeEditorStore((s) => s.selectedTempId === field.tempId);
+  const selected = useEnvelopeEditorStore(
+    (s) => s.selectedTempId === field.tempId,
+  );
 
   const dragRef = useRef<{
     type: 'move' | 'resize';
@@ -125,22 +126,24 @@ export function FieldChip({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       className={cn(
-        'absolute cursor-move select-none transition-shadow group',
-        'border-2 rounded-sm flex items-center justify-center',
-        'ring-offset-2 ring-offset-paper',
+        'absolute cursor-move select-none group',
+        'rounded-md flex items-center justify-center',
+        'transition-shadow duration-100',
         color.bg,
         color.fg,
-        'border-current',
-        selected ? 'ring-2 ring-current shadow-sheet z-20' : 'z-10',
+        selected
+          ? 'border-2 border-solid border-accent ring-2 ring-accent/30 shadow-lg z-20'
+          : 'border border-dashed border-current/60 hover:shadow-md z-10',
       )}
     >
-      <div className="flex items-center gap-1.5 pointer-events-none px-2 min-w-0">
-        <GripVertical className="h-3 w-3 opacity-50 shrink-0" />
-        <Icon className="h-3 w-3 shrink-0" />
-        <span className="font-mono text-[10px] uppercase tracking-wider truncate">
+      <div className="flex items-center gap-1 pointer-events-none px-1.5 min-w-0">
+        <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+        <span className="text-[10px] font-semibold uppercase tracking-wider truncate">
           {FIELD_LABEL[field.fieldType]}
         </span>
-        {field.required ? <span className="text-current">*</span> : null}
+        {field.required ? (
+          <span className="text-current opacity-80">*</span>
+        ) : null}
       </div>
 
       {selected ? (
@@ -148,16 +151,16 @@ export function FieldChip({
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => remove(field.tempId)}
-            className="absolute -top-2 -right-2 z-30 h-5 w-5 rounded-sm bg-paper border border-current flex items-center justify-center hover:bg-danger hover:text-paper"
+            className="absolute -top-2 -right-2 z-30 h-5 w-5 rounded-full bg-danger text-white shadow-md ring-2 ring-paper flex items-center justify-center hover:bg-red-700 transition-colors"
             aria-label="Remove field"
           >
-            <X className="h-3 w-3" />
+            <X className="h-2.5 w-2.5" strokeWidth={3} />
           </button>
           <div
             onPointerDown={(e) => onPointerDown(e, 'resize')}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm bg-paper border border-current z-30"
+            className="absolute -bottom-1 -right-1 h-3 w-3 cursor-se-resize rounded-sm bg-accent border-2 border-paper z-30"
           />
         </>
       ) : null}

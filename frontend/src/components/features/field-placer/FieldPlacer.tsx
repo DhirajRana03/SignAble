@@ -1,6 +1,6 @@
 'use client';
 
-import { type RefObject, useEffect, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { DocumentViewer } from '@/components/features/document-viewer/DocumentViewer';
 import { useDocumentPagesMeta } from '@/hooks/useDocuments';
@@ -9,6 +9,8 @@ import type { Envelope, FieldOptions, FieldType } from '@/types/envelope.types';
 
 import { FieldOverlay } from './FieldOverlay';
 import { FieldToolbar } from './FieldToolbar';
+import { ThumbnailStrip } from './ThumbnailStrip';
+import { ZoomControls } from './ZoomControls';
 
 /**
  * Default options for newly-dropped fields. DROPDOWN starts with two
@@ -20,7 +22,10 @@ function defaultOptionsFor(type: FieldType): FieldOptions {
   return null;
 }
 
-function defaultSizeFor(type: FieldType): { widthPct: number; heightPct: number } {
+function defaultSizeFor(type: FieldType): {
+  widthPct: number;
+  heightPct: number;
+} {
   switch (type) {
     case 'SIGNATURE':
       return { widthPct: 0.22, heightPct: 0.07 };
@@ -36,8 +41,8 @@ function defaultSizeFor(type: FieldType): { widthPct: number; heightPct: number 
 }
 
 /**
- * Wires DocumentViewer + FieldOverlay + FieldToolbar into the field-placement experience.
- * Hosts the click-to-drop logic which converts pixel coordinates → percentages.
+ * Wires DocumentViewer + FieldOverlay + FieldToolbar + ThumbnailStrip +
+ * ZoomControls into the DocuSign-style field-placement experience.
  */
 export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   const pagesMeta = useDocumentPagesMeta(envelope.documentId);
@@ -50,12 +55,10 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   const [pendingFieldType, setPendingFieldType] = useState<FieldType | null>(
     null,
   );
+  const [zoom, setZoom] = useState(1);
+  const [activePage, setActivePage] = useState(1);
+  const pageRefsRef = useRef<RefObject<HTMLDivElement | null>[]>([]);
 
-  // Seed editor store once per envelope id. fields/recipients deliberately
-  // omitted from deps — react-query hands back new array refs on every
-  // refetch which would re-init and re-trigger setActiveRecipient,
-  // producing an infinite render loop. activeRecipientId also excluded
-  // since the effect mutates it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     init(envelope.id, envelope.fields ?? []);
@@ -70,7 +73,7 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     pageIndex: number,
   ) => {
     if (!pendingFieldType || !activeRecipientId) return;
-    if (e.target !== e.currentTarget) return; // only drop on blank area
+    if (e.target !== e.currentTarget) return;
     const el = pageRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -91,6 +94,38 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     setPendingFieldType(null);
   };
 
+  const jumpToPage = (pageIndex: number) => {
+    const ref = pageRefsRef.current[pageIndex]?.current;
+    if (!ref) return;
+    ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActivePage(pageIndex + 1);
+  };
+
+  // Track active page via IntersectionObserver as user scrolls.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length > 0) {
+          const el = visible[0].target as HTMLElement;
+          const idx = Number(el.dataset.pageIndex);
+          if (!Number.isNaN(idx)) setActivePage(idx + 1);
+        }
+      },
+      { threshold: [0.3, 0.6] },
+    );
+    pageRefsRef.current.forEach((r, i) => {
+      if (r.current) {
+        r.current.dataset.pageIndex = String(i);
+        observer.observe(r.current);
+      }
+    });
+    return () => observer.disconnect();
+  }, [pagesMeta.data]);
+
   if (pagesMeta.isLoading) {
     return (
       <div className="flex items-center justify-center p-20 label-mono">
@@ -102,30 +137,44 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   const pageUrls = (pagesMeta.data ?? []).map((p) => p.imageUrl);
 
   return (
-    <div className="flex gap-6 items-start">
-      <FieldToolbar
-        envelopeId={envelope.id}
-        recipients={envelope.recipients ?? []}
-        pendingFieldType={pendingFieldType}
-        setPendingFieldType={setPendingFieldType}
-      />
-
-      <div className="flex-1 min-w-0">
-        <DocumentViewer
+    <>
+      <div className="flex gap-4 items-start">
+        <ThumbnailStrip
           pageUrls={pageUrls}
-          authed
-          renderOverlay={(pageIndex, pageRef) => (
-            <FieldOverlay
-              pageIndex={pageIndex}
-              pageRef={pageRef}
-              recipients={envelope.recipients ?? []}
-              onPagePointerDown={(e, ref) =>
-                handlePagePointerDown(e, ref, pageIndex)
-              }
-            />
-          )}
+          activePage={activePage}
+          onJump={jumpToPage}
         />
+
+        <FieldToolbar
+          envelopeId={envelope.id}
+          recipients={envelope.recipients ?? []}
+          pendingFieldType={pendingFieldType}
+          setPendingFieldType={setPendingFieldType}
+        />
+
+        <div className="flex-1 min-w-0">
+          <DocumentViewer
+            pageUrls={pageUrls}
+            authed
+            zoom={zoom}
+            onPageRefsReady={(refs) => {
+              pageRefsRef.current = refs;
+            }}
+            renderOverlay={(pageIndex, pageRef) => (
+              <FieldOverlay
+                pageIndex={pageIndex}
+                pageRef={pageRef}
+                recipients={envelope.recipients ?? []}
+                onPagePointerDown={(e, ref) =>
+                  handlePagePointerDown(e, ref, pageIndex)
+                }
+              />
+            )}
+          />
+        </div>
       </div>
-    </div>
+
+      <ZoomControls zoom={zoom} onChange={setZoom} />
+    </>
   );
 }

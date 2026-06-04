@@ -7,6 +7,7 @@ import { PageImage } from './PageImage';
 interface Props {
   pageUrls: string[];
   authed?: boolean;
+  zoom?: number;
   renderOverlay?: (
     pageIndex: number,
     pageRef: MutableRefObject<HTMLDivElement | null>,
@@ -17,14 +18,14 @@ interface Props {
 /**
  * Image-based PDF viewer.
  *
- * Why image-based instead of react-pdf:
  * - Predictable coordinate mapping (% of <img> dimensions)
  * - Server pre-renders pages; client only displays
- * - No PDF.js bundle bloat
+ * - Zoom scales each page width via prop; layout preserved.
  */
 export function DocumentViewer({
   pageUrls,
   authed = true,
+  zoom = 1,
   renderOverlay,
   onPageRefsReady,
 }: Props) {
@@ -40,13 +41,14 @@ export function DocumentViewer({
   }, [pageUrls.length]);
 
   return (
-    <div className="flex flex-col items-center gap-8 py-6">
+    <div className="flex flex-col items-center gap-6 py-4">
       {pageUrls.map((url, i) => (
         <PageImage
           key={i}
           url={url}
           pageNumber={i + 1}
           authed={authed}
+          zoom={zoom}
           overlay={renderOverlay?.(i, refs.current[i])}
           ref={(el) => {
             if (refs.current[i]) refs.current[i].current = el;

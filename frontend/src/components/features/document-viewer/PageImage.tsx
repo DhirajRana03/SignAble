@@ -9,32 +9,34 @@ interface Props {
   url: string;
   pageNumber: number;
   overlay?: React.ReactNode;
-  /**
-   * If true, fetch via authed client (dashboard).
-   * If false, use raw <img src=url> (public signing routes use server-rendered URLs).
-   */
   authed?: boolean;
+  zoom?: number;
 }
 
 /**
- * Single page image with optional overlay slot for field placement / signing.
- * Uses Refs at outer container so coordinate math has stable target.
+ * Single page image with optional overlay slot. Outer ref provides
+ * stable target for coordinate math + scroll-into-view. zoom scales
+ * the page width; max-width preserves the natural A4/Letter aspect.
  */
 export const PageImage = forwardRef<HTMLDivElement, Props>(function PageImage(
-  { url, pageNumber, overlay, authed = true },
+  { url, pageNumber, overlay, authed = true, zoom = 1 },
   ref,
 ) {
   const { src, loading } = useAuthedImage(authed ? url : undefined);
   const finalSrc = authed ? src : url;
+  const width = Math.round(860 * zoom);
 
   return (
-    <div className="flex flex-col items-center w-full">
-      <div className="label-mono mb-1.5">page · {pageNumber}</div>
+    <div className="flex flex-col items-center">
+      <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-ink-3 mb-1.5">
+        Page {pageNumber}
+      </div>
       <div
         ref={ref}
+        style={{ width: `${width}px` }}
         className={cn(
-          'relative w-full max-w-[860px] bg-paper border border-border shadow-sheet',
-          'overflow-hidden',
+          'relative bg-paper border border-border shadow-md rounded-sm',
+          'overflow-hidden transition-[width] duration-150',
         )}
       >
         {loading || !finalSrc ? (

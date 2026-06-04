@@ -9,31 +9,39 @@ import {
   Save,
   Trash2,
   Type,
+  Users,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { useBulkSaveFields } from '@/hooks/useEnvelopes';
-import { cn, recipientColor } from '@/lib/utils';
+import { cn, initials, recipientColor } from '@/lib/utils';
 import {
   useEnvelopeEditorStore,
   type EditorField,
 } from '@/store/envelopeEditorStore';
 import type { FieldType, Recipient } from '@/types/envelope.types';
 
-const FIELDS: { type: FieldType; label: string; icon: typeof Type }[] = [
-  { type: 'SIGNATURE', label: 'Signature', icon: Edit3 },
-  { type: 'INITIALS', label: 'Initials', icon: Type },
-  { type: 'DATE', label: 'Date', icon: Calendar },
-  { type: 'TEXT', label: 'Text', icon: Type },
-  { type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown },
-  { type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare },
+interface FieldDef {
+  type: FieldType;
+  label: string;
+  icon: typeof Type;
+  group: 'signing' | 'data';
+}
+
+const FIELDS: FieldDef[] = [
+  { type: 'SIGNATURE', label: 'Signature', icon: Edit3, group: 'signing' },
+  { type: 'INITIALS', label: 'Initials', icon: Type, group: 'signing' },
+  { type: 'DATE', label: 'Date signed', icon: Calendar, group: 'signing' },
+  { type: 'TEXT', label: 'Text', icon: Type, group: 'data' },
+  { type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data' },
+  { type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare, group: 'data' },
 ];
 
 /**
- * Side panel: signers list + add-field palette + properties panel for the
- * currently-selected field (dropdown choices, checkbox label, required
- * toggle). Save button persists all fields atomically via bulkSave.
+ * Field toolbar. DocuSign-style three-section panel: recipient picker
+ * cards, grouped field palette (Standard / Data), inline properties
+ * panel for the selected field, and a sticky save action at the bottom.
  */
 export function FieldToolbar({
   envelopeId,
@@ -59,6 +67,8 @@ export function FieldToolbar({
 
   const selected = fields.find((f) => f.tempId === selectedTempId) ?? null;
   const save = useBulkSaveFields(envelopeId);
+  const signingFields = FIELDS.filter((f) => f.group === 'signing');
+  const dataFields = FIELDS.filter((f) => f.group === 'data');
 
   const onSave = () => {
     save.mutate(
@@ -78,81 +88,96 @@ export function FieldToolbar({
   };
 
   return (
-    <aside className="sheet sticky top-24 self-start w-72 shrink-0 p-5 space-y-6">
-      <div>
-        <p className="label-mono mb-3">Signers</p>
+    <aside className="sticky top-24 self-start w-72 shrink-0 flex flex-col gap-4">
+      {/* Recipient picker */}
+      <section className="rounded-lg bg-surface-1 border border-border shadow-sm p-3.5">
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="h-3.5 w-3.5 text-ink-3" strokeWidth={2} />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-2">
+            Recipients
+          </p>
+          <span className="ml-auto text-[10.5px] text-ink-4 font-mono">
+            {recipients.length}
+          </span>
+        </div>
         <div className="space-y-1.5">
           {recipients.map((r, i) => {
             const color = recipientColor(i);
             const active = r.id === activeRecipientId;
+            const count = fields.filter((f) => f.recipientId === r.id).length;
             return (
               <button
                 key={r.id}
                 onClick={() => setActiveRecipient(r.id)}
                 className={cn(
-                  'w-full text-left flex items-center gap-3 rounded-sm p-2 border transition-colors',
+                  'group w-full flex items-center gap-2.5 rounded-md p-2 text-left',
+                  'transition-all duration-150',
                   active
-                    ? `${color.bg} border-current ${color.fg}`
-                    : 'border-transparent hover:bg-paper-dim',
+                    ? 'bg-accent-soft ring-1 ring-accent/30'
+                    : 'hover:bg-surface-sunken',
                 )}
               >
                 <span
                   className={cn(
-                    'h-6 w-6 rounded-sm border flex items-center justify-center text-[10px] font-mono uppercase tracking-wider',
+                    'h-7 w-7 grid place-items-center rounded-full shrink-0',
+                    'text-[10px] font-semibold uppercase tracking-tight',
                     color.bg,
                     color.fg,
-                    'border-current',
                   )}
                 >
-                  {i + 1}
+                  {initials(r.name)}
                 </span>
-                <span className="text-sm truncate flex-1">{r.name}</span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={cn(
+                      'block text-[12.5px] font-medium truncate leading-tight',
+                      active ? 'text-ink' : 'text-ink-2',
+                    )}
+                  >
+                    {r.name}
+                  </span>
+                  <span className="block text-[10.5px] text-ink-3 truncate">
+                    {count} field{count === 1 ? '' : 's'}
+                  </span>
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      <div>
-        <p className="label-mono mb-3">Add field</p>
-        <div className="grid grid-cols-2 gap-2">
-          {FIELDS.map((f) => {
-            const Icon = f.icon;
-            const isSelected = pendingFieldType === f.type;
-            return (
-              <button
-                key={f.type}
-                disabled={!activeRecipientId}
-                onClick={() =>
-                  setPendingFieldType(isSelected ? null : f.type)
-                }
-                className={cn(
-                  'flex flex-col items-center gap-1.5 rounded-md border p-3 transition-all',
-                  'disabled:opacity-40 disabled:cursor-not-allowed',
-                  isSelected
-                    ? 'border-accent bg-accent-tint text-accent-deep shadow-paper'
-                    : 'border-border text-ink-soft hover:border-accent-soft hover:bg-paper-dim/40 hover:text-ink',
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="text-xs">{f.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {pendingFieldType ? (
-          <p className="mt-3 text-xs text-ink-soft">
-            Click anywhere on the document to place the field.
-          </p>
-        ) : (
-          <p className="mt-3 text-xs text-ink-faint">
-            {activeRecipientId
-              ? 'Pick a field type to place.'
-              : 'Pick a signer first.'}
-          </p>
-        )}
-      </div>
+      {/* Field palette */}
+      <section className="rounded-lg bg-surface-1 border border-border shadow-sm p-3.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-2 mb-3">
+          Standard fields
+        </p>
+        <FieldPalette
+          fields={signingFields}
+          activeRecipientId={activeRecipientId}
+          pendingFieldType={pendingFieldType}
+          onPick={setPendingFieldType}
+        />
 
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-2 mb-3">
+          Data fields
+        </p>
+        <FieldPalette
+          fields={dataFields}
+          activeRecipientId={activeRecipientId}
+          pendingFieldType={pendingFieldType}
+          onPick={setPendingFieldType}
+        />
+
+        <p className="mt-3 text-[10.5px] text-ink-3 leading-snug">
+          {pendingFieldType
+            ? 'Click anywhere on document to drop field.'
+            : activeRecipientId
+              ? 'Pick field type then click document.'
+              : 'Pick recipient first.'}
+        </p>
+      </section>
+
+      {/* Selected field properties */}
       {selected ? (
         <FieldPropertiesPanel
           field={selected}
@@ -161,10 +186,13 @@ export function FieldToolbar({
         />
       ) : null}
 
-      <div className="pt-4 border-t border-border space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="label-mono">Total fields</span>
-          <span className="font-mono">{fields.length}</span>
+      {/* Save bar */}
+      <section className="rounded-lg bg-surface-1 border border-border shadow-sm p-3.5">
+        <div className="flex items-center justify-between text-[11px] mb-2.5">
+          <span className="text-ink-3 uppercase tracking-[0.06em] font-semibold">
+            Fields placed
+          </span>
+          <span className="font-mono text-ink">{fields.length}</span>
         </div>
         <Button
           variant="accent"
@@ -174,10 +202,61 @@ export function FieldToolbar({
           onClick={onSave}
         >
           <Save className="h-3.5 w-3.5" />
-          {dirty ? 'Save fields' : 'Saved'}
+          {dirty ? 'Save fields' : 'All saved'}
         </Button>
-      </div>
+      </section>
     </aside>
+  );
+}
+
+/* ─────────────── Palette grid ─────────────── */
+
+function FieldPalette({
+  fields,
+  activeRecipientId,
+  pendingFieldType,
+  onPick,
+}: {
+  fields: FieldDef[];
+  activeRecipientId: string | null;
+  pendingFieldType: FieldType | null;
+  onPick: (t: FieldType | null) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-1.5">
+      {fields.map((f) => {
+        const Icon = f.icon;
+        const isSelected = pendingFieldType === f.type;
+        const disabled = !activeRecipientId;
+        return (
+          <button
+            key={f.type}
+            disabled={disabled}
+            onClick={() => onPick(isSelected ? null : f.type)}
+            title={f.label}
+            className={cn(
+              'flex flex-col items-center justify-center gap-1 rounded-md py-2.5 px-1',
+              'border transition-all duration-150',
+              'disabled:opacity-40 disabled:cursor-not-allowed',
+              isSelected
+                ? 'border-accent bg-accent-soft text-accent-deep shadow-sm'
+                : 'border-border text-ink-2 hover:border-accent/50 hover:bg-surface-sunken hover:text-ink',
+            )}
+          >
+            <Icon
+              className={cn(
+                'h-4 w-4',
+                isSelected ? 'text-accent-deep' : 'text-ink-3',
+              )}
+              strokeWidth={2}
+            />
+            <span className="text-[10.5px] leading-tight truncate w-full text-center">
+              {f.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -193,9 +272,11 @@ function FieldPropertiesPanel({
   onRemove: () => void;
 }) {
   return (
-    <div className="pt-4 border-t border-border space-y-4">
+    <section className="rounded-lg bg-surface-1 border border-accent/30 shadow-sm p-3.5 space-y-4">
       <div className="flex items-center justify-between">
-        <p className="label-mono">Selected field</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-accent-deep">
+          Field properties
+        </p>
         <button
           type="button"
           onClick={onRemove}
@@ -206,19 +287,19 @@ function FieldPropertiesPanel({
         </button>
       </div>
 
-      <div className="text-[12px] text-ink-3">
-        Type:{' '}
+      <div className="flex items-center justify-between text-[12px]">
+        <span className="text-ink-3">Type</span>
         <span className="font-mono text-ink-2">{field.fieldType}</span>
       </div>
 
-      <label className="flex items-center gap-2 text-[13px] text-ink-2 cursor-pointer">
+      <label className="flex items-center justify-between cursor-pointer text-[12px] text-ink-2">
+        <span>Required</span>
         <input
           type="checkbox"
           checked={field.required}
           onChange={(e) => onUpdate({ required: e.target.checked })}
           className="h-3.5 w-3.5 accent-accent"
         />
-        Required
       </label>
 
       {field.fieldType === 'DROPDOWN' ? (
@@ -243,13 +324,11 @@ function FieldPropertiesPanel({
                 ? field.options.label
                 : '') ?? ''
             }
-            onChange={(e) =>
-              onUpdate({ options: { label: e.target.value } })
-            }
+            onChange={(e) => onUpdate({ options: { label: e.target.value } })}
           />
         </div>
       ) : null}
-    </div>
+    </section>
   );
 }
 
