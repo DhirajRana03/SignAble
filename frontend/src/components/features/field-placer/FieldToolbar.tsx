@@ -151,6 +151,32 @@ export const FIELDS: FieldDef[] = [
 ];
 
 /**
+ * Tile background by group. Soft, low-saturation tints so palette
+ * reads as colored cards without overpowering the document area.
+ */
+function groupBgFor(group: FieldDef['group']): string {
+  switch (group) {
+    case 'signing':
+      return 'bg-indigo-50/80';
+    case 'identity':
+      return 'bg-amber-50/80';
+    case 'data':
+      return 'bg-emerald-50/80';
+  }
+}
+
+function groupIconBgFor(group: FieldDef['group']): string {
+  switch (group) {
+    case 'signing':
+      return 'bg-white/85 text-indigo-700';
+    case 'identity':
+      return 'bg-white/85 text-amber-700';
+    case 'data':
+      return 'bg-white/85 text-emerald-700';
+  }
+}
+
+/**
  * Glassmorphic field toolbar. Recipient picker with validation badges,
  * draggable field palette grouped by purpose, inline properties
  * inspector, save bar.
@@ -444,26 +470,31 @@ function FieldTile({
       }}
       title={def.label}
       className={cn(
-        'group/tile relative flex flex-col items-center justify-center gap-1 rounded-lg py-2 px-1',
-        'border border-white/50 bg-white/40 backdrop-blur-sm',
+        'group/tile relative flex flex-col items-center justify-center gap-1.5 rounded-lg py-2.5 px-1.5',
+        'border border-white/60 backdrop-blur-sm',
         'transition-all duration-150',
+        groupBgFor(def.group),
         'disabled:opacity-40 disabled:cursor-not-allowed',
         !disabled &&
-          'hover:border-accent/40 hover:bg-white/70 hover:-translate-y-0.5 hover:shadow-sm cursor-grab active:cursor-grabbing',
+          'hover:border-accent/50 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing',
       )}
     >
-      {/* Recipient color swatch */}
       <span
         aria-hidden
         className={cn(
-          'absolute top-1 right-1 h-1.5 w-1.5 rounded-full',
+          'absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2 ring-white/70',
           colorClass,
         )}
       />
-      <span className="h-7 w-7 grid place-items-center rounded-md bg-white/70 text-ink-2 border border-white/50">
-        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+      <span
+        className={cn(
+          'h-9 w-9 grid place-items-center rounded-lg border border-white/70 shadow-sm',
+          groupIconBgFor(def.group),
+        )}
+      >
+        <Icon className="h-4.5 w-4.5" strokeWidth={2.2} style={{ width: 18, height: 18 }} />
       </span>
-      <span className="text-[10px] font-medium leading-tight truncate w-full text-center text-ink-2">
+      <span className="text-[11px] font-medium leading-tight truncate w-full text-center text-ink-2">
         {def.label}
       </span>
     </button>
