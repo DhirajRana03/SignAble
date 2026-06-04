@@ -23,6 +23,9 @@ export function EnvelopeCard({
   const isDraft = envelope.status === 'DRAFT';
   const del = useDeleteEnvelope();
   const [confirming, setConfirming] = useState(false);
+  const href = isDraft
+    ? `/envelopes/${envelope.id}/prepare`
+    : `/envelopes/${envelope.id}`;
 
   return (
     <>
@@ -31,7 +34,7 @@ export function EnvelopeCard({
         style={{ animationDelay: `${index * 24}ms` }}
       >
         <Link
-          href={`/envelopes/${envelope.id}`}
+          href={href}
           className="block px-4 lg:px-5 py-3.5 hover:bg-surface-sunken/60 transition-colors duration-150"
         >
         <div className="grid grid-cols-12 gap-3 items-center">

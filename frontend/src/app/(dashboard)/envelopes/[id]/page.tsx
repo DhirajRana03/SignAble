@@ -3,6 +3,7 @@
 import { Copy, Download, Send, Trash2, XCircle } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { AuditTrail } from '@/components/features/envelopes/AuditTrail';
@@ -26,7 +27,18 @@ export default function EnvelopeDetailPage() {
   const voidIt = useVoidEnvelope();
   const del = useDeleteEnvelope();
 
-  if (envelope.isLoading || !envelope.data) {
+  // Drafts finalize via prepare workspace. Redirect on load.
+  useEffect(() => {
+    if (envelope.data?.status === 'DRAFT') {
+      router.replace(`/envelopes/${envelope.data.id}/prepare`);
+    }
+  }, [envelope.data?.status, envelope.data?.id, router]);
+
+  if (
+    envelope.isLoading ||
+    !envelope.data ||
+    envelope.data.status === 'DRAFT'
+  ) {
     return (
       <DashboardShell eyebrow="Envelope" title="Loading…">
         <div className="label-mono">loading…</div>
