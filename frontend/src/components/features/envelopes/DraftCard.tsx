@@ -46,7 +46,7 @@ export function DraftCard({
           className={cn(
             'h-8 w-8 grid place-items-center rounded-full shrink-0 border-2 transition-colors',
             hasDocument
-              ? 'border-success text-success bg-success/10'
+              ? 'border-emerald-500 text-emerald-600 bg-emerald-50'
               : 'border-border-strong text-ink-4 bg-surface-sunken',
           )}
           aria-label={hasDocument ? 'Document uploaded' : 'No document'}
@@ -90,7 +90,7 @@ export function DraftCard({
             size="sm"
             onClick={() => setConfirming(true)}
             aria-label="Delete draft"
-            className="border border-danger text-danger bg-transparent hover:bg-danger/10 hover:text-danger hover:border-danger"
+            className="border border-red-500 text-red-600 bg-transparent hover:bg-red-50 hover:text-red-700 hover:border-red-600"
           >
             <Trash2 className="h-3 w-3" /> Delete
           </Button>
