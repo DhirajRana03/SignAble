@@ -91,16 +91,24 @@ export function EnvelopeComposer({
         const { envelopeService } = await import(
           '@/services/envelope.service'
         );
-        const [env, attached] = await Promise.all([
-          envelopeService.get(draftId),
-          envelopeService.listAttachedDocuments(draftId),
-        ]);
+        const env = await envelopeService.get(draftId);
         if (cancelled) return;
         if (env.status !== 'DRAFT') {
           // Non-draft cannot edit via composer. Bounce to detail.
           router.replace(`/envelopes/${env.id}`);
           return;
         }
+        // Attached docs endpoint may be unavailable on older backends;
+        // primary documentId still loads from envelope payload.
+        let attached: Awaited<
+          ReturnType<typeof envelopeService.listAttachedDocuments>
+        > = [];
+        try {
+          attached = await envelopeService.listAttachedDocuments(draftId);
+        } catch {
+          // Tolerate failure — primary doc still renders.
+        }
+        if (cancelled) return;
         const docIds = [
           env.documentId,
           ...attached
@@ -138,6 +146,8 @@ export function EnvelopeComposer({
   const docReady = primaryDoc?.status === 'READY';
 
   useEffect(() => {
+    // Skip filename auto-seed in draft edit mode — hydration owns title.
+    if (draftId) return;
     if (primaryDoc && !title) {
       setTitle(
         primaryDoc.filename.replace(
@@ -146,7 +156,7 @@ export function EnvelopeComposer({
         ),
       );
     }
-  }, [primaryDoc, title]);
+  }, [draftId, primaryDoc, title]);
 
   const createEnvelope = useCreateEnvelope();
   const deleteDoc = useDeleteDocument();
@@ -353,6 +363,21 @@ export function EnvelopeComposer({
   }, [isDirty]);
 
   const sequential = signingOrder === 'SEQUENTIAL';
+
+  // Wait for draft hydration before painting form. Prevents flashing
+  // empty inputs during async load + race vs title-seed effect.
+  if (draftId && !hydrated) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 pb-12">
+        <div className="space-y-5">
+          <div className="glass p-5 h-24 animate-pulse" />
+          <div className="glass p-5 h-40 animate-pulse" />
+          <div className="glass p-5 h-32 animate-pulse" />
+        </div>
+        <div className="glass p-5 h-64 animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <form
