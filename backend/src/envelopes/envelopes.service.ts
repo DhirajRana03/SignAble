@@ -123,6 +123,97 @@ export class EnvelopesService {
     });
   }
 
+  /**
+   * Attach extra document to envelope. Primary documentId stays as set
+   * on create. Attachments are sender-side reference material today;
+   * future bundling may merge them into final signed PDF.
+   * Rejects on non-DRAFT envelope to prevent post-send tampering.
+   */
+  async attachDocument(
+    userId: string,
+    envelopeId: string,
+    documentId: string,
+  ): Promise<{ envelopeId: string; documentId: string; orderIndex: number }> {
+    const env = await this.get(userId, envelopeId);
+    if (env.status !== EnvelopeStatus.DRAFT) {
+      throw new InvalidStateTransitionError(env.status, 'attach_document');
+    }
+    if (env.documentId === documentId) {
+      throw new ValidationError(
+        'Document already attached as primary document',
+      );
+    }
+    const doc = await this.prisma.document.findUnique({
+      where: { id: documentId },
+    });
+    if (!doc) throw new NotFoundError('Document', documentId);
+    if (doc.userId !== userId) throw new ForbiddenError();
+    if (doc.status !== DocumentStatus.READY) {
+      throw new ValidationError(
+        'Document must finish processing before attachment',
+      );
+    }
+    const existing = await this.prisma.envelopeDocument.findUnique({
+      where: {
+        envelopeId_documentId: { envelopeId, documentId },
+      },
+    });
+    if (existing) {
+      throw new ValidationError('Document already attached to envelope');
+    }
+    const count = await this.prisma.envelopeDocument.count({
+      where: { envelopeId },
+    });
+    return this.prisma.envelopeDocument.create({
+      data: { envelopeId, documentId, orderIndex: count },
+    });
+  }
+
+  async detachDocument(
+    userId: string,
+    envelopeId: string,
+    documentId: string,
+  ): Promise<void> {
+    const env = await this.get(userId, envelopeId);
+    if (env.status !== EnvelopeStatus.DRAFT) {
+      throw new InvalidStateTransitionError(env.status, 'detach_document');
+    }
+    await this.prisma.envelopeDocument.delete({
+      where: {
+        envelopeId_documentId: { envelopeId, documentId },
+      },
+    });
+  }
+
+  async listAttachedDocuments(
+    userId: string,
+    envelopeId: string,
+  ): Promise<
+    Array<{
+      documentId: string;
+      orderIndex: number;
+      attachedAt: Date;
+      filename: string;
+      pageCount: number;
+      status: DocumentStatus;
+    }>
+  > {
+    await this.get(userId, envelopeId); // ownership check
+    const rows = await this.prisma.envelopeDocument.findMany({
+      where: { envelopeId },
+      orderBy: { orderIndex: 'asc' },
+      include: { document: true },
+    });
+    return rows.map((r) => ({
+      documentId: r.documentId,
+      orderIndex: r.orderIndex,
+      attachedAt: r.attachedAt,
+      filename: r.document.filename,
+      pageCount: r.document.pageCount,
+      status: r.document.status,
+    }));
+  }
+
   async send(
     userId: string,
     userEmail: string,

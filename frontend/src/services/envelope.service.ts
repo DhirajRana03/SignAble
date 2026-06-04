@@ -158,4 +158,45 @@ export const envelopeService = {
   async deleteField(envelopeId: string, fieldId: string): Promise<void> {
     await apiClient.delete(`/envelopes/${envelopeId}/fields/${fieldId}`);
   },
+  async attachDocument(
+    envelopeId: string,
+    documentId: string,
+  ): Promise<{ envelopeId: string; documentId: string; orderIndex: number }> {
+    const { data } = await apiClient.post<{
+      envelopeId: string;
+      documentId: string;
+      orderIndex: number;
+    }>(`/envelopes/${envelopeId}/documents/${documentId}`);
+    return data;
+  },
+  async detachDocument(
+    envelopeId: string,
+    documentId: string,
+  ): Promise<void> {
+    await apiClient.delete(
+      `/envelopes/${envelopeId}/documents/${documentId}`,
+    );
+  },
+  async listAttachedDocuments(envelopeId: string): Promise<
+    Array<{
+      documentId: string;
+      orderIndex: number;
+      attachedAt: string;
+      filename: string;
+      pageCount: number;
+      status: string;
+    }>
+  > {
+    const { data } = await apiClient.get<
+      Array<{
+        documentId: string;
+        orderIndex: number;
+        attachedAt: string;
+        filename: string;
+        pageCount: number;
+        status: string;
+      }>
+    >(`/envelopes/${envelopeId}/documents`);
+    return data;
+  },
 };

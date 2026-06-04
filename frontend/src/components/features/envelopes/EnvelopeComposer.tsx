@@ -148,6 +148,11 @@ export function EnvelopeComposer() {
         signingOrder,
       });
       const { envelopeService } = await import('@/services/envelope.service');
+      // Attach extra documents (beyond primary) to envelope. Skip primaryId.
+      const extras = documentIds.slice(1);
+      for (const extraId of extras) {
+        await envelopeService.attachDocument(envelope.id, extraId);
+      }
       for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
         await envelopeService.addRecipient(envelope.id, {

@@ -38,6 +38,7 @@ model Document {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   envelopes Envelope[]
+  envelopeAttachments EnvelopeDocument[]
 
   @@index([userId])
   @@map("documents")
@@ -69,10 +70,29 @@ model Envelope {
   recipients  Recipient[]
   fields      SignatureField[]
   auditEvents AuditEvent[]
+  attachedDocuments EnvelopeDocument[]
 
   @@index([userId])
   @@index([status])
   @@map("envelopes")
+}
+
+/// Join table for extra documents attached to an envelope beyond the
+/// primary documentId. Primary doc drives the signing pipeline today;
+/// extras travel with envelope for sender reference and future bundling.
+model EnvelopeDocument {
+  envelopeId String
+  documentId String
+  orderIndex Int      @default(0)
+  attachedAt DateTime @default(now())
+
+  envelope Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([envelopeId, documentId])
+  @@index([envelopeId])
+  @@index([documentId])
+  @@map("envelope_documents")
 }
 
 enum EnvelopeStatus {

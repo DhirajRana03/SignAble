@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -74,6 +75,34 @@ export class EnvelopesController {
     @CurrentUser() user: User,
   ) {
     return this.envelopesService.void(user.id, user.email, id, dto.reason);
+  }
+
+  @Get(':id/documents')
+  listDocuments(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.envelopesService.listAttachedDocuments(user.id, id);
+  }
+
+  @Post(':id/documents/:documentId')
+  @HttpCode(201)
+  attachDocument(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('documentId', new ParseUUIDPipe()) documentId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.envelopesService.attachDocument(user.id, id, documentId);
+  }
+
+  @Delete(':id/documents/:documentId')
+  @HttpCode(204)
+  detachDocument(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('documentId', new ParseUUIDPipe()) documentId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.envelopesService.detachDocument(user.id, id, documentId);
   }
 
   @Get(':id/audit')

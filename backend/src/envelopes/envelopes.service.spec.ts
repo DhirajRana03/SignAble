@@ -31,6 +31,13 @@ describe('EnvelopesService', () => {
       document: { findUnique: jest.fn() },
       recipient: { findMany: jest.fn() },
       auditEvent: { create: jest.fn(), findMany: jest.fn() },
+      envelopeDocument: {
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -273,6 +280,83 @@ describe('EnvelopesService', () => {
 
       const result = await service.void(USER_ID, USER_EMAIL, 'env-1', 'r');
       expect(result.status).toBe(EnvelopeStatus.VOIDED);
+    });
+  });
+
+  describe('attachDocument', () => {
+    const baseEnv = {
+      id: 'env-1',
+      userId: USER_ID,
+      documentId: 'doc-primary',
+      status: EnvelopeStatus.DRAFT,
+    };
+
+    it('rejects on non-DRAFT envelope', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        ...baseEnv,
+        status: EnvelopeStatus.SENT,
+      });
+      await expect(
+        service.attachDocument(USER_ID, 'env-1', 'doc-2'),
+      ).rejects.toBeInstanceOf(InvalidStateTransitionError);
+    });
+
+    it('rejects when document is envelope primary', async () => {
+      prisma.envelope.findUnique.mockResolvedValue(baseEnv);
+      await expect(
+        service.attachDocument(USER_ID, 'env-1', 'doc-primary'),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('rejects unprocessed document', async () => {
+      prisma.envelope.findUnique.mockResolvedValue(baseEnv);
+      prisma.document.findUnique.mockResolvedValue({
+        id: 'doc-2',
+        userId: USER_ID,
+        status: 'PROCESSING',
+      });
+      await expect(
+        service.attachDocument(USER_ID, 'env-1', 'doc-2'),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('rejects duplicate attachment', async () => {
+      prisma.envelope.findUnique.mockResolvedValue(baseEnv);
+      prisma.document.findUnique.mockResolvedValue({
+        id: 'doc-2',
+        userId: USER_ID,
+        status: 'READY',
+      });
+      prisma.envelopeDocument.findUnique.mockResolvedValue({
+        envelopeId: 'env-1',
+        documentId: 'doc-2',
+      });
+      await expect(
+        service.attachDocument(USER_ID, 'env-1', 'doc-2'),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+
+    it('creates attachment with sequential orderIndex', async () => {
+      prisma.envelope.findUnique.mockResolvedValue(baseEnv);
+      prisma.document.findUnique.mockResolvedValue({
+        id: 'doc-2',
+        userId: USER_ID,
+        status: 'READY',
+      });
+      prisma.envelopeDocument.findUnique.mockResolvedValue(null);
+      prisma.envelopeDocument.count.mockResolvedValue(2);
+      prisma.envelopeDocument.create.mockResolvedValue({
+        envelopeId: 'env-1',
+        documentId: 'doc-2',
+        orderIndex: 2,
+      });
+
+      const result = await service.attachDocument(USER_ID, 'env-1', 'doc-2');
+
+      expect(prisma.envelopeDocument.create).toHaveBeenCalledWith({
+        data: { envelopeId: 'env-1', documentId: 'doc-2', orderIndex: 2 },
+      });
+      expect(result.orderIndex).toBe(2);
     });
   });
 });
