@@ -8,56 +8,79 @@ const config: Config = {
     container: {
       center: true,
       padding: '1.5rem',
-      screens: { '2xl': '1240px' },
+      screens: { '2xl': '1200px' },
     },
     extend: {
       fontFamily: {
-        // Display: Playfair Display (matches definable.ai)
-        // Sans: Inter
-        // Mono: JetBrains Mono
-        display: ['var(--font-display)', 'Playfair Display', 'Georgia', 'serif'],
-        sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
+        // App uses Inter Tight for everything. Serif kept available for
+        // edge cases but no longer assigned to default headings.
+        sans: ['var(--font-sans)', 'Inter Tight', 'system-ui', 'sans-serif'],
+        display: ['var(--font-sans)', 'Inter Tight', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-serif)', 'Fraunces', 'Georgia', 'serif'],
         mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // Surfaces
+        // Warm cream/ivory/paper surfaces
+        cream: {
+          DEFAULT: 'hsl(var(--cream))',
+          2: 'hsl(var(--cream-2))',
+        },
+        ivory: {
+          DEFAULT: 'hsl(var(--ivory))',
+          2: 'hsl(var(--ivory-2))',
+        },
         paper: {
           DEFAULT: 'hsl(var(--paper))',
-          dim: 'hsl(var(--paper-dim))',
-          deep: 'hsl(var(--paper-deep))',
+          // Legacy aliases used by older components — pointed at app tokens
+          dim: 'hsl(var(--ivory-2))',
+          deep: 'hsl(var(--paper))',
         },
-        // Ink (text + on-paper marks)
+
+        // Ink ramp
         ink: {
           DEFAULT: 'hsl(var(--ink))',
-          soft: 'hsl(var(--ink-soft))',
-          faint: 'hsl(var(--ink-faint))',
-          mute: 'hsl(var(--ink-mute))',
-          bg: 'hsl(var(--ink-bg))',
-          bg2: 'hsl(var(--ink-bg-2))',
+          2: 'hsl(var(--ink-2))',
+          3: 'hsl(var(--ink-3))',
+          soft: 'hsl(var(--ink-3))',
+          faint: 'hsl(var(--muted))',
+          mute: 'hsl(var(--muted-2))',
+          bg: 'hsl(var(--ink))',
+          bg2: 'hsl(var(--ink-2))',
         },
-        // Coral accent stack
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          2: 'hsl(var(--muted-2))',
+          foreground: 'hsl(var(--ink-3))',
+        },
+        faint: 'hsl(var(--faint))',
+
+        // Accent — terracotta, mostly for focus/drag/brand
         accent: {
           DEFAULT: 'hsl(var(--accent))',
-          deep: 'hsl(var(--accent-deep))',
-          soft: 'hsl(var(--accent-soft))',
-          tint: 'hsl(var(--accent-tint))',
+          soft: 'hsl(var(--accent) / 0.12)',
+          softer: 'hsl(var(--accent) / 0.06)',
+          ink: 'hsl(var(--accent-ink))',
+          tint: 'hsl(var(--accent) / 0.10)',
+          deep: 'hsl(var(--accent-ink))',
           fg: 'hsl(var(--accent-fg))',
         },
-        border: 'hsl(var(--border))',
-        'border-soft': 'hsl(var(--border-soft))',
+
+        // Lines
+        border: 'hsl(var(--line))',
+        'border-soft': 'hsl(var(--line-soft))',
+        'border-strong': 'hsl(var(--line-strong))',
         ring: 'hsl(var(--ring))',
-        success: 'hsl(var(--success))',
+
+        // Status
+        success: 'hsl(var(--ok))',
         warn: 'hsl(var(--warn))',
-        danger: 'hsl(var(--danger))',
-        // shadcn compatibility
-        background: 'hsl(var(--paper))',
+        danger: 'hsl(var(--err))',
+
+        // shadcn compat
+        background: 'hsl(var(--cream))',
         foreground: 'hsl(var(--ink))',
-        muted: {
-          DEFAULT: 'hsl(var(--paper-dim))',
-          foreground: 'hsl(var(--ink-soft))',
-        },
         destructive: {
-          DEFAULT: 'hsl(var(--danger))',
+          DEFAULT: 'hsl(var(--err))',
           foreground: 'hsl(var(--paper))',
         },
         primary: {
@@ -65,60 +88,64 @@ const config: Config = {
           foreground: 'hsl(var(--paper))',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--paper-dim))',
+          DEFAULT: 'hsl(var(--ivory))',
           foreground: 'hsl(var(--ink))',
         },
         card: {
-          DEFAULT: 'hsl(var(--paper-deep))',
+          DEFAULT: 'hsl(var(--paper))',
           foreground: 'hsl(var(--ink))',
         },
         popover: {
-          DEFAULT: 'hsl(var(--paper-deep))',
+          DEFAULT: 'hsl(var(--paper))',
           foreground: 'hsl(var(--ink))',
         },
-        input: 'hsl(var(--border))',
+        input: 'hsl(var(--line-strong))',
       },
       borderRadius: {
-        // Match definable.ai radii: 6 / 10 / 18 / 28
-        xs: '6px',
-        sm: '8px',
-        md: '10px',
-        lg: '18px',
-        xl: '28px',
+        xs: '4px',
+        sm: '6px',      // --r-sm
+        DEFAULT: '6px',
+        md: '10px',     // --r-md
+        lg: '14px',     // --r-lg
+        xl: '20px',     // --r-xl
         pill: '9999px',
       },
       boxShadow: {
-        // Only used on hover-lift CTA. Default surfaces stay flat.
         xs: '0 1px 2px hsl(var(--ink) / 0.04)',
         paper: 'none',
         sheet: 'none',
-        lifted: '0 24px 60px hsl(var(--ink) / 0.10), 0 8px 20px hsl(var(--ink) / 0.05)',
-        coral: '0 10px 22px hsl(var(--accent) / 0.28)',
+        hairline: '0 1px 0 hsl(var(--line))',
+        // Inset ring matches definable active state
+        ring: 'inset 0 0 0 1px hsl(var(--line))',
+        // Card lift (popovers / dropdowns)
+        lifted: '0 5px 20px -5px hsl(var(--ink) / 0.15), 0 0 1px hsl(var(--ink) / 0.10)',
+        popover: '0 12px 28px -14px hsl(var(--ink) / 0.18)',
+        focus: '0 0 0 3px hsl(var(--accent) / 0.18)',
+        coral: '0 0 0 3px hsl(var(--accent) / 0.18)',
       },
       keyframes: {
         'fade-up': {
-          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         'scale-in': {
-          '0%': { opacity: '0', transform: 'scale(0.96)' },
+          '0%': { opacity: '0', transform: 'scale(0.97)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.4' },
         },
         'pulse-coral': {
-          '0%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.45)' },
-          '70%': { boxShadow: '0 0 0 8px hsl(var(--accent) / 0)' },
-          '100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0)' },
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
         },
       },
       animation: {
-        'fade-up': 'fade-up 0.4s ease-out',
-        'scale-in': 'scale-in 0.2s ease-out',
-        shimmer: 'shimmer 2s linear infinite',
-        'pulse-coral': 'pulse-coral 1.6s ease-out infinite',
+        'fade-up': 'fade-up 0.2s ease-out',
+        'scale-in': 'scale-in 0.14s ease-out',
+        'pulse-soft': 'pulse-soft 1.8s ease-in-out infinite',
+        'pulse-coral': 'pulse-soft 1.8s ease-in-out infinite',
       },
     },
   },

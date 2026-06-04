@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
 
 /**
- * SinAble wordmark — coral "S" mark + serif wordmark.
- * Aligned with definable.ai's brand stack: Playfair Display serif + coral accent.
+ * Wordmark — sans, paper-on-ink mark. Matches app.definable.ai compact
+ * brand sizing (24px mark, 13.5px wordmark).
  */
 export function Logo({
   className,
@@ -12,36 +12,27 @@ export function Logo({
   showText?: boolean;
 }) {
   return (
-    <div className={cn('flex items-center gap-2 select-none', className)}>
-      <div className="relative h-8 w-8 shrink-0">
-        <svg viewBox="0 0 32 32" className="h-full w-full" aria-hidden="true">
-          {/* Soft coral disc with ink mark inside */}
-          <rect
-            x="0.5"
-            y="0.5"
-            width="31"
-            height="31"
-            rx="6"
-            fill="hsl(var(--accent))"
-            stroke="hsl(var(--accent-deep))"
-          />
+    <div className={cn('flex items-center gap-1.5 select-none', className)}>
+      <div className="relative h-6 w-6 shrink-0">
+        <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
+          <rect width="24" height="24" rx="6" fill="hsl(var(--ink))" />
           <text
-            x="16"
-            y="22"
+            x="12"
+            y="17"
             textAnchor="middle"
-            fontFamily="Playfair Display, serif"
-            fontSize="20"
+            fontFamily="inherit"
+            fontSize="14"
             fontWeight="600"
             fill="hsl(var(--paper))"
-            fontStyle="italic"
+            letterSpacing="-0.02em"
           >
             S
           </text>
         </svg>
       </div>
       {showText ? (
-        <span className="font-display text-lg leading-none tracking-tight">
-          Sin<span className="italic-accent">A</span>ble
+        <span className="text-[13.5px] font-semibold tracking-tight text-ink">
+          SinAble
         </span>
       ) : null}
     </div>

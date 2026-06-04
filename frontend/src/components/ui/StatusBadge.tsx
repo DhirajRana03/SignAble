@@ -5,26 +5,20 @@ import type { EnvelopeStatus, RecipientStatus } from '@/types/envelope.types';
 type AnyStatus = DocumentStatus | EnvelopeStatus | RecipientStatus | string;
 
 const PALETTE: Record<string, string> = {
-  // documents
-  PENDING: 'border-ink-faint/40 text-ink-mute bg-paper-dim',
-  PROCESSING: 'border-accent/40 text-accent-deep bg-accent-tint',
-  READY: 'border-success/40 text-success bg-success/5',
-  FAILED: 'border-danger/40 text-danger bg-danger/5',
-  // envelopes
-  DRAFT: 'border-ink-faint/40 text-ink-soft bg-paper-dim/60',
-  SENT: 'border-accent/40 text-accent-deep bg-accent-tint',
-  IN_PROGRESS: 'border-accent/50 text-accent-deep bg-accent-tint',
-  COMPLETED: 'border-success/50 text-success bg-success/5',
-  VOIDED: 'border-ink-faint/40 text-ink-mute line-through',
-  EXPIRED: 'border-ink-faint/40 text-ink-mute',
-  // recipients
-  VIEWED: 'border-accent/40 text-accent-deep bg-accent-tint',
-  SIGNED: 'border-success/40 text-success bg-success/5',
-  DECLINED: 'border-danger/40 text-danger bg-danger/5',
+  PENDING: 'text-muted bg-ivory-2',
+  PROCESSING: 'text-warn bg-warn/10',
+  READY: 'text-success bg-success/10',
+  FAILED: 'text-danger bg-danger/10',
+  DRAFT: 'text-muted bg-ivory-2',
+  SENT: 'text-accent-ink bg-accent/10',
+  IN_PROGRESS: 'text-warn bg-warn/10',
+  COMPLETED: 'text-success bg-success/10',
+  VOIDED: 'text-muted-2 bg-ivory-2',
+  EXPIRED: 'text-muted-2 bg-ivory-2',
+  VIEWED: 'text-accent-ink bg-accent/10',
+  SIGNED: 'text-success bg-success/10',
+  DECLINED: 'text-danger bg-danger/10',
 };
-
-// Status that should pulse with the live coral animation
-const LIVE_STATUSES = new Set(['PROCESSING', 'SENT', 'IN_PROGRESS']);
 
 export function StatusBadge({
   status,
@@ -33,25 +27,16 @@ export function StatusBadge({
   status: AnyStatus;
   className?: string;
 }) {
-  const palette = PALETTE[status] ?? 'border-ink-faint/40 text-ink-mute';
-  const isLive = LIVE_STATUSES.has(String(status));
-
+  const palette = PALETTE[status] ?? 'text-muted bg-ivory-2';
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em]',
+        'inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10.5px] uppercase tracking-[0.06em] font-medium',
         palette,
         className,
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          'inline-block h-1.5 w-1.5 rounded-full bg-current',
-          isLive && 'animate-pulse-coral',
-        )}
-      />
-      {String(status).replace(/_/g, ' ')}
+      {String(status).replace(/_/g, ' ').toLowerCase()}
     </span>
   );
 }

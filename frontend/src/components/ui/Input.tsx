@@ -2,6 +2,10 @@ import { forwardRef } from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Inputs match app.definable.ai — paper container with strong hairline
+ * border, terracotta focus ring (3px softer-tint). 13px text, 7×10 pad.
+ */
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}
 
@@ -11,11 +15,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       ref={ref}
       type={type}
       className={cn(
-        'flex h-10 w-full rounded-md border border-border bg-paper-deep px-3.5 py-2 text-sm text-ink',
-        'placeholder:text-ink-mute',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-accent',
+        'flex h-8 w-full rounded-sm bg-paper px-2.5 py-1.5 text-[13px] text-ink',
+        'border border-border-strong',
+        'placeholder:text-muted-2',
+        'focus-visible:outline-none focus-visible:border-accent focus-visible:shadow-focus',
         'disabled:cursor-not-allowed disabled:opacity-60',
-        'transition-colors',
+        'transition-[border-color,box-shadow] duration-[120ms]',
         className,
       )}
       {...props}
@@ -31,10 +36,11 @@ export const Textarea = forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      'flex min-h-[80px] w-full rounded-md border border-border bg-paper-deep px-3.5 py-2.5 text-sm text-ink',
-      'placeholder:text-ink-mute',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-accent',
-      'transition-colors resize-y',
+      'flex min-h-[72px] w-full rounded-sm bg-paper px-2.5 py-2 text-[13px] text-ink',
+      'border border-border-strong',
+      'placeholder:text-muted-2',
+      'focus-visible:outline-none focus-visible:border-accent focus-visible:shadow-focus',
+      'transition-[border-color,box-shadow] duration-[120ms] resize-y',
       className,
     )}
     {...props}
@@ -49,7 +55,10 @@ export function Label({
 }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn('label-mono plain mb-1.5 block', className)}
+      className={cn(
+        'block mb-1.5 text-[11.5px] font-medium text-ink-3',
+        className,
+      )}
       {...props}
     >
       {children}

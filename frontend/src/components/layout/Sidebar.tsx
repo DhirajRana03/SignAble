@@ -23,8 +23,11 @@ const NAV = [
 ];
 
 /**
- * Sidebar renders inline at md+ and as a slide-over drawer below.
- * Controlled `open` only matters for mobile breakpoints.
+ * Sidebar mirrors app.definable.ai `.sb` pattern:
+ *   - cream bg shared with page
+ *   - tight 13px nav items, 4–5px vertical padding
+ *   - active state: paper chip + inset 1px line (never coral fill)
+ *   - section labels: 10.5px uppercase 0.09em tracking
  */
 export function Sidebar({
   open = false,
@@ -35,7 +38,6 @@ export function Sidebar({
 }) {
   const pathname = usePathname() ?? '/';
 
-  // Lock body scroll while mobile drawer open
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -45,28 +47,28 @@ export function Sidebar({
     };
   }, [open]);
 
-  const navContent = (
-    <div className="flex flex-1 flex-col p-5">
-      <div className="mb-10 px-2 flex items-center justify-between">
+  const inner = (
+    <div className="flex flex-1 flex-col">
+      <div className="px-3 pt-4 pb-3 flex items-center justify-between">
         <Link href="/" onClick={onClose}>
           <Logo />
         </Link>
         {onClose ? (
           <button
             onClick={onClose}
-            className="md:hidden h-8 w-8 flex items-center justify-center rounded-sm text-ink-faint hover:bg-paper-dim hover:text-ink"
+            className="md:hidden h-7 w-7 grid place-items-center rounded-sm text-muted hover:bg-ivory-2 hover:text-ink"
             aria-label="Close menu"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         ) : null}
       </div>
 
-      <div className="px-2 mb-4">
-        <span className="label-mono">Workspace</span>
+      <div className="px-3 pt-2 pb-1">
+        <span className="sect-label">Workspace</span>
       </div>
 
-      <nav className="space-y-1">
+      <nav className="px-2 py-1 flex flex-col gap-[1px]">
         {NAV.map((item) => {
           const active =
             item.href === '/'
@@ -79,73 +81,64 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               className={cn(
-                'group relative flex items-center gap-3 px-3 py-2 text-[14px] transition-colors',
+                'flex items-center gap-2.5 rounded-sm px-2 py-[5px] text-[13px] transition-colors duration-[120ms]',
                 active
-                  ? 'text-ink font-medium'
-                  : 'text-ink-soft hover:text-ink',
+                  ? 'item-active font-medium'
+                  : 'text-ink-3 hover:bg-ivory-2 hover:text-ink',
               )}
             >
               <Icon
                 className={cn(
-                  'h-4 w-4 shrink-0 transition-colors',
-                  active ? 'text-accent-deep' : 'text-ink-mute group-hover:text-ink-soft',
+                  'h-3.5 w-3.5 shrink-0',
+                  active ? 'text-ink' : 'text-muted',
                 )}
               />
               <span>{item.label}</span>
-              {active ? (
-                <span
-                  aria-hidden
-                  className="ml-auto h-1.5 w-1.5 rounded-pill bg-accent"
-                />
-              ) : null}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto px-2 space-y-3">
-        <div className="rule" />
+      <div className="mt-auto border-t border-border-soft px-3 py-2 flex items-center justify-between">
         <Link
           href="/settings"
           onClick={onClose}
-          className="flex items-center gap-2 text-xs text-ink-faint hover:text-ink"
+          className="flex items-center gap-1.5 text-[11.5px] text-muted hover:text-ink"
         >
-          <Settings className="h-3.5 w-3.5" />
+          <Settings className="h-3 w-3" />
           Settings
         </Link>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
-          v0.3 · beta
-        </p>
+        <span className="text-[10px] text-muted-2 font-mono">v0.3</span>
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Desktop: persistent column. No border, just transparency. */}
-      <aside className="hidden md:flex md:w-56 lg:w-60 shrink-0 bg-transparent">
-        {navContent}
+      {/* Desktop column — shares cream surface */}
+      <aside className="hidden md:flex md:w-56 lg:w-60 shrink-0 border-r border-border-soft bg-cream">
+        {inner}
       </aside>
 
-      {/* Mobile: drawer */}
+      {/* Mobile drawer */}
       <div
         className={cn(
-          'md:hidden fixed inset-0 z-40 transition-opacity',
+          'md:hidden fixed inset-0 z-40 transition-opacity duration-[140ms]',
           open ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
         aria-hidden={!open}
       >
         <div
-          className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]"
           onClick={onClose}
         />
         <aside
           className={cn(
-            'absolute inset-y-0 left-0 w-72 max-w-[85vw] flex bg-paper transition-transform',
+            'absolute inset-y-0 left-0 w-64 max-w-[80vw] flex bg-cream border-r border-border-soft transition-transform duration-[140ms]',
             open ? 'translate-x-0' : '-translate-x-full',
           )}
         >
-          {navContent}
+          {inner}
         </aside>
       </div>
     </>

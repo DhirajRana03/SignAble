@@ -14,49 +14,36 @@ export function AuthLayout({
   footer?: ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-paper">
-      {/* Coral aurora — radial glows like definable.ai hero */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(50% 40% at 88% 8%, hsl(var(--accent) / 0.14) 0%, transparent 100%), radial-gradient(35% 30% at 8% 92%, hsl(var(--accent) / 0.08) 0%, transparent 100%)',
-        }}
-      />
+    <div className="min-h-screen bg-cream flex flex-col">
+      <div className="px-6 py-5">
+        <Logo />
+      </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-        <div className="mb-16 flex items-center justify-between">
-          <Logo />
-          <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-mute">
-            est. mmxxv
-          </span>
-        </div>
-
-        {/* Borderless form area — no box, no card */}
-        <div className="animate-fade-up">
-          <div className="mb-10 space-y-3">
-            <h1 className="font-display text-[clamp(34px,4vw,52px)] font-medium leading-[1.02] tracking-tight">
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-[22px] font-semibold tracking-tight text-ink">
               {title}
             </h1>
             {subtitle ? (
-              <p className="text-base text-ink-soft text-pretty leading-relaxed max-w-sm">
-                {subtitle}
-              </p>
+              <p className="mt-1.5 text-[13px] text-muted">{subtitle}</p>
             ) : null}
           </div>
-          {children}
-        </div>
 
-        {footer ? (
-          <div className="mt-8 text-sm text-ink-soft">{footer}</div>
-        ) : null}
+          <div className="rounded-md bg-paper border border-border p-6">
+            {children}
+          </div>
 
-        <div className="mt-16">
-          <span className="font-display italic text-sm text-ink-mute">
-            a more intentional way to sign.
-          </span>
+          {footer ? (
+            <p className="mt-4 text-center text-[12.5px] text-muted">{footer}</p>
+          ) : null}
         </div>
+      </div>
+
+      <div className="px-6 py-4 text-center">
+        <span className="text-[10.5px] font-mono uppercase tracking-[0.09em] text-muted-2">
+          SinAble
+        </span>
       </div>
     </div>
   );

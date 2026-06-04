@@ -2,14 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  ArrowUpRight,
   Check,
   FileText,
-  Mail,
   Plus,
   Trash2,
   UploadCloud,
-  UserRound,
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -20,47 +17,31 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/Button';
 import { Input, Label, Textarea } from '@/components/ui/Input';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useDocument, useUploadDocument } from '@/hooks/useDocuments';
-import {
-  useAddRecipient,
-  useCreateEnvelope,
-} from '@/hooks/useEnvelopes';
-import { cn, recipientColor } from '@/lib/utils';
+import { useCreateEnvelope } from '@/hooks/useEnvelopes';
+import { cn } from '@/lib/utils';
 import { extractErrorMessage } from '@/services/api-client';
-import type { Document } from '@/types/document.types';
 import type { SigningOrder } from '@/types/envelope.types';
 
 interface DraftRecipient {
-  id: string; // client-only temp id
+  id: string;
   name: string;
   email: string;
 }
 
 const recipientSchema = z.object({
-  name: z.string().min(1, 'Name required'),
-  email: z.string().email('Valid email required'),
+  name: z.string().min(1, 'Required'),
+  email: z.string().email('Invalid email'),
 });
 type RecipientFormValues = z.infer<typeof recipientSchema>;
 
 const envelopeSchema = z.object({
-  title: z.string().min(1, 'Title required').max(500),
+  title: z.string().min(1, 'Required').max(500),
   message: z.string().max(5000).optional(),
   signingOrder: z.enum(['SEQUENTIAL', 'PARALLEL']),
 });
 type EnvelopeFormValues = z.infer<typeof envelopeSchema>;
 
-/**
- * Single-page envelope composer.
- *
- * Sections (top-to-bottom):
- *   1. Document — inline uploader, polls processing status
- *   2. Recipients — name + email form, client-side list
- *   3. Envelope — title, message, signing order
- *
- * Submit flow: ensure document READY → create envelope → add all recipients
- * sequentially → navigate to /prepare for field placement.
- */
 export function EnvelopeComposer() {
   const router = useRouter();
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -68,23 +49,16 @@ export function EnvelopeComposer() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Poll the document until READY
   const docQuery = useDocument(documentId ?? undefined);
   const document = docQuery.data;
   const docReady = document?.status === 'READY';
   const docFailed = document?.status === 'FAILED';
 
-  // Envelope form — title prefills from filename once document arrives
   const envelopeForm = useForm<EnvelopeFormValues>({
     resolver: zodResolver(envelopeSchema),
-    defaultValues: {
-      title: '',
-      message: '',
-      signingOrder: 'SEQUENTIAL',
-    },
+    defaultValues: { title: '', message: '', signingOrder: 'SEQUENTIAL' },
   });
 
-  // Sync title default when document filename arrives
   if (
     document &&
     !envelopeForm.getValues('title') &&
@@ -98,9 +72,6 @@ export function EnvelopeComposer() {
   }
 
   const createEnvelope = useCreateEnvelope();
-  // addRecipient mutation factory expects envelope id at call time — we'll
-  // build a fresh per-envelope mutation via service inside submit handler.
-
   const canSubmit =
     docReady &&
     recipients.length > 0 &&
@@ -109,7 +80,7 @@ export function EnvelopeComposer() {
 
   const onSubmit = envelopeForm.handleSubmit(async (values) => {
     if (!documentId || !docReady) {
-      setSubmitError('Upload + wait for document to finish processing first.');
+      setSubmitError('Upload and wait for document to finish processing.');
       return;
     }
     if (recipients.length === 0) {
@@ -121,7 +92,6 @@ export function EnvelopeComposer() {
     setSubmitting(true);
 
     try {
-      // 1. Create envelope
       const envelope = await createEnvelope.mutateAsync({
         documentId,
         title: values.title,
@@ -129,7 +99,6 @@ export function EnvelopeComposer() {
         signingOrder: values.signingOrder as SigningOrder,
       });
 
-      // 2. Add recipients sequentially (preserve order)
       const { envelopeService } = await import('@/services/envelope.service');
       for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
@@ -140,7 +109,6 @@ export function EnvelopeComposer() {
         });
       }
 
-      // 3. Navigate to field placement
       toast.success('Envelope created');
       router.push(`/envelopes/${envelope.id}/prepare`);
     } catch (err) {
@@ -150,121 +118,100 @@ export function EnvelopeComposer() {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-20 pb-16 max-w-4xl">
-      {/* ──────────── 1. Document ──────────── */}
-      <section className="space-y-6 animate-fade-up">
-        <SectionHeader
-          step="01"
-          eyebrow="Document"
-          title="What needs signing?"
-          accent="Upload it."
-          description="PDFs and common image formats. We will render every page for field placement."
-        />
-
+    <form onSubmit={onSubmit} className="space-y-6 pb-12 max-w-[640px]">
+      {/* Document */}
+      <Field label="Document">
         {!documentId ? (
           <DocumentDropzone onUploaded={(id) => setDocumentId(id)} />
         ) : (
-          <DocumentStatusLine
-            document={document}
-            loading={docQuery.isLoading}
-            failed={docFailed}
+          <DocumentLine
+            filename={document?.filename ?? 'Loading…'}
+            pageCount={document?.pageCount ?? 0}
+            status={document?.status ?? 'PENDING'}
+            errorMessage={docFailed ? document?.errorMessage ?? null : null}
             onReplace={() => setDocumentId(null)}
           />
         )}
-      </section>
+      </Field>
 
-      <div className="rule" />
-
-      {/* ──────────── 2. Recipients ──────────── */}
-      <section className="space-y-6 animate-fade-up">
-        <SectionHeader
-          step="02"
-          eyebrow="Recipients"
-          title="Who needs to sign?"
-          accent="Add them."
-          description="Each recipient receives an email with a unique signing link. Order is preserved for sequential signing."
-        />
-
-        <RecipientInlineForm
-          onAdd={(values) =>
+      {/* Recipients */}
+      <Field label="Recipients">
+        <RecipientAddForm
+          onAdd={(v) =>
             setRecipients((rs) => [
               ...rs,
-              { id: tempId(), name: values.name, email: values.email },
+              { id: tempId(), name: v.name, email: v.email },
             ])
           }
         />
-
         {recipients.length > 0 ? (
-          <RecipientDraftList
-            recipients={recipients}
-            onRemove={(id) =>
-              setRecipients((rs) => rs.filter((r) => r.id !== id))
-            }
-          />
-        ) : (
-          <p className="text-sm text-ink-soft py-2">
-            No recipients added yet. Add the first above.
-          </p>
-        )}
-      </section>
+          <ul className="mt-2 divide-y divide-border-soft">
+            {recipients.map((r, i) => (
+              <li
+                key={r.id}
+                className="flex items-center gap-2.5 py-2 group"
+              >
+                <span className="font-mono text-[10.5px] text-muted w-5">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] text-ink truncate">{r.name}</p>
+                  <p className="text-[11.5px] text-muted truncate">{r.email}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRecipients((rs) => rs.filter((x) => x.id !== r.id))
+                  }
+                  className="opacity-0 group-hover:opacity-100 h-6 w-6 grid place-items-center rounded-sm text-muted hover:text-danger hover:bg-danger/5 transition-opacity"
+                  aria-label="Remove"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </Field>
 
-      <div className="rule" />
-
-      {/* ──────────── 3. Envelope details ──────────── */}
-      <section className="space-y-6 animate-fade-up">
-        <SectionHeader
-          step="03"
-          eyebrow="Envelope"
-          title="Title and tone."
-          accent="Set the context."
-          description="Shown in signing emails and on every recipient's signing page."
+      {/* Title */}
+      <Field label="Title">
+        <Input
+          placeholder="Q4 vendor agreement"
+          {...envelopeForm.register('title')}
         />
+        {envelopeForm.formState.errors.title ? (
+          <p className="mt-1 text-[11.5px] text-danger">
+            {envelopeForm.formState.errors.title.message}
+          </p>
+        ) : null}
+      </Field>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="lg:col-span-2">
-            <Label htmlFor="env-title">Envelope title</Label>
-            <Input
-              id="env-title"
-              placeholder="Q4 vendor agreement"
-              {...envelopeForm.register('title')}
-            />
-            {envelopeForm.formState.errors.title ? (
-              <p className="mt-1.5 text-xs text-danger">
-                {envelopeForm.formState.errors.title.message}
-              </p>
-            ) : null}
-          </div>
+      {/* Message */}
+      <Field label="Message" optional>
+        <Textarea
+          rows={3}
+          placeholder="Please review and sign."
+          {...envelopeForm.register('message')}
+        />
+      </Field>
 
-          <div className="lg:col-span-2">
-            <Label htmlFor="env-message">Message to signers (optional)</Label>
-            <Textarea
-              id="env-message"
-              rows={3}
-              placeholder="Please review and sign at your convenience. Thank you."
-              {...envelopeForm.register('message')}
-            />
-          </div>
+      {/* Signing order */}
+      <Field label="Signing order">
+        <SigningOrderPicker
+          value={envelopeForm.watch('signingOrder')}
+          onChange={(v) => envelopeForm.setValue('signingOrder', v)}
+        />
+      </Field>
 
-          <div className="lg:col-span-2">
-            <Label className="mb-3">Signing order</Label>
-            <SigningOrderPicker
-              value={envelopeForm.watch('signingOrder')}
-              onChange={(v) => envelopeForm.setValue('signingOrder', v)}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Error banner */}
       {submitError ? (
-        <div className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+        <div className="rounded-sm border border-danger/30 bg-danger/5 px-3 py-2 text-[12.5px] text-danger">
           {submitError}
         </div>
       ) : null}
 
-      {/* Submit bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border">
-        <ReadinessSummary
+      <div className="flex items-center justify-between pt-3 border-t border-border-soft">
+        <ReadyState
           docReady={docReady}
           docPending={!!documentId && !docReady && !docFailed}
           recipientCount={recipients.length}
@@ -272,50 +219,42 @@ export function EnvelopeComposer() {
         <Button
           type="submit"
           variant="primary"
-          size="lg"
+          size="md"
           loading={submitting}
           disabled={!canSubmit}
         >
-          {submitting ? 'Creating envelope…' : 'Continue to field placement'}
-          {!submitting ? <ArrowUpRight className="h-3.5 w-3.5" /> : null}
+          {submitting ? 'Creating…' : 'Continue'}
         </Button>
       </div>
     </form>
   );
 }
 
-/* ──────────────────── Section header ──────────────────── */
+/* ────────── Field row ────────── */
 
-function SectionHeader({
-  step,
-  eyebrow,
-  title,
-  accent,
-  description,
+function Field({
+  label,
+  optional,
+  children,
 }: {
-  step: string;
-  eyebrow: string;
-  title: string;
-  accent: string;
-  description: string;
+  label: string;
+  optional?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <header>
-      <div className="flex items-baseline gap-3 mb-3">
-        <span className="font-display italic text-accent text-sm">{step}</span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
-          {eyebrow}
-        </span>
-      </div>
-      <h2 className="font-display tracking-tight">
-        {title} <em className="italic-accent">{accent}</em>
-      </h2>
-      <p className="lede mt-3">{description}</p>
-    </header>
+    <div>
+      <Label>
+        {label}
+        {optional ? (
+          <span className="ml-1.5 text-muted-2 font-normal">optional</span>
+        ) : null}
+      </Label>
+      {children}
+    </div>
   );
 }
 
-/* ──────────────────── Document dropzone ──────────────────── */
+/* ────────── Document dropzone ────────── */
 
 function DocumentDropzone({
   onUploaded,
@@ -330,9 +269,7 @@ function DocumentDropzone({
     (files: FileList | null) => {
       const file = files?.[0];
       if (!file) return;
-      upload.mutate(file, {
-        onSuccess: (doc) => onUploaded(doc.id),
-      });
+      upload.mutate(file, { onSuccess: (doc) => onUploaded(doc.id) });
     },
     [upload, onUploaded],
   );
@@ -351,12 +288,12 @@ function DocumentDropzone({
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        'relative cursor-pointer rounded-md p-10 lg:p-14 transition-all group',
-        'flex items-center gap-6 border border-dashed',
+        'relative cursor-pointer rounded-sm bg-paper border border-dashed transition-colors',
+        'flex items-center gap-3 p-4',
         dragging
-          ? 'border-accent bg-accent-tint/30'
-          : 'border-border hover:border-accent-soft hover:bg-paper-dim/30',
-        upload.isPending && 'pointer-events-none opacity-70',
+          ? 'border-accent bg-accent/8'
+          : 'border-border-strong hover:border-accent hover:bg-ivory-2/40',
+        upload.isPending && 'pointer-events-none opacity-60',
       )}
     >
       <input
@@ -366,92 +303,91 @@ function DocumentDropzone({
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
-
-      <div
-        className={cn(
-          'flex h-14 w-14 shrink-0 items-center justify-center rounded-pill transition-all',
-          dragging
-            ? 'bg-accent text-accent-fg'
-            : 'bg-paper-dim text-ink-soft group-hover:bg-accent-tint group-hover:text-accent-deep',
-        )}
-      >
-        <UploadCloud
-          className={cn('h-5 w-5', upload.isPending && 'animate-pulse')}
-        />
+      <div className="h-8 w-8 grid place-items-center rounded-sm bg-ivory-2 text-muted shrink-0">
+        <UploadCloud className={cn('h-3.5 w-3.5', upload.isPending && 'animate-pulse')} />
       </div>
-
       <div className="flex-1 min-w-0">
-        <p className="font-display text-2xl tracking-tight">
-          {upload.isPending ? 'Uploading…' : 'Drop a file, or click to browse'}
+        <p className="text-[13px] text-ink">
+          {upload.isPending ? 'Uploading…' : 'Drop a file or click to browse'}
         </p>
-        <p className="text-sm text-ink-soft mt-1">
-          Max 50&nbsp;MB · PDF and common image formats
-        </p>
+        <p className="text-[11.5px] text-muted">PDF or image, max 50 MB</p>
       </div>
     </div>
   );
 }
 
-/* ──────────────────── Document status line ──────────────────── */
+/* ────────── Document line (uploaded) ────────── */
 
-function DocumentStatusLine({
-  document,
-  loading,
-  failed,
+function DocumentLine({
+  filename,
+  pageCount,
+  status,
+  errorMessage,
   onReplace,
 }: {
-  document: Document | undefined;
-  loading: boolean;
-  failed: boolean;
+  filename: string;
+  pageCount: number;
+  status: string;
+  errorMessage: string | null;
   onReplace: () => void;
 }) {
-  if (loading || !document) {
-    return (
-      <div className="flex items-center gap-4 py-4 animate-pulse">
-        <div className="h-12 w-11 rounded-xs bg-paper-dim" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-1/3 bg-paper-dim rounded-pill" />
-          <div className="h-3 w-1/4 bg-paper-dim rounded-pill" />
-        </div>
-      </div>
-    );
-  }
+  const isProcessing = status === 'PENDING' || status === 'PROCESSING';
+  const isReady = status === 'READY';
+  const isFailed = status === 'FAILED';
 
   return (
-    <div className="flex items-center gap-4 py-4 rounded-md">
-      <div className="flex h-12 w-11 shrink-0 items-center justify-center rounded-xs bg-accent-tint text-accent-deep">
-        <FileText className="h-4 w-4" />
+    <div className="flex items-center gap-2.5 p-2.5 rounded-sm bg-paper border border-border">
+      <div className="h-8 w-8 grid place-items-center rounded-sm bg-ivory-2 text-ink-3 shrink-0">
+        <FileText className="h-3.5 w-3.5" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-display text-xl tracking-tight truncate">
-          {document.filename}
+        <p className="text-[13px] text-ink truncate">{filename}</p>
+        <p className="text-[11.5px] text-muted">
+          {isProcessing
+            ? 'Processing…'
+            : isReady
+              ? `${pageCount} page${pageCount === 1 ? '' : 's'}`
+              : isFailed
+                ? errorMessage ?? 'Failed'
+                : status.toLowerCase()}
         </p>
-        <p className="text-xs text-ink-soft mt-0.5">
-          {document.pageCount > 0
-            ? `${document.pageCount} page${document.pageCount === 1 ? '' : 's'}`
-            : 'Processing pages…'}
-        </p>
-        {failed && document.errorMessage ? (
-          <p className="text-xs text-danger mt-1">{document.errorMessage}</p>
-        ) : null}
       </div>
-      <StatusBadge status={document.status} />
+      <StatusPill status={status} />
       <button
         type="button"
         onClick={onReplace}
-        className="p-2 rounded-pill text-ink-mute hover:text-danger hover:bg-danger/5 transition-colors"
+        className="h-6 w-6 grid place-items-center rounded-sm text-muted hover:text-ink hover:bg-ivory-2"
         aria-label="Replace document"
-        title="Replace document"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>
   );
 }
 
-/* ──────────────────── Recipient inline form ──────────────────── */
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { tone: string; label: string }> = {
+    PENDING: { tone: 'text-muted bg-ivory-2', label: 'queued' },
+    PROCESSING: { tone: 'text-warn bg-warn/10', label: 'processing' },
+    READY: { tone: 'text-success bg-success/10', label: 'ready' },
+    FAILED: { tone: 'text-danger bg-danger/10', label: 'failed' },
+  };
+  const m = map[status] ?? map.PENDING;
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10.5px] uppercase tracking-[0.06em] font-medium',
+        m.tone,
+      )}
+    >
+      {m.label}
+    </span>
+  );
+}
 
-function RecipientInlineForm({
+/* ────────── Recipient add form ────────── */
+
+function RecipientAddForm({
   onAdd,
 }: {
   onAdd: (values: RecipientFormValues) => void;
@@ -474,114 +410,37 @@ function RecipientInlineForm({
           void submit();
         }
       }}
-      className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 items-start"
+      className="flex flex-col sm:flex-row gap-2"
     >
-      <div className="sm:col-span-5">
-        <Label htmlFor="r-name">Name</Label>
-        <Input
-          id="r-name"
-          placeholder="Ada Lovelace"
-          autoComplete="off"
-          {...form.register('name')}
-        />
+      <div className="flex-1">
+        <Input placeholder="Name" autoComplete="off" {...form.register('name')} />
         {form.formState.errors.name ? (
-          <p className="mt-1.5 text-xs text-danger">
+          <p className="mt-1 text-[11px] text-danger">
             {form.formState.errors.name.message}
           </p>
         ) : null}
       </div>
-
-      <div className="sm:col-span-5">
-        <Label htmlFor="r-email">Email</Label>
+      <div className="flex-1">
         <Input
-          id="r-email"
           type="email"
-          placeholder="ada@analytical.engine"
+          placeholder="email@example.com"
           autoComplete="off"
           {...form.register('email')}
         />
         {form.formState.errors.email ? (
-          <p className="mt-1.5 text-xs text-danger">
+          <p className="mt-1 text-[11px] text-danger">
             {form.formState.errors.email.message}
           </p>
         ) : null}
       </div>
-
-      <div className="sm:col-span-2 sm:pt-[26px]">
-        <Button
-          type="button"
-          variant="primary"
-          onClick={submit}
-          className="w-full"
-        >
-          <Plus className="h-3.5 w-3.5" /> Add
-        </Button>
-      </div>
+      <Button type="button" variant="secondary" size="md" onClick={submit}>
+        <Plus className="h-3 w-3" /> Add
+      </Button>
     </div>
   );
 }
 
-/* ──────────────────── Draft recipient list ──────────────────── */
-
-function RecipientDraftList({
-  recipients,
-  onRemove,
-}: {
-  recipients: DraftRecipient[];
-  onRemove: (id: string) => void;
-}) {
-  return (
-    <div>
-      <div className="rule" />
-      {recipients.map((r, i) => {
-        const color = recipientColor(i);
-        return (
-          <div key={r.id}>
-            <div className="group flex items-center gap-4 py-5 px-2 -mx-2 rounded-sm hover:bg-paper-dim/50 transition-colors">
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute w-6">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span
-                  className={cn(
-                    'h-9 w-9 rounded-pill border flex items-center justify-center text-xs font-mono uppercase font-medium',
-                    color.bg,
-                    color.fg,
-                    'border-current',
-                  )}
-                >
-                  {r.name[0]?.toUpperCase() ?? '?'}
-                </span>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="font-display text-lg tracking-tight truncate">
-                  {r.name}
-                </p>
-                <p className="text-xs text-ink-soft truncate flex items-center gap-1.5">
-                  <Mail className="h-3 w-3" />
-                  {r.email}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onRemove(r.id)}
-                className="p-1.5 rounded-pill text-ink-mute hover:text-danger hover:bg-danger/5 transition-colors opacity-0 group-hover:opacity-100"
-                aria-label="Remove recipient"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="rule" />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ──────────────────── Signing order picker ──────────────────── */
+/* ────────── Signing order picker ────────── */
 
 function SigningOrderPicker({
   value,
@@ -590,22 +449,13 @@ function SigningOrderPicker({
   value: SigningOrder;
   onChange: (v: SigningOrder) => void;
 }) {
-  const options: { value: SigningOrder; title: string; desc: string }[] = [
-    {
-      value: 'SEQUENTIAL',
-      title: 'Sequential',
-      desc: 'One signer at a time, in the order added. Recommended.',
-    },
-    {
-      value: 'PARALLEL',
-      title: 'Parallel',
-      desc: 'Notify everyone at once. Anyone can sign first.',
-    },
+  const opts: { value: SigningOrder; label: string; hint: string }[] = [
+    { value: 'SEQUENTIAL', label: 'Sequential', hint: 'One at a time, in order' },
+    { value: 'PARALLEL', label: 'Parallel', hint: 'Everyone at once' },
   ];
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {options.map((o) => {
+    <div className="grid grid-cols-2 gap-2">
+      {opts.map((o) => {
         const active = value === o.value;
         return (
           <button
@@ -613,22 +463,14 @@ function SigningOrderPicker({
             type="button"
             onClick={() => onChange(o.value)}
             className={cn(
-              'relative text-left rounded-md p-5 transition-all border',
+              'text-left rounded-sm bg-paper border px-3 py-2 transition-all duration-[120ms]',
               active
-                ? 'border-accent bg-accent-tint/40'
-                : 'border-border hover:border-accent-soft hover:bg-paper-dim/40',
+                ? 'border-ink shadow-[inset_0_0_0_1px_hsl(var(--ink))]'
+                : 'border-border-strong hover:border-ink-3',
             )}
           >
-            {active ? (
-              <span
-                aria-hidden
-                className="absolute right-3 top-3 inline-flex h-1.5 w-1.5 rounded-pill bg-accent"
-              />
-            ) : null}
-            <p className="font-display text-lg tracking-tight">{o.title}</p>
-            <p className="text-xs text-ink-soft mt-1.5 leading-relaxed">
-              {o.desc}
-            </p>
+            <p className="text-[12.5px] font-medium text-ink">{o.label}</p>
+            <p className="text-[11px] text-muted mt-0.5">{o.hint}</p>
           </button>
         );
       })}
@@ -636,9 +478,9 @@ function SigningOrderPicker({
   );
 }
 
-/* ──────────────────── Readiness summary ──────────────────── */
+/* ────────── Ready state pip ────────── */
 
-function ReadinessSummary({
+function ReadyState({
   docReady,
   docPending,
   recipientCount,
@@ -648,49 +490,37 @@ function ReadinessSummary({
   recipientCount: number;
 }) {
   return (
-    <div className="flex items-center gap-4 text-xs text-ink-soft">
-      <Pip label="Document" ok={docReady} pending={docPending} />
-      <Pip label={`${recipientCount} signer${recipientCount === 1 ? '' : 's'}`} ok={recipientCount > 0} />
+    <div className="flex items-center gap-3 text-[11px] font-mono text-muted">
+      <span className="flex items-center gap-1">
+        <Dot ok={docReady} pending={docPending} />
+        Doc
+      </span>
+      <span className="flex items-center gap-1">
+        <Dot ok={recipientCount > 0} />
+        {recipientCount} signer{recipientCount === 1 ? '' : 's'}
+      </span>
     </div>
   );
 }
 
-function Pip({
-  label,
-  ok,
-  pending,
-}: {
-  label: string;
-  ok: boolean;
-  pending?: boolean;
-}) {
+function Dot({ ok, pending }: { ok: boolean; pending?: boolean }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em]',
-        ok ? 'text-success' : pending ? 'text-accent-deep' : 'text-ink-mute',
+        'inline-block h-2.5 w-2.5 rounded-pill grid place-items-center',
+        ok
+          ? 'bg-success/15'
+          : pending
+            ? 'bg-warn/15 animate-pulse-soft'
+            : 'bg-ivory-2',
       )}
     >
-      <span
-        className={cn(
-          'inline-block h-3 w-3 rounded-pill flex items-center justify-center',
-          ok ? 'bg-success/15' : pending ? 'bg-accent-tint' : 'bg-paper-dim',
-        )}
-      >
-        {ok ? (
-          <Check className="h-2 w-2 text-success" strokeWidth={4} />
-        ) : pending ? (
-          <span className="h-1 w-1 rounded-pill bg-accent animate-pulse" />
-        ) : (
-          <UserRound className="h-2 w-2 text-ink-mute" />
-        )}
-      </span>
-      {label}
+      {ok ? (
+        <Check className="h-1.5 w-1.5 text-success" strokeWidth={4} />
+      ) : null}
     </span>
   );
 }
-
-/* ──────────────────── Util ──────────────────── */
 
 function tempId(): string {
   return `tmp_${Math.random().toString(36).slice(2, 10)}`;

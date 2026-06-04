@@ -3,249 +3,217 @@
 @tailwind utilities;
 
 /*
- * SinAble — definable.ai aesthetic.
+ * SinAble — design tokens lifted from app.definable.ai.
  *
- * No boxes. Hairline rules. Generous whitespace. Coral on warm paper.
- * Typography drives hierarchy; surfaces stay flat and almost invisible.
+ * Paper-on-cream warm UI. Inter Tight everywhere. Terracotta accent
+ * reserved for focus, drag, and brand mark only. Headings sans-serif,
+ * not display. Compact: 11.5–13px body, sub-px hairlines, small radii.
  */
 @layer base {
   :root {
-    /* Warm paper surfaces */
-    --paper: 36 33% 97%;          /* #FAF8F5  primary bg */
-    --paper-dim: 39 35% 92%;       /* #F2EDE4  warmer recess */
-    --paper-deep: 0 0% 100%;        /* #FFFFFF  card lift (used sparingly) */
+    /* Brand accent — terracotta */
+    --accent: 16 56% 50%;            /* #c65d3a */
+    --accent-soft: 16 56% 50% / 0.12;
+    --accent-softer: 16 56% 50% / 0.06;
+    --accent-ink: 16 60% 38%;        /* darker for text-on-cream */
+    --accent-fg: 0 0% 100%;
+
+    /* Warm page surfaces (HSL) */
+    --ivory: 39 38% 96%;              /* #faf7f2 */
+    --ivory-2: 40 35% 94%;            /* #f6f2eb */
+    --cream: 38 32% 92%;              /* #f3eee5  page bg */
+    --cream-2: 36 28% 89%;            /* #ece5d8 */
+    --paper: 0 0% 100%;               /* #fff   card / input bg */
 
     /* Ink ramp */
-    --ink: 30 13% 9%;              /* #1A1714  primary text */
-    --ink-soft: 32 14% 21%;         /* #3D362E  secondary text */
-    --ink-faint: 30 8% 44%;         /* #7A7168  muted */
-    --ink-mute: 34 13% 68%;         /* #B8AFA3  quietest */
+    --ink: 24 13% 9%;                 /* #1c1917 */
+    --ink-2: 24 10% 15%;               /* #292524 */
+    --ink-3: 24 8% 25%;                /* #44403c */
+    --muted: 24 5% 45%;                 /* #78716c */
+    --muted-2: 30 8% 64%;               /* #a8a29e */
+    --faint: 36 17% 80%;                /* #d6cfc2 */
 
-    /* Inverse — dark CTA + footer */
-    --ink-bg: 30 18% 7%;            /* #14110E */
-    --ink-bg-2: 33 17% 10%;         /* #1F1B16 */
+    /* Lines — hairlines */
+    --line: 24 13% 9% / 0.08;
+    --line-soft: 24 13% 9% / 0.05;
+    --line-strong: 24 13% 9% / 0.14;
 
-    /* Coral — single brand accent */
-    --accent: 16 64% 53%;           /* #D4623A */
-    --accent-deep: 16 67% 43%;       /* #B54B24 */
-    --accent-soft: 19 67% 88%;       /* #F5D9CC */
-    --accent-tint: 22 76% 94%;       /* #FBEBE2 */
-    --accent-fg: 36 33% 97%;
+    /* Status */
+    --ok: 145 33% 37%;
+    --warn: 30 60% 44%;
+    --err: 8 49% 46%;
 
-    /* Lines — hairline only, never used as primary structure */
-    --border: 37 31% 87%;            /* #E8E0D3 */
-    --border-soft: 40 36% 90%;       /* #EFE9DD */
+    /* Radii */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
 
-    --ring: 16 64% 53%;
-    --success: 103 27% 33%;
-    --warn: 32 78% 42%;
-    --danger: 16 67% 43%;
+    /* Focus ring spec */
+    --ring: 16 56% 50%;
+
+    /* Mapped tokens for components */
+    --bg-page: hsl(var(--cream));
+    --bg-card: hsl(var(--paper));
+    --bg-hover: hsl(var(--ivory-2));
+    --bg-input: hsl(var(--paper));
+    --text-primary: hsl(var(--ink));
+    --text-secondary: hsl(var(--ink-3));
+    --text-tertiary: hsl(var(--muted));
+    --text-muted: hsl(var(--muted-2));
+    --border-primary: hsl(var(--line));
+    --border-secondary: hsl(var(--line-soft));
+    --border-input: hsl(var(--line-strong));
   }
 
   .dark {
-    --paper: 30 18% 7%;
-    --paper-dim: 33 17% 10%;
-    --paper-deep: 33 14% 13%;
-    --ink: 36 33% 97%;
-    --ink-soft: 38 18% 80%;
-    --ink-faint: 34 13% 60%;
-    --ink-mute: 34 13% 45%;
-    --ink-bg: 36 33% 97%;
-    --ink-bg-2: 39 35% 92%;
-    --accent: 16 72% 60%;
-    --accent-deep: 16 67% 50%;
-    --accent-soft: 19 50% 25%;
-    --accent-tint: 22 40% 18%;
-    --accent-fg: 30 18% 7%;
-    --border: 33 12% 18%;
-    --border-soft: 33 12% 22%;
-    --ring: 16 72% 60%;
-    --success: 103 35% 50%;
-    --warn: 32 78% 60%;
-    --danger: 16 72% 60%;
+    --ivory: 30 4% 15%;                  /* #262624 */
+    --ivory-2: 30 4% 17%;
+    --cream: 30 4% 12%;                  /* #1f1e1d */
+    --cream-2: 30 4% 22%;
+    --paper: 30 3% 19%;                   /* #30302e */
+
+    --ink: 45 26% 95%;
+    --ink-2: 42 14% 90%;
+    --ink-3: 40 9% 77%;
+    --muted: 36 4% 52%;
+    --muted-2: 36 3% 42%;
+    --faint: 36 5% 23%;
+
+    --line: 45 26% 95% / 0.08;
+    --line-soft: 45 26% 95% / 0.05;
+    --line-strong: 45 26% 95% / 0.14;
+
+    --ok: 130 24% 60%;
+    --warn: 32 55% 62%;
+    --err: 12 56% 65%;
+
+    --accent: 16 58% 56%;
+    --accent-soft: 16 58% 56% / 0.22;
+    --accent-softer: 16 58% 56% / 0.12;
+    --accent-ink: 16 60% 70%;
+    --accent-fg: 30 4% 12%;
   }
 
   * {
-    @apply border-border;
+    border-color: hsl(var(--line));
   }
 
   html {
-    @apply antialiased;
-    font-feature-settings: 'kern', 'ss01';
-    scroll-behavior: smooth;
+    font-feature-settings: 'ss01', 'cv11', 'kern';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-paper text-ink font-sans;
-    /* Flat warm paper — no grain, no gradient, no shadow */
+    background: hsl(var(--cream));
+    color: hsl(var(--ink));
+    font-family: var(--font-sans), 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
-  h1, h2, h3, h4 {
-    @apply font-display;
-    font-weight: 500;
-    letter-spacing: -0.022em;
-    line-height: 1.04;
+  /* Headings — sans, not display. Tight letter-spacing. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: inherit;
+    font-weight: 600;
+    color: hsl(var(--ink));
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  h1 { font-size: 22px; letter-spacing: -0.025em; }
+  h2 { font-size: 18px; letter-spacing: -0.02em; }
+  h3 { font-size: 15px; letter-spacing: -0.015em; }
+  h4 { font-size: 13px; letter-spacing: -0.01em; }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.25);
     color: hsl(var(--ink));
   }
 
-  h1 {
-    font-size: clamp(48px, 6vw, 92px);
-    line-height: 0.98;
-    letter-spacing: -0.028em;
-  }
-  h2 {
-    font-size: clamp(36px, 4.6vw, 64px);
-    line-height: 1.02;
-    letter-spacing: -0.022em;
-  }
-  h3 {
-    font-size: clamp(24px, 2.6vw, 36px);
-    line-height: 1.1;
-    font-weight: 600;
-  }
-  h4 {
-    font-size: clamp(18px, 1.6vw, 22px);
-    line-height: 1.2;
-    font-weight: 600;
-  }
-
-  ::selection {
-    background: hsl(var(--accent));
-    color: hsl(var(--accent-fg));
-  }
-
   :focus-visible {
-    outline: 2px solid hsl(var(--accent));
-    outline-offset: 3px;
-    border-radius: 2px;
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--accent) / 0.06);
+    border-radius: 4px;
   }
 }
 
 @layer components {
-  /* Hairline rule — the primary structural element. Use instead of borders. */
   .rule {
     height: 1px;
-    background: hsl(var(--border));
+    background: hsl(var(--line));
   }
 
-  /*
-   * Sheet — legacy class kept for compatibility. Was a card with border +
-   * shadow; now collapses to transparent. Components that still need a
-   * lifted card should explicitly use bg-paper-deep + border-border.
-   */
-  .sheet {
-    background: transparent;
-    border: 0;
-    box-shadow: none;
+  /* Section label — uppercase tight tracking, matches .sb-sect */
+  .sect-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: hsl(var(--muted));
   }
 
-  /*
-   * Legacy mono label — used by Input <Label> and many form sections.
-   * Smaller + tighter than .eyebrow. No coral dot.
-   */
+  /* Hairline-bordered card surface — paper bg, used for menus + popovers */
+  .card {
+    background: hsl(var(--paper));
+    border: 1px solid hsl(var(--line));
+    border-radius: var(--r-md);
+  }
+
+  /* Active item — paper chip on cream, inset ring (NEVER accent fill) */
+  .item-active {
+    background: hsl(var(--paper));
+    color: hsl(var(--ink));
+    box-shadow: inset 0 0 0 1px hsl(var(--line));
+  }
+
+  /* Drop target — only place accent fills */
+  .item-drop {
+    background: hsl(var(--accent) / 0.12);
+    box-shadow: inset 0 0 0 1px hsl(var(--accent));
+  }
+
+  /* Legacy compat — kept transparent so callers don't break */
+  .sheet { background: transparent; border: 0; box-shadow: none; }
   .label-mono {
     font-family: var(--font-mono), 'JetBrains Mono', monospace;
     font-size: 10px;
     font-weight: 500;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    color: hsl(var(--ink-faint));
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .label-mono::before {
-    content: '';
-    width: 5px;
-    height: 5px;
-    background: hsl(var(--accent));
-    border-radius: 50%;
+    color: hsl(var(--muted));
     display: inline-block;
   }
-  .label-mono.plain::before {
-    display: none;
-  }
+  .label-mono.plain { display: inline-block; }
+  .label-mono::before, .label-mono.plain::before { content: none; }
 
-  /* Eyebrow label — coral dot + mono uppercase. The signature definable mark. */
   .eyebrow {
-    font-family: var(--font-mono), 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 500;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    color: hsl(var(--ink-faint));
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    color: hsl(var(--muted));
   }
-  .eyebrow::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    background: hsl(var(--accent));
-    border-radius: 50%;
-    display: inline-block;
-  }
-  .eyebrow.plain::before {
-    display: none;
-  }
-
-  /* Italic-accent — the definable signature inline flourish */
+  .eyebrow::before { content: none; }
   .italic-accent {
-    font-style: italic;
-    color: hsl(var(--accent));
+    color: hsl(var(--accent-ink));
+    font-style: normal;
     font-weight: 500;
   }
-
-  /* Container — definable max-width 1240px with 24px gutter */
-  .shell {
-    max-width: 1240px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-
-  /* Pill link — minimal text link with subtle underline */
-  .text-link {
-    color: hsl(var(--ink-soft));
-    transition: color 150ms ease;
-  }
-  .text-link:hover {
-    color: hsl(var(--ink));
-  }
-
-  /* Lead paragraph */
   .lede {
-    font-size: clamp(17px, 1.4vw, 20px);
-    line-height: 1.5;
-    color: hsl(var(--ink-soft));
-    max-width: 640px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: hsl(var(--ink-3));
+    max-width: 56ch;
   }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .text-pretty {
-    text-wrap: pretty;
-  }
-}
-
-/* Scrollbar — warm, subtle */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Scrollbar — subtle */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
+  background: hsl(var(--line-strong));
   border-radius: 999px;
-  border: 2px solid hsl(var(--paper));
+  border: 2px solid hsl(var(--cream));
 }
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--ink-mute));
-}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-2)); }

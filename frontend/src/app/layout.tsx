@@ -1,23 +1,15 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono, Playfair_Display } from 'next/font/google';
+import { Inter_Tight, JetBrains_Mono } from 'next/font/google';
 
 import { Providers } from './providers';
 import './globals.css';
 
-// Playfair Display: high-contrast serif — matches definable.ai brand voice.
-const fontDisplay = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-});
-
-const fontSans = Inter({
+// Inter Tight — primary UI font, matches app.definable.ai
+const fontSans = Inter_Tight({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const fontMono = JetBrains_Mono({
@@ -28,10 +20,9 @@ const fontMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SinAble — Sign documents with intent',
-  description:
-    'A modern electronic signature platform. Upload, route, sign, and seal.',
-  themeColor: '#D4623A',
+  title: 'SinAble',
+  description: 'Electronic signature platform.',
+  themeColor: '#c65d3a',
 };
 
 export default function RootLayout({
@@ -40,10 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
-    >
+    <html lang="en" className={`${fontSans.variable} ${fontMono.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>
