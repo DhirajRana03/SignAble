@@ -235,11 +235,22 @@ export function EnvelopeComposer({
           title: title.trim() || 'Untitled draft',
           signingOrder,
         });
-        const existing = await envelopeService.listAttachedDocuments(draftId);
-        const existingIds = new Set(existing.map((a) => a.documentId));
+        // Reconcile extra documents. Tolerate missing list route on
+        // older backends — fall back to attempt-then-ignore duplicate.
+        let existingIds = new Set<string>();
+        try {
+          const existing =
+            await envelopeService.listAttachedDocuments(draftId);
+          existingIds = new Set(existing.map((a) => a.documentId));
+        } catch {
+          // Older backend: skip dedup, server rejects duplicates anyway.
+        }
         for (const extraId of documentIds.slice(1)) {
-          if (!existingIds.has(extraId)) {
+          if (existingIds.has(extraId)) continue;
+          try {
             await envelopeService.attachDocument(draftId, extraId);
+          } catch {
+            // Duplicate or transient: continue saving rest.
           }
         }
         const env = await envelopeService.get(draftId);
