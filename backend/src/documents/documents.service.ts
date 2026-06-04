@@ -118,6 +118,40 @@ export class DocumentsService {
     return this.storage.pageUrls(docId, doc.pageCount);
   }
 
+  /**
+   * Page metadata for prepare workspace: per-page dimensions (PDF points)
+   * + image URL. Used by sender to position fields accurately.
+   */
+  async getPagesMeta(
+    userId: string,
+    docId: string,
+  ): Promise<
+    Array<{ pageNumber: number; width: number; height: number; imageUrl: string }>
+  > {
+    const doc = await this.getDocument(userId, docId);
+    if (doc.status !== 'READY') {
+      throw new InvalidStateTransitionError(doc.status, 'page_access');
+    }
+    const urls = await this.storage.pageUrls(docId, doc.pageCount);
+    const dims =
+      (doc.pageDimensions as Array<{
+        pageNumber: number;
+        width: number;
+        height: number;
+      }> | null) ?? [];
+
+    return Array.from({ length: doc.pageCount }, (_, i) => {
+      const pageNumber = i + 1;
+      const dim = dims.find((d) => d.pageNumber === pageNumber);
+      return {
+        pageNumber,
+        width: dim?.width ?? 612, // US Letter default
+        height: dim?.height ?? 792,
+        imageUrl: urls[i],
+      };
+    });
+  }
+
   async delete(userId: string, docId: string): Promise<void> {
     const doc = await this.getDocument(userId, docId);
     await this.storage.delete(doc.storageKey);
@@ -151,11 +185,18 @@ export class DocumentsService {
         await this.storage.savePage(docId, i + 1, imgBuffer);
       }
 
+      const pageDimensions = result.page_dimensions.map((dim, i) => ({
+        pageNumber: i + 1,
+        width: dim.width,
+        height: dim.height,
+      }));
+
       await this.prisma.document.update({
         where: { id: docId },
         data: {
           status: 'READY',
           pageCount: result.page_count,
+          pageDimensions,
         },
       });
     } catch (err) {

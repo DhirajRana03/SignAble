@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsUUID,
   Max,
@@ -48,9 +49,28 @@ export class CreateFieldDto {
   @IsOptional()
   @IsBoolean()
   required?: boolean;
+
+  /**
+   * Type-specific config:
+   * - DROPDOWN: { choices: string[] }
+   * - CHECKBOX: { label?: string }
+   * - others: null/omitted
+   */
+  @IsOptional()
+  @IsObject()
+  options?: Record<string, unknown>;
 }
 
 export class UpdateFieldDto {
+  @IsOptional()
+  @IsUUID()
+  recipientId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  pageNumber?: number;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -76,8 +96,16 @@ export class UpdateFieldDto {
   heightPct?: number;
 
   @IsOptional()
+  @IsEnum(FieldType)
+  fieldType?: FieldType;
+
+  @IsOptional()
   @IsBoolean()
   required?: boolean;
+
+  @IsOptional()
+  @IsObject()
+  options?: Record<string, unknown>;
 }
 
 export class BulkSaveFieldsDto {

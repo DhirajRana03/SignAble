@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EnvelopeStatus, SigningOrder } from '@prisma/client';
+import { AuditEventType, EnvelopeStatus, SigningOrder } from '@prisma/client';
 
 import {
   InvalidStateTransitionError,
@@ -183,6 +183,65 @@ describe('EnvelopesService', () => {
       expect(prisma.envelope.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ status: EnvelopeStatus.SENT }),
+        }),
+      );
+    });
+  });
+
+  describe('getAudit (pagination + filter)', () => {
+    it('returns items with nextCursor when more rows exist', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+      });
+      // Service requests `take: limit + 1` to detect more rows
+      const rows = Array.from({ length: 51 }, (_, i) => ({
+        id: `evt-${i}`,
+        envelopeId: 'env-1',
+        eventType: AuditEventType.DOCUMENT_VIEWED,
+      }));
+      prisma.auditEvent.findMany.mockResolvedValue(rows);
+
+      const result = await service.getAudit(USER_ID, 'env-1');
+
+      expect(result.items).toHaveLength(50);
+      expect(result.nextCursor).toBe('evt-49');
+    });
+
+    it('returns nextCursor=null when no more rows', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+      });
+      prisma.auditEvent.findMany.mockResolvedValue([
+        { id: 'evt-0', envelopeId: 'env-1' },
+      ]);
+
+      const result = await service.getAudit(USER_ID, 'env-1');
+
+      expect(result.items).toHaveLength(1);
+      expect(result.nextCursor).toBeNull();
+    });
+
+    it('passes eventType filter to prisma query', async () => {
+      prisma.envelope.findUnique.mockResolvedValue({
+        id: 'env-1',
+        userId: USER_ID,
+      });
+      prisma.auditEvent.findMany.mockResolvedValue([]);
+
+      await service.getAudit(USER_ID, 'env-1', {
+        eventType: AuditEventType.RECIPIENT_SIGNED,
+        limit: 10,
+      });
+
+      expect(prisma.auditEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            envelopeId: 'env-1',
+            eventType: AuditEventType.RECIPIENT_SIGNED,
+          },
+          take: 11,
         }),
       );
     });

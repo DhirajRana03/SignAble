@@ -53,6 +53,14 @@ export class DocumentsController {
     return this.documentsService.getPageUrls(user.id, id);
   }
 
+  @Get(':id/pages-meta')
+  getPagesMeta(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.documentsService.getPagesMeta(user.id, id);
+  }
+
   @Delete(':id')
   @HttpCode(204)
   delete(

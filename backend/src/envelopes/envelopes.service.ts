@@ -167,12 +167,41 @@ export class EnvelopesService {
     return updated;
   }
 
-  async getAudit(userId: string, envelopeId: string): Promise<AuditEvent[]> {
+  /**
+   * Paginated audit log. Cursor-based on AuditEvent.id (uuid) so callers
+   * can fetch next page deterministically without offset drift. Optional
+   * eventType filter narrows to one event class. Default page size 50,
+   * capped at 200 to bound payload size.
+   */
+  async getAudit(
+    userId: string,
+    envelopeId: string,
+    options: {
+      cursor?: string;
+      limit?: number;
+      eventType?: AuditEventType;
+    } = {},
+  ): Promise<{ items: AuditEvent[]; nextCursor: string | null }> {
     await this.get(userId, envelopeId); // ownership check
-    return this.prisma.auditEvent.findMany({
-      where: { envelopeId },
+    const take = Math.min(Math.max(options.limit ?? 50, 1), 200);
+    const where: Prisma.AuditEventWhereInput = { envelopeId };
+    if (options.eventType) where.eventType = options.eventType;
+
+    const items = await this.prisma.auditEvent.findMany({
+      where,
       orderBy: { createdAt: 'asc' },
+      take: take + 1,
+      ...(options.cursor
+        ? { skip: 1, cursor: { id: options.cursor } }
+        : {}),
     });
+
+    const hasMore = items.length > take;
+    const trimmed = hasMore ? items.slice(0, take) : items;
+    return {
+      items: trimmed,
+      nextCursor: hasMore ? trimmed[trimmed.length - 1].id : null,
+    };
   }
 
   async download(userId: string, envelopeId: string): Promise<Buffer> {

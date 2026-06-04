@@ -13,6 +13,15 @@ export class SubmitSignatureDto {
   fieldValues!: Record<string, string>;
 }
 
+export class SaveProgressDto {
+  /**
+   * Partial map of field id → draft value. Persisted without finalizing.
+   * Used by the signer UI for debounced auto-save.
+   */
+  @IsObject()
+  fieldValues!: Record<string, string>;
+}
+
 export class DeclineDto {
   @IsOptional()
   @IsString()

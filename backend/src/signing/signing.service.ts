@@ -116,6 +116,42 @@ export class SigningService {
     );
   }
 
+  /**
+   * Persist mid-session draft values without finalizing. Idempotent —
+   * callable repeatedly as signer types/clicks. Skips required-field
+   * validation and audit/webhook fan-out (would flood the log).
+   * Rejects if recipient already SIGNED or DECLINED to prevent tampering
+   * after submission.
+   */
+  async saveProgress(
+    token: string,
+    fieldValues: Record<string, string>,
+  ): Promise<{ savedCount: number }> {
+    const recipient = await this.getByToken(token);
+    this.assertSignable(recipient);
+
+    const fields = await this.prisma.signatureField.findMany({
+      where: { recipientId: recipient.id },
+      select: { id: true },
+    });
+    const validIds = new Set(fields.map((f) => f.id));
+    const entries = Object.entries(fieldValues).filter(([id]) =>
+      validIds.has(id),
+    );
+
+    // Draft saves do NOT set signedAt (reserved for final submission).
+    await Promise.all(
+      entries.map(([id, value]) =>
+        this.prisma.signatureField.update({
+          where: { id },
+          data: { value },
+        }),
+      ),
+    );
+
+    return { savedCount: entries.length };
+  }
+
   async submit(
     token: string,
     fieldValues: Record<string, string>,

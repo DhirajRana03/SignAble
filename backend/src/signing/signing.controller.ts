@@ -9,7 +9,11 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 
-import { DeclineDto, SubmitSignatureDto } from './dto/signing.dto';
+import {
+  DeclineDto,
+  SaveProgressDto,
+  SubmitSignatureDto,
+} from './dto/signing.dto';
 import { SigningService } from './signing.service';
 
 /**
@@ -29,6 +33,15 @@ export class SigningController {
   @HttpCode(204)
   markViewed(@Param('token') token: string, @Req() req: Request) {
     return this.signingService.markViewed(token, this.clientIp(req));
+  }
+
+  @Post(':token/save-progress')
+  @HttpCode(200)
+  saveProgress(
+    @Param('token') token: string,
+    @Body() dto: SaveProgressDto,
+  ) {
+    return this.signingService.saveProgress(token, dto.fieldValues);
   }
 
   @Post(':token/submit')

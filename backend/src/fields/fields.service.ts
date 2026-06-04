@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   Envelope,
   EnvelopeStatus,
+  FieldType,
   Prisma,
   Recipient,
   SignatureField,
@@ -18,6 +19,42 @@ import {
   CreateFieldDto,
   UpdateFieldDto,
 } from './dto/field.dto';
+
+/**
+ * Validate type-specific options. DROPDOWN must have a non-empty choices
+ * array; CHECKBOX accepts optional label; SIGNATURE/INITIALS/DATE/TEXT
+ * forbid options.
+ */
+function validateOptions(
+  fieldType: FieldType,
+  options: Record<string, unknown> | null | undefined,
+): void {
+  if (fieldType === FieldType.DROPDOWN) {
+    const choices = options?.choices;
+    if (!Array.isArray(choices) || choices.length === 0) {
+      throw new ValidationError(
+        'DROPDOWN fields require options.choices: non-empty string array',
+      );
+    }
+    if (!choices.every((c) => typeof c === 'string' && c.trim().length > 0)) {
+      throw new ValidationError(
+        'DROPDOWN options.choices must contain only non-empty strings',
+      );
+    }
+    return;
+  }
+  if (fieldType === FieldType.CHECKBOX) {
+    if (options?.label !== undefined && typeof options.label !== 'string') {
+      throw new ValidationError('CHECKBOX options.label must be a string');
+    }
+    return;
+  }
+  if (options !== undefined && options !== null) {
+    throw new ValidationError(
+      `Field type ${fieldType} does not accept options`,
+    );
+  }
+}
 
 @Injectable()
 export class FieldsService {
@@ -42,6 +79,7 @@ export class FieldsService {
     const env = await this.getDraftEnvelope(userId, envelopeId);
     await this.assertRecipientInEnvelope(dto.recipientId, envelopeId);
     await this.assertPageWithinDocument(env.documentId, dto.pageNumber);
+    validateOptions(dto.fieldType, dto.options);
 
     return this.prisma.signatureField.create({
       data: {
@@ -54,31 +92,70 @@ export class FieldsService {
         heightPct: dto.heightPct,
         fieldType: dto.fieldType,
         required: dto.required ?? true,
+        options: (dto.options ?? undefined) as Prisma.InputJsonValue | undefined,
       },
     });
   }
 
+  /**
+   * Partial update for auto-save and drag-reposition. Any subset of fields
+   * may be provided. When fieldType or options change together they're
+   * validated as a pair.
+   */
   async update(
     userId: string,
     envelopeId: string,
     fieldId: string,
     dto: UpdateFieldDto,
   ): Promise<SignatureField> {
-    await this.getDraftEnvelope(userId, envelopeId);
+    const env = await this.getDraftEnvelope(userId, envelopeId);
     const field = await this.prisma.signatureField.findUnique({
       where: { id: fieldId },
     });
     if (!field || field.envelopeId !== envelopeId) {
       throw new NotFoundError('SignatureField', fieldId);
     }
+
+    if (dto.recipientId !== undefined) {
+      await this.assertRecipientInEnvelope(dto.recipientId, envelopeId);
+    }
+    if (dto.pageNumber !== undefined) {
+      await this.assertPageWithinDocument(env.documentId, dto.pageNumber);
+    }
+
+    const nextType = dto.fieldType ?? field.fieldType;
+    // If type changed but options not provided, drop existing options
+    // unless the new type still accepts them.
+    const nextOptions =
+      dto.options !== undefined
+        ? dto.options
+        : dto.fieldType !== undefined && dto.fieldType !== field.fieldType
+          ? null
+          : undefined;
+    if (nextOptions !== undefined) {
+      validateOptions(
+        nextType,
+        nextOptions as Record<string, unknown> | null,
+      );
+    }
+
     return this.prisma.signatureField.update({
       where: { id: fieldId },
       data: {
+        recipientId: dto.recipientId ?? undefined,
+        pageNumber: dto.pageNumber ?? undefined,
         xPct: dto.xPct ?? undefined,
         yPct: dto.yPct ?? undefined,
         widthPct: dto.widthPct ?? undefined,
         heightPct: dto.heightPct ?? undefined,
+        fieldType: dto.fieldType ?? undefined,
         required: dto.required ?? undefined,
+        options:
+          nextOptions === undefined
+            ? undefined
+            : nextOptions === null
+              ? Prisma.JsonNull
+              : (nextOptions as Prisma.InputJsonValue),
       },
     });
   }
@@ -129,6 +206,7 @@ export class FieldsService {
           `Page ${f.pageNumber} does not exist in document`,
         );
       }
+      validateOptions(f.fieldType, f.options);
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -146,6 +224,9 @@ export class FieldsService {
             heightPct: f.heightPct,
             fieldType: f.fieldType,
             required: f.required ?? true,
+            options: (f.options ?? undefined) as
+              | Prisma.InputJsonValue
+              | undefined,
           },
         });
         created.push(row);

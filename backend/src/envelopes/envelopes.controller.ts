@@ -1,16 +1,20 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   HttpCode,
   Param,
+  ParseEnumPipe,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { AuditEventType, User } from '@prisma/client';
 import { Response } from 'express';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -76,8 +80,20 @@ export class EnvelopesController {
   audit(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: User,
+    @Query('cursor') cursor?: string,
+    @Query('limit', new DefaultValuePipe(50), new ParseIntPipe())
+    limit?: number,
+    @Query(
+      'eventType',
+      new ParseEnumPipe(AuditEventType, { optional: true }),
+    )
+    eventType?: AuditEventType,
   ) {
-    return this.envelopesService.getAudit(user.id, id);
+    return this.envelopesService.getAudit(user.id, id, {
+      cursor,
+      limit,
+      eventType,
+    });
   }
 
   @Get(':id/download')

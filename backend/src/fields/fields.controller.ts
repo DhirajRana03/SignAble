@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   UseGuards,
@@ -55,6 +56,21 @@ export class FieldsController {
 
   @Put(':fieldId')
   update(
+    @Param('envelopeId', new ParseUUIDPipe()) envelopeId: string,
+    @Param('fieldId', new ParseUUIDPipe()) fieldId: string,
+    @Body() dto: UpdateFieldDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.fieldsService.update(user.id, envelopeId, fieldId, dto);
+  }
+
+  /**
+   * Partial update target for auto-save. Same semantics as PUT but
+   * explicit verb the frontend uses for debounced drag/resize/property
+   * edits. Idempotent at field level.
+   */
+  @Patch(':fieldId')
+  patch(
     @Param('envelopeId', new ParseUUIDPipe()) envelopeId: string,
     @Param('fieldId', new ParseUUIDPipe()) fieldId: string,
     @Body() dto: UpdateFieldDto,

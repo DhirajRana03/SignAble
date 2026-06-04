@@ -26,14 +26,15 @@ model User {
 }
 
 model Document {
-  id           String         @id @default(uuid())
-  userId       String
-  filename     String
-  storageKey   String
-  pageCount    Int            @default(0)
-  status       DocumentStatus @default(PENDING)
-  errorMessage String?
-  createdAt    DateTime       @default(now())
+  id              String         @id @default(uuid())
+  userId          String
+  filename        String
+  storageKey      String
+  pageCount       Int            @default(0)
+  pageDimensions  Json?          // Array<{ pageNumber: number; width: number; height: number }> in PDF points
+  status          DocumentStatus @default(PENDING)
+  errorMessage    String?
+  createdAt       DateTime       @default(now())
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   envelopes Envelope[]
@@ -134,6 +135,7 @@ model SignatureField {
   fieldType   FieldType
   required    Boolean   @default(true)
   value       String?
+  options     Json?     // For DROPDOWN: { choices: string[] }; for CHECKBOX: { label?: string }; null otherwise
   signedAt    DateTime?
 
   envelope  Envelope  @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
@@ -149,6 +151,8 @@ enum FieldType {
   INITIALS
   DATE
   TEXT
+  DROPDOWN
+  CHECKBOX
 }
 
 model AuditEvent {

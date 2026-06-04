@@ -144,4 +144,47 @@ describe('SigningService', () => {
       ).rejects.toBeInstanceOf(ValidationError);
     });
   });
+
+  describe('saveProgress', () => {
+    it('persists partial values without status change or audit log', async () => {
+      prisma.recipient.findUnique.mockResolvedValue({
+        id: 'r1',
+        envelopeId: 'env-1',
+        status: RecipientStatus.PENDING,
+      });
+      prisma.signatureField.findMany.mockResolvedValueOnce([
+        { id: 'f1' },
+        { id: 'f2' },
+      ]);
+      prisma.signatureField.update.mockResolvedValue({});
+
+      const result = await service.saveProgress('t', {
+        f1: 'partial-value',
+        unknownId: 'ignored',
+      });
+
+      expect(result.savedCount).toBe(1);
+      expect(prisma.signatureField.update).toHaveBeenCalledTimes(1);
+      expect(prisma.signatureField.update).toHaveBeenCalledWith({
+        where: { id: 'f1' },
+        data: { value: 'partial-value' },
+      });
+      // No audit log emission for drafts
+      expect(prisma.auditEvent.create).not.toHaveBeenCalled();
+      // No recipient status mutation
+      expect(prisma.recipient.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects save-progress on already-signed recipient', async () => {
+      prisma.recipient.findUnique.mockResolvedValue({
+        id: 'r1',
+        envelopeId: 'env-1',
+        status: RecipientStatus.SIGNED,
+      });
+
+      await expect(
+        service.saveProgress('t', { f1: 'x' }),
+      ).rejects.toBeInstanceOf(InvalidStateTransitionError);
+    });
+  });
 });
