@@ -221,7 +221,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop column — transparent, shares mesh */}
-      <aside className="hidden md:flex md:w-60 lg:w-64 shrink-0 bg-transparent">
+      <aside className="hidden md:flex md:w-60 lg:w-64 shrink-0 bg-transparent sticky top-0 h-screen overflow-y-auto">
         {inner}
       </aside>
 
