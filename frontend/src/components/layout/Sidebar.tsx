@@ -48,7 +48,10 @@ export function Sidebar({
   const requestNavigate = useComposerGuardStore((s) => s.requestNavigate);
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
-    if (dirty && pathname.startsWith('/envelopes/new') && href !== pathname) {
+    const onComposer =
+      pathname.startsWith('/envelopes/new') ||
+      /^\/envelopes\/[^/]+\/edit/.test(pathname);
+    if (dirty && onComposer && href !== pathname) {
       e.preventDefault();
       requestNavigate(href);
       onClose?.();

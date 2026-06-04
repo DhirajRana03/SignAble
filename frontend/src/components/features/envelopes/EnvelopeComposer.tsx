@@ -47,6 +47,8 @@ import {
   useDocument,
   useUploadDocument,
 } from '@/hooks/useDocuments';
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useCreateEnvelope } from '@/hooks/useEnvelopes';
 import { useComposerGuardStore } from '@/store/composerGuardStore';
 import { cn } from '@/lib/utils';
@@ -83,6 +85,10 @@ export function EnvelopeComposer({
   // initializing from !draftId since useParams returns undefined on first
   // render, which would skip hydration when draftId arrives later.
   const [hydrated, setHydrated] = useState(false);
+  // Server snapshot at hydration. Used to compute diffs at save time so
+  // detaches and recipient deletes are issued for items the user removed.
+  const initialDocIdsRef = useRef<string[]>([]);
+  const initialRecipientIdsRef = useRef<string[]>([]);
 
   // Hydrate from existing draft. Loads envelope + attached docs once.
   // Skips when draftId absent (fresh create flow).
@@ -123,19 +129,20 @@ export function EnvelopeComposer({
             .sort((a, b) => a.orderIndex - b.orderIndex)
             .map((a) => a.documentId),
         ];
+        const hydratedRecipients = (env.recipients ?? [])
+          .sort((a, b) => a.orderIndex - b.orderIndex)
+          .map((r) => ({
+            id: r.id,
+            name: r.name,
+            email: r.email,
+            role: r.role,
+          }));
+        initialDocIdsRef.current = docIds;
+        initialRecipientIdsRef.current = hydratedRecipients.map((r) => r.id);
         setDocumentIds(docIds);
         setTitle(env.title ?? '');
         setSigningOrder(env.signingOrder);
-        setRecipients(
-          (env.recipients ?? [])
-            .sort((a, b) => a.orderIndex - b.orderIndex)
-            .map((r) => ({
-              id: r.id,
-              name: r.name,
-              email: r.email,
-              role: r.role,
-            })),
-        );
+        setRecipients(hydratedRecipients);
         setHydrated(true);
       } catch (err) {
         setSubmitError(extractErrorMessage(err));
@@ -167,16 +174,19 @@ export function EnvelopeComposer({
   }, [draftId, primaryDoc, title]);
 
   const createEnvelope = useCreateEnvelope();
+  const queryClient = useQueryClient();
   const deleteDoc = useDeleteDocument();
   const signerCount = recipients.filter((r) => r.role === 'SIGNER').length;
   const canSubmit = docReady && signerCount > 0 && !!title && !submitting;
 
   const handleRemoveDoc = (id: string) => {
     setDocumentIds((ids) => ids.filter((d) => d !== id));
-    if (primaryId === id && documentIds.length === 1 && !title) {
-      // Optional: clear title if user never edited it. Simpler: keep title.
+    // In create mode the document is throwaway, hard-delete it. In edit
+    // mode persist() diff handles detach; deleting Document row would
+    // orphan the envelope's primary FK if user removes the primary.
+    if (!draftId) {
+      deleteDoc.mutate(id);
     }
-    deleteDoc.mutate(id);
   };
 
   // Sortable sensors — pointer for mouse/touch, keyboard for a11y
@@ -228,45 +238,57 @@ export function EnvelopeComposer({
       const { envelopeService } = await import('@/services/envelope.service');
       let envelopeId: string;
       if (draftId) {
-        // Update existing draft: PATCH metadata. Reconcile attachments
-        // and recipients via diff (additions only for now — deletions
-        // handled by user via card remove + recipient delete UI).
+        // Update existing draft. PATCH metadata, reconcile documents
+        // and recipients via full diff against hydration snapshot:
+        // additions for new ids, removals for ids no longer present.
         await envelopeService.update(draftId, {
           title: title.trim() || 'Untitled draft',
           signingOrder,
         });
-        // Reconcile extra documents. Tolerate missing list route on
-        // older backends — fall back to attempt-then-ignore duplicate.
-        let existingIds = new Set<string>();
-        try {
-          const existing =
-            await envelopeService.listAttachedDocuments(draftId);
-          existingIds = new Set(existing.map((a) => a.documentId));
-        } catch {
-          // Older backend: skip dedup, server rejects duplicates anyway.
-        }
-        for (const extraId of documentIds.slice(1)) {
-          if (existingIds.has(extraId)) continue;
+
+        // Document reconcile. Primary doc cannot change via attach API.
+        // Only diff the extras (slice(1)).
+        const initialExtras = initialDocIdsRef.current.slice(1);
+        const currentExtras = documentIds.slice(1);
+        const currentExtrasSet = new Set(currentExtras);
+        const initialExtrasSet = new Set(initialExtras);
+        for (const removedId of initialExtras) {
+          if (currentExtrasSet.has(removedId)) continue;
           try {
-            await envelopeService.attachDocument(draftId, extraId);
+            await envelopeService.detachDocument(draftId, removedId);
           } catch {
-            // Duplicate or transient: continue saving rest.
+            // Already detached or missing route; continue.
           }
         }
-        const env = await envelopeService.get(draftId);
-        const existingRecipientIds = new Set(
-          (env.recipients ?? []).map((r) => r.id),
-        );
+        for (const addedId of currentExtras) {
+          if (initialExtrasSet.has(addedId)) continue;
+          try {
+            await envelopeService.attachDocument(draftId, addedId);
+          } catch {
+            // Duplicate or transient; continue.
+          }
+        }
+
+        // Recipient reconcile. Remove ones dropped from UI, add new ones.
+        const currentRecipientIds = new Set(recipients.map((r) => r.id));
+        for (const removedId of initialRecipientIdsRef.current) {
+          if (currentRecipientIds.has(removedId)) continue;
+          try {
+            await envelopeService.deleteRecipient(draftId, removedId);
+          } catch {
+            // Continue.
+          }
+        }
+        const initialRecipientSet = new Set(initialRecipientIdsRef.current);
         for (let i = 0; i < recipients.length; i++) {
           const r = recipients[i];
-          if (!existingRecipientIds.has(r.id)) {
-            await envelopeService.addRecipient(draftId, {
-              name: r.name,
-              email: r.email,
-              orderIndex: i,
-              role: r.role,
-            });
-          }
+          if (initialRecipientSet.has(r.id)) continue;
+          await envelopeService.addRecipient(draftId, {
+            name: r.name,
+            email: r.email,
+            orderIndex: i,
+            role: r.role,
+          });
         }
         envelopeId = draftId;
       } else {
@@ -289,6 +311,8 @@ export function EnvelopeComposer({
           });
         }
       }
+      queryClient.invalidateQueries({ queryKey: ['envelopes'] });
+      queryClient.invalidateQueries({ queryKey: ['envelopes', envelopeId] });
       if (mode === 'draft') {
         toast.success('Draft saved');
         router.push('/drafts');
@@ -311,6 +335,7 @@ export function EnvelopeComposer({
     recipients,
     signingOrder,
     router,
+    queryClient,
   ]);
 
   const onSubmit = (e: React.FormEvent) => {
