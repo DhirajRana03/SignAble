@@ -27,7 +27,7 @@ export function ThumbnailStrip({
   return (
     <aside
       className={cn(
-        'sticky top-24 self-start shrink-0 transition-all duration-200',
+        'sticky top-20 self-start shrink-0 transition-all duration-200',
         collapsed ? 'w-8' : 'w-24',
       )}
     >
@@ -50,7 +50,7 @@ export function ThumbnailStrip({
           )}
         </button>
         {!collapsed ? (
-          <div className="overflow-y-auto max-h-[calc(100vh-12rem)] p-2 space-y-2">
+          <div className="overflow-y-auto max-h-[calc(100vh-8rem)] p-2 space-y-2">
             {pageUrls.map((url, i) => (
               <Thumbnail
                 key={i}

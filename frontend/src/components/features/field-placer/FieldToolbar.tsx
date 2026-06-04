@@ -88,7 +88,7 @@ export function FieldToolbar({
   };
 
   return (
-    <aside className="sticky top-24 self-start w-72 shrink-0 flex flex-col gap-4">
+    <aside className="sticky top-20 self-start w-72 shrink-0 flex flex-col gap-4 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
       {/* Recipient picker */}
       <section className="rounded-lg bg-surface-1 border border-border shadow-sm p-3.5">
         <div className="flex items-center gap-2 mb-3">

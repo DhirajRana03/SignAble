@@ -139,17 +139,17 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   return (
     <>
       <div className="flex gap-4 items-start">
-        <ThumbnailStrip
-          pageUrls={pageUrls}
-          activePage={activePage}
-          onJump={jumpToPage}
-        />
-
         <FieldToolbar
           envelopeId={envelope.id}
           recipients={envelope.recipients ?? []}
           pendingFieldType={pendingFieldType}
           setPendingFieldType={setPendingFieldType}
+        />
+
+        <ThumbnailStrip
+          pageUrls={pageUrls}
+          activePage={activePage}
+          onJump={jumpToPage}
         />
 
         <div className="flex-1 min-w-0">
