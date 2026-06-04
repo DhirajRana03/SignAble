@@ -484,19 +484,29 @@ function DocumentDropzoneCompact({
       <div
         className={cn(
           'h-9 w-9 grid place-items-center rounded-pill transition-all shrink-0',
-          dragging ? 'bg-accent text-white' : 'bg-accent-soft text-accent-deep',
+          dragging
+            ? 'bg-accent text-white'
+            : hasExisting
+              ? 'bg-accent text-white'
+              : 'bg-accent-soft text-accent-deep',
         )}
       >
-        <UploadCloud className="h-4 w-4" strokeWidth={2} />
+        {hasExisting ? (
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
+        ) : (
+          <UploadCloud className="h-4 w-4" strokeWidth={2} />
+        )}
       </div>
       <div className="min-w-0">
         <p className="text-[13.5px] font-medium text-ink">
           {hasExisting
-            ? 'Add another file'
+            ? 'Add another document'
             : 'Drop files or click to browse'}
         </p>
         <p className="text-[11.5px] text-ink-3 mt-0.5">
-          PDF or image · up to 50 MB · multiple allowed
+          {hasExisting
+            ? 'Click to select more files'
+            : 'PDF or image · up to 50 MB · multiple allowed'}
         </p>
       </div>
     </div>
@@ -520,7 +530,7 @@ function DocumentRow({
   const failed = status === 'FAILED';
 
   return (
-    <li className="relative group">
+    <li className="relative pr-2">
       <DocumentLine
         filename={doc?.filename ?? 'Loading…'}
         pageCount={doc?.pageCount ?? 0}
@@ -531,16 +541,17 @@ function DocumentRow({
       <button
         type="button"
         onClick={onRemove}
-        aria-label="Remove document"
-        title="Remove document"
+        aria-label="Delete document"
+        title="Delete document"
         className={cn(
-          'absolute -top-1.5 -right-1.5 h-5 w-5 grid place-items-center rounded-full',
-          'bg-danger text-white shadow-sm',
-          'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity',
-          'hover:bg-danger/90 focus:outline-none focus:ring-2 focus:ring-danger/40',
+          'absolute -top-2 -right-2 h-6 w-6 grid place-items-center rounded-full',
+          'bg-danger text-white shadow-md ring-2 ring-paper',
+          'hover:bg-danger/90 hover:scale-105 active:scale-95',
+          'focus:outline-none focus:ring-2 focus:ring-danger/50',
+          'transition-all',
         )}
       >
-        <X className="h-3 w-3" strokeWidth={2.5} />
+        <Trash2 className="h-3 w-3" strokeWidth={2.5} />
       </button>
     </li>
   );
