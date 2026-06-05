@@ -162,21 +162,21 @@ function ActivityRow({ item, index }: { item: ActivityItem; index: number }) {
           </span>
         </div>
 
-        <div className="hidden lg:flex flex-col flex-[1.4_1.4_0%] min-w-0">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
-            Date &amp; Time
-          </span>
-          <span className="mt-0.5 text-[12px] text-ink-3 truncate">
-            {formatDate(item.createdAt)}
-          </span>
-        </div>
-
         <div className="hidden lg:flex flex-col flex-1 basis-0 min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
             When
           </span>
           <span className="mt-0.5 text-[12px] text-ink-3 truncate">
             {formatRelative(item.createdAt)}
+          </span>
+        </div>
+
+        <div className="hidden lg:flex flex-col flex-[1.4_1.4_0%] min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
+            Date &amp; Time
+          </span>
+          <span className="mt-0.5 text-[12px] text-ink-3 truncate">
+            {formatDate(item.createdAt)}
           </span>
         </div>
       </Link>
