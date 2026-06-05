@@ -592,9 +592,19 @@ export function EnvelopeComposer({
         ) : null}
       </div>
 
-      {/* Sticky review */}
-      <aside className="lg:sticky lg:top-20 lg:self-start">
-        <div className="glass p-5">
+      {/*
+       * Sticky review card.
+       *
+       * Aside has no `self-start` so it stretches to the grid row height
+       * (taller of left column / aside). Inner div uses `position: sticky`
+       * pinned at `top-6` — pins at top of `<main>` scroll container and
+       * stays frozen as the left column grows past viewport.
+       *
+       * `max-h-[calc(100vh-7rem)]` + internal scroll keeps card visible
+       * even when card content itself exceeds viewport.
+       */}
+      <aside>
+        <div className="glass p-5 sticky top-6 max-h-[calc(100vh-7rem)] overflow-y-auto">
           <span className="eyebrow">Review</span>
           <h2 className="mt-2 text-[18px]">Ready to create</h2>
           <p className="text-[13px] text-ink-3 mt-1.5 leading-relaxed">
