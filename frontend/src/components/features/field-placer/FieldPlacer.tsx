@@ -45,6 +45,8 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
   const setFilterRecipient = useEnvelopeEditorStore(
     (s) => s.setFilterRecipient,
   );
+  const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
+  const removeField = useEnvelopeEditorStore((s) => s.removeField);
   const fieldCount = useEnvelopeEditorStore((s) => s.fields.length);
 
   const [zoom, setZoom] = useState(1);
@@ -93,6 +95,33 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActivePage(pageIndex + 1);
   };
+
+  /**
+   * Keyboard shortcut: Delete / Backspace removes the selected chip.
+   * Skipped when focus is inside an editable control so the user can
+   * still backspace through property-panel inputs without losing the
+   * chip itself.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (!selectedTempId) return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      removeField(selectedTempId);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedTempId, removeField]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
