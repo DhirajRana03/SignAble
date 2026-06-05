@@ -23,7 +23,7 @@ export default function DashboardRouteLayout({
 
   if (!hydrated || !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center">
         <span className="label-mono animate-pulse">loading</span>
       </div>
     );

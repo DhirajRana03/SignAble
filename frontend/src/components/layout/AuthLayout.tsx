@@ -14,7 +14,7 @@ export function AuthLayout({
   footer?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen overflow-y-auto flex flex-col">
       <div className="px-6 py-5">
         <Logo />
       </div>

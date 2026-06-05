@@ -220,8 +220,15 @@ export function Sidebar({
 
   return (
     <>
-      {/* Desktop column — transparent, shares mesh */}
-      <aside className="hidden md:flex md:w-60 lg:w-64 shrink-0 bg-transparent sticky top-0 h-screen overflow-y-auto">
+      {/* Desktop column — glass surface separates from main canvas */}
+      <aside
+        className={cn(
+          'hidden md:flex md:w-60 lg:w-64 shrink-0 h-full overflow-y-auto',
+          'bg-white/55 backdrop-blur-xl backdrop-saturate-150',
+          'border-r border-white/60',
+          'shadow-[inset_-1px_0_0_0_hsl(var(--hairline)),4px_0_24px_-12px_hsl(240_10%_10%/0.08)]',
+        )}
+      >
         {inner}
       </aside>
 
