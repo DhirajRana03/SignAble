@@ -1,10 +1,11 @@
-# Render Blueprint — three services from one monorepo.
+# Render Blueprint — three services + Postgres + Redis from one monorepo.
 # https://render.com/docs/blueprint-spec
 #
 # Usage:
 #   1. New + → Blueprint → connect this repo → pick branch `main`.
-#   2. Render reads this file and provisions all three services.
-#   3. Set the secret env vars (JWT_SECRET, EMAIL_*) per service in the dashboard.
+#   2. Render reads this file and provisions all services.
+#   3. Set the secret env vars marked `sync: false` per service in the
+#      dashboard (NEXT_PUBLIC_API_URL, STORAGE_URL_BASE, EMAIL_* creds).
 
 services:
   # ---------- processor (FastAPI / Python) ----------
@@ -14,7 +15,7 @@ services:
     rootDir: processor
     dockerfilePath: ./Dockerfile
     plan: starter
-    healthCheckPath: /
+    healthCheckPath: /health
     autoDeploy: true
 
   # ---------- backend (NestJS / Node) ----------
@@ -40,6 +41,20 @@ services:
           type: web
           name: signable-processor
           property: hostport
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: signable-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: signable-redis
+          property: port
+      - key: REDIS_PASSWORD
+        sync: false # paste from Render Redis dashboard once provisioned
+      - key: REDIS_DB
+        value: "0"
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -49,13 +64,25 @@ services:
       - key: STORAGE_ROOT
         value: /app/storage
       - key: QUEUES_INLINE
-        value: "true"
-      - key: EMAIL_ENABLED
         value: "false"
+      - key: EMAIL_ENABLED
+        value: "false" # flip true after provider creds set
       - key: EMAIL_PROVIDER
-        value: console
+        value: smtp # smtp | sendgrid | postmark | console
       - key: EMAIL_FROM
         value: noreply@signable.com
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: POSTMARK_SERVER_TOKEN
+        sync: false
       - key: MAX_UPLOAD_BYTES
         value: "52428800"
       - key: ALLOWED_ORIGINS
@@ -69,7 +96,7 @@ services:
           name: signable-frontend
           property: host
       - key: STORAGE_URL_BASE
-        sync: false
+        sync: false # set to https://<backend-host>/api/v1/files after first deploy
 
   # ---------- frontend (Next.js) ----------
   - type: web
@@ -81,7 +108,14 @@ services:
     autoDeploy: true
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        sync: false # set in dashboard once backend has a public URL
+        sync: false # set in dashboard once backend has a public URL, then redeploy
+
+  # ---------- redis (BullMQ job queue) ----------
+  - type: redis
+    name: signable-redis
+    plan: starter
+    maxmemoryPolicy: noeviction # job queue must not silently drop
+    ipAllowList: [] # only Render-internal services
 
 databases:
   - name: signable-postgres
