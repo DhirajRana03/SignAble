@@ -149,8 +149,11 @@ export function FieldChip({
         'absolute select-none group',
         'rounded-md flex items-center justify-center',
         'transition-all duration-150 animate-fade-up',
+        // Solid recipient-tinted left bar + tinted background so each
+        // signer is visually distinct even when multiple chips overlap.
         color.bg,
         color.fg,
+        `border-l-4 ${color.bar}`,
         dimmed
           ? 'opacity-25 pointer-events-none cursor-default'
           : 'cursor-move',

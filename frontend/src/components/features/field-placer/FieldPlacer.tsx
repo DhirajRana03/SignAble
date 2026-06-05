@@ -223,7 +223,7 @@ function RecipientFilterStrip({
             active={activeId === r.id}
             onClick={() => onChange(r.id)}
             label={r.name}
-            dotClass={c.bg}
+            dotClass={c.dot}
           />
         );
       })}
