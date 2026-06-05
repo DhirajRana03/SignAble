@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 
 import { useRecentActivity } from '@/hooks/useEnvelopes';
-import { cn, formatRelative } from '@/lib/utils';
+import { cn, formatDate, formatRelative } from '@/lib/utils';
 import type { ActivityItem, AuditEventType } from '@/types/envelope.types';
 
 interface IconConfig {
@@ -159,6 +159,15 @@ function ActivityRow({ item, index }: { item: ActivityItem; index: number }) {
             title={item.actorEmail}
           >
             {actor || '—'}
+          </span>
+        </div>
+
+        <div className="hidden lg:flex flex-col flex-[1.4_1.4_0%] min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
+            Date &amp; Time
+          </span>
+          <span className="mt-0.5 text-[12px] text-ink-3 truncate">
+            {formatDate(item.createdAt)}
           </span>
         </div>
 

@@ -147,7 +147,7 @@ export default function VerifyEnvelopePage() {
               <dt className="label-mono mb-0.5">Completed</dt>
               <dd>
                 {data.completedAt
-                  ? new Date(data.completedAt).toLocaleString()
+                  ? new Date(data.completedAt).toLocaleString(undefined, { hour12: true })
                   : '—'}
               </dd>
             </div>
@@ -192,7 +192,7 @@ export default function VerifyEnvelopePage() {
                 <span className="label-mono shrink-0">{r.status}</span>
                 <span className="text-[11px] text-ink-3 shrink-0 w-32 text-right">
                   {r.signedAt
-                    ? new Date(r.signedAt).toLocaleString()
+                    ? new Date(r.signedAt).toLocaleString(undefined, { hour12: true })
                     : '—'}
                 </span>
               </li>

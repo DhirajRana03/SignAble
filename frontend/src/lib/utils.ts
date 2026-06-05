@@ -8,12 +8,16 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(iso: string | Date | null | undefined): string {
   if (!iso) return '—';
   const d = typeof iso === 'string' ? new Date(iso) : iso;
+  // Force `hour12` so output always carries AM/PM regardless of
+  // browser locale defaults (some 24-hour locales would otherwise
+  // drop the suffix and break consistency across the platform).
   return d.toLocaleString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: true,
   });
 }
 
