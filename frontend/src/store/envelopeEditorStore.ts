@@ -36,9 +36,15 @@ interface EditorState {
   fields: EditorField[];
   selectedTempId: string | null;
   activeRecipientId: string | null;
+  /**
+   * Visibility filter. null = show all recipients' chips; otherwise the
+   * recipient whose chips render at full opacity (others dim).
+   */
+  filterRecipientId: string | null;
   dirty: boolean;
   init: (envelopeId: string, existing: SignatureField[]) => void;
   setActiveRecipient: (recipientId: string | null) => void;
+  setFilterRecipient: (recipientId: string | null) => void;
   addField: (field: Omit<EditorField, 'tempId'>) => void;
   updateField: (tempId: string, patch: Partial<EditorField>) => void;
   removeField: (tempId: string) => void;
@@ -52,6 +58,7 @@ export const useEnvelopeEditorStore = create<EditorState>((set) => ({
   fields: [],
   selectedTempId: null,
   activeRecipientId: null,
+  filterRecipientId: null,
   dirty: false,
 
   init: (envelopeId, existing) => {
@@ -75,12 +82,16 @@ export const useEnvelopeEditorStore = create<EditorState>((set) => ({
         options: f.options ?? null,
       })),
       selectedTempId: null,
+      filterRecipientId: null,
       dirty: false,
     });
   },
 
   setActiveRecipient: (recipientId) =>
     set({ activeRecipientId: recipientId }),
+
+  setFilterRecipient: (recipientId) =>
+    set({ filterRecipientId: recipientId }),
 
   addField: (field) =>
     set((s) => ({
@@ -113,6 +124,7 @@ export const useEnvelopeEditorStore = create<EditorState>((set) => ({
       fields: [],
       selectedTempId: null,
       activeRecipientId: null,
+      filterRecipientId: null,
       dirty: false,
     }),
 }));
