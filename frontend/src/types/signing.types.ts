@@ -4,6 +4,20 @@ import type {
   SignatureField,
 } from './envelope.types';
 
+/**
+ * Adopted signature style returned to the signing UI. Populated once
+ * the recipient confirms the "Adopt Your Signature" modal. Null until
+ * adoption happens; after that, every SIGNATURE/INITIALS click reuses
+ * these images instead of re-prompting.
+ */
+export interface AdoptedSignature {
+  signature: string | null;
+  initials: string | null;
+  fullName: string | null;
+  initialsText: string | null;
+  adoptedAt: string;
+}
+
 export interface SigningView {
   envelopeId: string;
   envelopeTitle: string;
@@ -15,6 +29,19 @@ export interface SigningView {
   fields: SignatureField[];
   pageUrls: string[];
   pageCount: number;
+  adopted: AdoptedSignature | null;
+}
+
+/**
+ * Payload posted to /sign/:token/adopt. Base64 data URLs for both
+ * images; full name + initials text drive the audit trail and the
+ * preview card in the modal.
+ */
+export interface AdoptSignaturePayload {
+  signature: string;
+  initials: string;
+  fullName: string;
+  initialsText: string;
 }
 
 /**

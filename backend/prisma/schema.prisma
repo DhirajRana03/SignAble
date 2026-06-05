@@ -123,6 +123,23 @@ model Recipient {
   declineReason String?
   ipAddress     String?
 
+  /// Adopted signature image (base64 data URL). Captured once via
+  /// the Adopt Your Signature modal, then auto-applied to every
+  /// SIGNATURE field on click. Stored on the recipient so the same
+  /// style persists across sessions if the signer returns.
+  adoptedSignature  String?
+  /// Adopted initials image (base64 data URL). Mirrors
+  /// adoptedSignature for INITIALS fields.
+  adoptedInitials   String?
+  /// Full name the signer adopted (may differ from `name` set by the
+  /// sender). Used to render the adopted-style preview in the modal.
+  adoptedFullName   String?
+  /// Adopted initials text (e.g. "DS"). Optional override.
+  adoptedInitialsText String?
+  /// First time the recipient adopted a signature in any session.
+  /// Drives audit + analytics; null until adoption happens.
+  adoptedAt         DateTime?
+
   envelope Envelope         @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
   fields   SignatureField[]
 
