@@ -19,7 +19,12 @@ import {
   useEnvelopeEditorStore,
   type EditorField,
 } from '@/store/envelopeEditorStore';
-import type { FieldType } from '@/types/envelope.types';
+import {
+  isCheckboxOptions,
+  isDropdownOptions,
+  isTextOptions,
+  type FieldType,
+} from '@/types/envelope.types';
 
 const FIELD_LABEL: Record<FieldType, string> = {
   SIGNATURE: 'Signature',
@@ -245,12 +250,12 @@ function FieldEditor({
           <Accordion title="Add Text" defaultOpen>
             <textarea
               value={
-                (field.options && 'placeholder' in field.options
-                  ? (field.options as { placeholder?: string }).placeholder
-                  : '') ?? ''
+                isTextOptions(field.options)
+                  ? (field.options.placeholder ?? '')
+                  : ''
               }
               onChange={(e) =>
-                onUpdate({ options: { placeholder: e.target.value } as never })
+                onUpdate({ options: { placeholder: e.target.value } })
               }
               placeholder="Add Text"
               rows={4}
@@ -262,9 +267,7 @@ function FieldEditor({
         {field.fieldType === 'DROPDOWN' ? (
           <DropdownChoicesEditor
             choices={
-              (field.options && 'choices' in field.options
-                ? field.options.choices
-                : undefined) ?? []
+              isDropdownOptions(field.options) ? field.options.choices : []
             }
             onChange={(choices) => onUpdate({ options: { choices } })}
           />
@@ -277,9 +280,9 @@ function FieldEditor({
               id="cb-label"
               placeholder="Agree to terms"
               value={
-                (field.options && 'label' in field.options
-                  ? field.options.label
-                  : '') ?? ''
+                isCheckboxOptions(field.options)
+                  ? (field.options.label ?? '')
+                  : ''
               }
               onChange={(e) => onUpdate({ options: { label: e.target.value } })}
             />

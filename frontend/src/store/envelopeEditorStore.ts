@@ -68,6 +68,10 @@ export const useEnvelopeEditorStore = create<EditorState>((set) => ({
         heightPct: f.heightPct,
         fieldType: f.fieldType,
         required: f.required,
+        // Hydrate label + readOnly when the envelope has been saved
+        // before; both are stored on the server.
+        label: f.label ?? undefined,
+        readOnly: f.readOnly ?? false,
         options: f.options ?? null,
       })),
       selectedTempId: null,

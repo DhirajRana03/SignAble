@@ -20,12 +20,34 @@ export type FieldType =
  * Type-specific configuration persisted alongside a field.
  * - DROPDOWN: { choices: non-empty string[] }
  * - CHECKBOX: { label?: string }
+ * - TEXT:     { placeholder?: string }
  * - other types: null
+ *
+ * Members overlap structurally, so narrow at runtime via the helpers
+ * exported below instead of in-keyword checks against the union.
  */
+export type DropdownOptions = { choices: string[] };
+export type CheckboxOptions = { label?: string };
+export type TextOptions = { placeholder?: string };
 export type FieldOptions =
-  | { choices: string[] }
-  | { label?: string }
+  | DropdownOptions
+  | CheckboxOptions
+  | TextOptions
   | null;
+
+export function isDropdownOptions(o: FieldOptions): o is DropdownOptions {
+  return !!o && Array.isArray((o as DropdownOptions).choices);
+}
+export function isCheckboxOptions(o: FieldOptions): o is CheckboxOptions {
+  return (
+    !!o &&
+    !Array.isArray((o as DropdownOptions).choices) &&
+    'label' in o
+  );
+}
+export function isTextOptions(o: FieldOptions): o is TextOptions {
+  return !!o && 'placeholder' in o;
+}
 
 export interface Recipient {
   id: string;
@@ -53,6 +75,10 @@ export interface SignatureField {
   heightPct: number;
   fieldType: FieldType;
   required: boolean;
+  /** Palette tile label (e.g. "Name", "Email"). Metadata only. */
+  label: string | null;
+  /** Disables signer interaction; pre-filled value preserved on submit. */
+  readOnly: boolean;
   value: string | null;
   options: FieldOptions;
   signedAt: string | null;
