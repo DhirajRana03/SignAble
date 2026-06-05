@@ -7,7 +7,29 @@ import { FieldPlacer } from '@/components/features/field-placer/FieldPlacer';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useBulkSaveFields, useEnvelope, useSendEnvelope } from '@/hooks/useEnvelopes';
-import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
+import { useEnvelopeEditorStore, type EditorField } from '@/store/envelopeEditorStore';
+import { toast } from 'sonner';
+
+/**
+ * Map an editor field into the bulk-save payload shape expected by the
+ * backend. Centralises every prepare-time send/save call so we never
+ * lose `label`, `readOnly`, or option values on round-trip.
+ */
+function toBulkPayload(f: EditorField) {
+  return {
+    recipientId: f.recipientId,
+    pageNumber: f.pageNumber,
+    xPct: f.xPct,
+    yPct: f.yPct,
+    widthPct: f.widthPct,
+    heightPct: f.heightPct,
+    fieldType: f.fieldType,
+    required: f.required,
+    label: f.label ?? undefined,
+    readOnly: f.readOnly ?? false,
+    options: f.options ?? undefined,
+  };
+}
 
 export default function PreparePage() {
   const { id } = useParams<{ id: string }>();
@@ -30,33 +52,40 @@ export default function PreparePage() {
   const env = envelope.data;
 
   const onSaveDraft = () => {
-    save.mutate(
-      fields.map((f) => ({
-        recipientId: f.recipientId,
-        pageNumber: f.pageNumber,
-        xPct: f.xPct,
-        yPct: f.yPct,
-        widthPct: f.widthPct,
-        heightPct: f.heightPct,
-        fieldType: f.fieldType,
-        required: f.required,
-        options: f.options ?? undefined,
-      })),
-      {
-        onSuccess: () => {
-          markClean();
-          router.push('/drafts');
-        },
+    save.mutate(fields.map(toBulkPayload), {
+      onSuccess: () => {
+        markClean();
+        router.push('/drafts');
       },
-    );
+    });
   };
 
   /**
    * Send envelope. Auto-saves dirty field layout first so user does not
    * have to think about a separate save step. Only sends after save
    * resolves to avoid sending stale server-side field state.
+   *
+   * Blocks send when any SIGNER recipient has zero fields assigned —
+   * leaving them without a way to interact would prevent envelope
+   * completion entirely.
    */
   const onSend = () => {
+    const signers = (env.recipients ?? []).filter(
+      (r) => r.role === 'SIGNER',
+    );
+    const fieldRecipientIds = new Set(fields.map((f) => f.recipientId));
+    const orphanSigners = signers.filter(
+      (r) => !fieldRecipientIds.has(r.id),
+    );
+    if (orphanSigners.length > 0) {
+      toast.error(
+        `Add at least one field for: ${orphanSigners
+          .map((r) => r.name)
+          .join(', ')}`,
+      );
+      return;
+    }
+
     const dispatchSend = () =>
       send.mutate(env.id, {
         onSuccess: () => router.push(`/envelopes/${env.id}`),
@@ -65,25 +94,12 @@ export default function PreparePage() {
       dispatchSend();
       return;
     }
-    save.mutate(
-      fields.map((f) => ({
-        recipientId: f.recipientId,
-        pageNumber: f.pageNumber,
-        xPct: f.xPct,
-        yPct: f.yPct,
-        widthPct: f.widthPct,
-        heightPct: f.heightPct,
-        fieldType: f.fieldType,
-        required: f.required,
-        options: f.options ?? undefined,
-      })),
-      {
-        onSuccess: () => {
-          markClean();
-          dispatchSend();
-        },
+    save.mutate(fields.map(toBulkPayload), {
+      onSuccess: () => {
+        markClean();
+        dispatchSend();
       },
-    );
+    });
   };
 
   const canSend = fields.length > 0 && !send.isPending && !save.isPending;
