@@ -42,6 +42,21 @@ export function SigningView({ token }: { token: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adopted?.adoptedAt, query.data?.envelopeId]);
 
+  // Auto-fill identity tiles (Name / Email / Date Signed) on first
+  // load. Sender placed these so signer never re-enters data already
+  // captured at recipient creation. Re-runs when server data refreshes
+  // but only stamps fields that are still blank.
+  useEffect(() => {
+    if (!query.data) return;
+    for (const f of query.data.fields) {
+      const auto = autoFillFor(f, query.data, adopted);
+      if (auto !== null && !fieldValues[f.id]) {
+        setFieldValue(f.id, auto);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.data?.envelopeId, adopted?.adoptedAt]);
+
   if (query.isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -136,6 +151,15 @@ export function SigningView({ token }: { token: string }) {
                     return;
                   }
                   setAdoptOpen(true);
+                  return;
+                }
+                // Auto-filled identity fields: stamp value from the
+                // recipient profile + skip the prompt. Sender placed
+                // these as "Name" / "Email" / "Date Signed" tiles so
+                // the signer never enters data they already gave.
+                const auto = autoFillFor(f, data, adopted);
+                if (auto !== null) {
+                  setFieldValue(f.id, auto);
                   return;
                 }
                 setActiveField(f);
@@ -288,6 +312,44 @@ function FieldInputModal({
       </div>
     </Modal>
   );
+}
+
+/**
+ * Resolve auto-fill value for an identity tile. Returns the string to
+ * stamp, or `null` when the field needs a manual prompt. Labels come
+ * from the palette ("Name", "Email", "Date Signed", etc.) — matches
+ * by case-insensitive label so renamed tiles still work.
+ *
+ * Adopted name takes precedence over the recipient's profile name so
+ * the printed identity matches what the signer confirmed at adoption.
+ */
+function autoFillFor(
+  field: SignatureField,
+  view: { recipientName: string; recipientEmail: string },
+  adopted: { fullName?: string | null } | null,
+): string | null {
+  if (field.fieldType === 'DATE') {
+    const lbl = (field.label ?? '').toLowerCase();
+    if (
+      lbl === '' ||
+      lbl.includes('date') ||
+      lbl.includes('today') ||
+      lbl.includes('signed')
+    ) {
+      return new Date().toLocaleDateString();
+    }
+    return null;
+  }
+  if (field.fieldType !== 'TEXT') return null;
+  const lbl = (field.label ?? '').trim().toLowerCase();
+  if (!lbl) return null;
+  if (lbl === 'name' || lbl === 'full name' || lbl === 'signer name') {
+    return adopted?.fullName?.trim() || view.recipientName;
+  }
+  if (lbl === 'email' || lbl === 'email address') {
+    return view.recipientEmail;
+  }
+  return null;
 }
 
 function Modal({

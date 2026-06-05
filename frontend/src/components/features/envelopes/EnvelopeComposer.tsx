@@ -381,17 +381,11 @@ export function EnvelopeComposer({
     void persist('continue');
   };
 
-  // Draft enables when any composer field has user input. Title auto-fills
+  // Dirty when any composer field carries user input. Title auto-fills
   // from filename once doc ready, so doc-only state still qualifies.
-  const hasAnyInput =
-    documentIds.length > 0 ||
-    recipients.length > 0 ||
-    title.trim().length > 0 ||
-    pendingRecipientInput;
-  const canSaveDraft = hasAnyInput && !submitting;
-
+  // Drives the leave-page guard banner (Stay / Discard only — drafts
+  // are now saved from the prepare-envelope settings, not here).
   const setDirty = useComposerGuardStore((s) => s.setDirty);
-  const setSaveDraftHandler = useComposerGuardStore((s) => s.setSaveDraft);
   const isDirty =
     documentIds.length > 0 ||
     recipients.length > 0 ||
@@ -402,16 +396,11 @@ export function EnvelopeComposer({
     setDirty(isDirty);
   }, [isDirty, setDirty]);
 
-  useEffect(() => {
-    setSaveDraftHandler(canSaveDraft ? () => persist('draft') : null);
-  }, [canSaveDraft, setSaveDraftHandler, persist]);
-
   useEffect(
     () => () => {
       setDirty(false);
-      setSaveDraftHandler(null);
     },
-    [setDirty, setSaveDraftHandler],
+    [setDirty],
   );
 
   /**
@@ -464,7 +453,7 @@ export function EnvelopeComposer({
   return (
     <form
       onSubmit={onSubmit}
-      className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 pb-12"
+      className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 pb-12 items-start"
     >
       <div className="space-y-5">
         {/* Title */}
@@ -593,18 +582,16 @@ export function EnvelopeComposer({
       </div>
 
       {/*
-       * Sticky review card.
+       * Review card — frozen to top of scroll viewport via
+       * `position: sticky` on the aside itself. Grid uses
+       * `items-start` so aside no longer stretches with left column
+       * height; sticky then bites at `top-6` of the scrolling <main>.
        *
-       * Aside has no `self-start` so it stretches to the grid row height
-       * (taller of left column / aside). Inner div uses `position: sticky`
-       * pinned at `top-6` — pins at top of `<main>` scroll container and
-       * stays frozen as the left column grows past viewport.
-       *
-       * `max-h-[calc(100vh-7rem)]` + internal scroll keeps card visible
-       * even when card content itself exceeds viewport.
+       * `max-h-[calc(100vh-7rem)]` + internal scroll keeps card fully
+       * visible when its own content exceeds the viewport.
        */}
-      <aside>
-        <div className="glass p-5 sticky top-6 max-h-[calc(100vh-7rem)] overflow-y-auto">
+      <aside className="lg:sticky lg:top-6">
+        <div className="glass p-5 max-h-[calc(100vh-7rem)] overflow-y-auto">
           <span className="eyebrow">Review</span>
           <h2 className="mt-2 text-[18px]">Ready to create</h2>
           <p className="text-[13px] text-ink-3 mt-1.5 leading-relaxed">
@@ -668,23 +655,9 @@ export function EnvelopeComposer({
                   ? 'Continue to fields'
                   : 'Create envelope'}
             </Button>
-            <Button
-              type="button"
-              size="md"
-              className={cn(
-                'w-full bg-transparent border border-accent/40 text-accent-deep',
-                'hover:bg-accent-soft hover:border-accent/60',
-                'disabled:border-border disabled:text-ink-4',
-                'transition-colors duration-150',
-              )}
-              disabled={!canSaveDraft}
-              onClick={() => void persist('draft')}
-            >
-              Save as draft
-            </Button>
           </div>
           <p className="text-[11px] text-ink-4 mt-3 text-center">
-            Next: place fields, then send.
+            Drafts are managed from the envelope settings on the prepare step.
           </p>
         </div>
       </aside>
@@ -1162,26 +1135,48 @@ function SortableRecipientItem({
     zIndex: isDragging ? 20 : 'auto',
   } as React.CSSProperties;
 
+  // Recipient tone: avatar gradient, role-button outline, name tint +
+  // hover underline. Bottom bar dropped — competed with row hover.
   const tones = [
     {
       avatar: 'from-violet-400/30 to-indigo-500/30 text-indigo-700',
-      bar: 'bg-indigo-500',
+      border: 'border-indigo-400/70 hover:border-indigo-500',
+      text: 'text-indigo-700',
+      icon: 'text-indigo-500',
+      ring: 'focus-visible:ring-indigo-400/40',
+      underline: 'bg-gradient-to-r from-indigo-400 to-violet-500',
     },
     {
       avatar: 'from-amber-400/30 to-orange-500/30 text-orange-700',
-      bar: 'bg-orange-500',
+      border: 'border-orange-400/70 hover:border-orange-500',
+      text: 'text-orange-700',
+      icon: 'text-orange-500',
+      ring: 'focus-visible:ring-orange-400/40',
+      underline: 'bg-gradient-to-r from-amber-400 to-orange-500',
     },
     {
       avatar: 'from-emerald-400/30 to-teal-500/30 text-teal-700',
-      bar: 'bg-teal-500',
+      border: 'border-teal-400/70 hover:border-teal-500',
+      text: 'text-teal-700',
+      icon: 'text-teal-500',
+      ring: 'focus-visible:ring-teal-400/40',
+      underline: 'bg-gradient-to-r from-emerald-400 to-teal-500',
     },
     {
       avatar: 'from-sky-400/30 to-blue-500/30 text-blue-700',
-      bar: 'bg-blue-500',
+      border: 'border-blue-400/70 hover:border-blue-500',
+      text: 'text-blue-700',
+      icon: 'text-blue-500',
+      ring: 'focus-visible:ring-blue-400/40',
+      underline: 'bg-gradient-to-r from-sky-400 to-blue-500',
     },
     {
       avatar: 'from-pink-400/30 to-rose-500/30 text-rose-700',
-      bar: 'bg-rose-500',
+      border: 'border-rose-400/70 hover:border-rose-500',
+      text: 'text-rose-700',
+      icon: 'text-rose-500',
+      ring: 'focus-visible:ring-rose-400/40',
+      underline: 'bg-gradient-to-r from-pink-400 to-rose-500',
     },
   ];
   const tone = tones[index % tones.length];
@@ -1198,15 +1193,6 @@ function SortableRecipientItem({
           : 'hover:bg-surface-sunken/60',
       )}
     >
-      {/* Recipient color strip */}
-      <span
-        aria-hidden
-        className={cn(
-          'absolute left-0 right-0 bottom-0 h-[2px] rounded-b-md',
-          tone.bar,
-        )}
-      />
-
       {sequential ? (
         <button
           type="button"
@@ -1240,13 +1226,28 @@ function SortableRecipientItem({
         {recipient.name[0]}
       </span>
 
-      {/* Name + email inline — fixed name col, email fills */}
+      {/* Name + email inline — fixed name col, email fills. Name
+          carries recipient-tone effect: tinted color, gradient
+          underline reveal on row hover, subtle lift. */}
       <div className="min-w-0 flex-1 grid grid-cols-[minmax(0,12rem)_auto_minmax(0,1fr)] items-center gap-3">
         <p
-          className="text-[13.5px] font-medium text-ink truncate"
+          className={cn(
+            'relative inline-block w-fit max-w-full text-[13.5px] font-semibold truncate',
+            'transition-all duration-200 ease-out',
+            'group-hover:-translate-y-[1px]',
+            tone.text,
+          )}
           title={recipient.name}
         >
-          {recipient.name}
+          <span className="relative z-10">{recipient.name}</span>
+          <span
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute left-0 right-0 -bottom-0.5 h-[2px] rounded-full origin-left',
+              'scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out',
+              tone.underline,
+            )}
+          />
         </p>
         <span className="text-ink-4">·</span>
         <p
@@ -1257,7 +1258,16 @@ function SortableRecipientItem({
         </p>
       </div>
 
-      <ActionDropdown value={recipient.role} onChange={onChangeRole} />
+      <ActionDropdown
+        value={recipient.role}
+        onChange={onChangeRole}
+        tone={{
+          border: tone.border,
+          text: tone.text,
+          icon: tone.icon,
+          ring: tone.ring,
+        }}
+      />
 
       <button
         type="button"
@@ -1287,29 +1297,41 @@ const ROLE_OPTIONS: {
 function ActionDropdown({
   value,
   onChange,
+  tone,
 }: {
   value: RecipientRole;
   onChange: (v: RecipientRole) => void;
+  tone: { border: string; text: string; icon: string; ring: string };
 }) {
   const [open, setOpen] = useState(false);
   const current = ROLE_OPTIONS.find((o) => o.value === value) ?? ROLE_OPTIONS[0];
   const Icon = current.icon;
 
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0 ml-2">
+      {/* Fixed width so every role pill renders identically across
+          recipients. Width sized to the longest label ("Receives a
+          copy") plus icon, chevron, and breathing room. */}
       <button
         type="button"
         onClick={() => setOpen((s) => !s)}
         className={cn(
-          'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[12px] font-medium transition-colors',
-          'bg-surface-2 border border-border-strong text-ink-2 hover:border-accent hover:text-ink',
+          'grid grid-cols-[14px_1fr_12px] items-center gap-1.5 h-9 w-44 px-3 rounded-pill',
+          'text-[12.5px] font-medium leading-none transition-colors',
+          'bg-transparent border focus:outline-none focus-visible:ring-2',
+          tone.border,
+          tone.text,
+          tone.ring,
         )}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <Icon className="h-3.5 w-3.5 text-ink-3" />
-        <span className="hidden sm:inline">{current.label}</span>
-        <ChevronDown className="h-3 w-3 text-ink-3" />
+        <Icon className={cn('h-3.5 w-3.5 justify-self-start', tone.icon)} strokeWidth={2} />
+        <span className="text-left truncate">{current.label}</span>
+        <ChevronDown
+          className={cn('h-3 w-3 justify-self-end', tone.icon)}
+          strokeWidth={2.4}
+        />
       </button>
 
       {open ? (

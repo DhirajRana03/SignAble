@@ -2,7 +2,10 @@
 
 import { Download, FileText } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
+import { DownloadDialog } from '@/components/features/envelopes/DownloadDialog';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
 import { useSigningCompletion } from '@/hooks/useSigning';
@@ -17,6 +20,63 @@ import { cn } from '@/lib/utils';
 export default function SignedDocumentPage() {
   const { token } = useParams<{ token: string }>();
   const { data, isLoading, error } = useSigningCompletion(token);
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+
+  const downloadFromUrl = async (url: string, filename: string) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    a.href = objUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(objUrl);
+  };
+
+  const handleDownload = async (selection: {
+    document: boolean;
+    certificate: boolean;
+    combine: boolean;
+  }) => {
+    if (!data) return;
+    setDownloadBusy(true);
+    try {
+      if (selection.combine && selection.document && selection.certificate) {
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
+        await downloadFromUrl(
+          `${apiBase}/sign/${token}/combined`,
+          `${data.envelopeTitle}.combined.pdf`,
+        );
+      } else {
+        const jobs: Promise<void>[] = [];
+        if (selection.document && data.signedPdfUrl) {
+          jobs.push(
+            downloadFromUrl(
+              data.signedPdfUrl,
+              `${data.envelopeTitle}.signed.pdf`,
+            ),
+          );
+        }
+        if (selection.certificate && data.certificatePdfUrl) {
+          jobs.push(
+            downloadFromUrl(
+              data.certificatePdfUrl,
+              `${data.envelopeTitle}.certificate.pdf`,
+            ),
+          );
+        }
+        await Promise.all(jobs);
+      }
+      setDownloadOpen(false);
+    } catch {
+      toast.error('Download failed');
+    } finally {
+      setDownloadBusy(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -57,14 +117,14 @@ export default function SignedDocumentPage() {
             </p>
           </div>
           {completed ? (
-            <a
-              href={data.signedPdfUrl!}
-              download={`${data.envelopeTitle}.signed.pdf`}
+            <Button
+              variant="accent"
+              size="sm"
+              className="!rounded-full px-4"
+              onClick={() => setDownloadOpen(true)}
             >
-              <Button variant="accent" size="sm" className="!rounded-full px-4">
-                <Download className="h-3.5 w-3.5" /> Download
-              </Button>
-            </a>
+              <Download className="h-3.5 w-3.5" /> Download
+            </Button>
           ) : null}
         </div>
       </header>
@@ -84,6 +144,16 @@ export default function SignedDocumentPage() {
           />
         )}
       </main>
+
+      {downloadOpen ? (
+        <DownloadDialog
+          busy={downloadBusy}
+          onClose={() => {
+            if (!downloadBusy) setDownloadOpen(false);
+          }}
+          onDownload={handleDownload}
+        />
+      ) : null}
     </div>
   );
 }

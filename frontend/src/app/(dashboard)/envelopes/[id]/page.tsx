@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { AuditTrail } from '@/components/features/envelopes/AuditTrail';
+import { DownloadDialog } from '@/components/features/envelopes/DownloadDialog';
 import { EnvelopeDocumentPreview } from '@/components/features/envelopes/EnvelopeDocumentPreview';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
@@ -37,6 +38,8 @@ export default function EnvelopeDetailPage() {
   const voidIt = useVoidEnvelope();
   const del = useDeleteEnvelope();
   const [showDocument, setShowDocument] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloadBusy, setDownloadBusy] = useState(false);
 
   // Drafts finalize via prepare workspace. Redirect on load.
   useEffect(() => {
@@ -63,17 +66,55 @@ export default function EnvelopeDetailPage() {
   const isDraft = env.status === 'DRAFT';
   const isCompleted = env.status === 'COMPLETED';
 
-  const onDownload = async () => {
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSelection = async (selection: {
+    document: boolean;
+    certificate: boolean;
+    combine: boolean;
+  }) => {
+    setDownloadBusy(true);
     try {
-      const blob = await envelopeService.download(env.id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${env.title}.signed.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      if (selection.combine && selection.document && selection.certificate) {
+        const blob = await envelopeService.download(env.id, 'combined');
+        triggerBlobDownload(blob, `${env.title}.combined.pdf`);
+      } else {
+        const jobs: Promise<unknown>[] = [];
+        if (selection.document) {
+          jobs.push(
+            envelopeService
+              .download(env.id, 'document')
+              .then((blob) =>
+                triggerBlobDownload(blob, `${env.title}.signed.pdf`),
+              ),
+          );
+        }
+        if (selection.certificate) {
+          jobs.push(
+            envelopeService
+              .download(env.id, 'certificate')
+              .then((blob) =>
+                triggerBlobDownload(
+                  blob,
+                  `${env.title}.certificate.pdf`,
+                ),
+              ),
+          );
+        }
+        await Promise.all(jobs);
+      }
+      setDownloadOpen(false);
     } catch {
       toast.error('Download failed');
+    } finally {
+      setDownloadBusy(false);
     }
   };
 
@@ -111,8 +152,8 @@ export default function EnvelopeDetailPage() {
             </>
           ) : null}
           {isCompleted ? (
-            <Button variant="accent" onClick={onDownload}>
-              <Download className="h-3.5 w-3.5" /> Download signed PDF
+            <Button variant="accent" onClick={() => setDownloadOpen(true)}>
+              <Download className="h-3.5 w-3.5" /> Download
             </Button>
           ) : null}
         </>
@@ -283,6 +324,16 @@ export default function EnvelopeDetailPage() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {downloadOpen ? (
+        <DownloadDialog
+          busy={downloadBusy}
+          onClose={() => {
+            if (!downloadBusy) setDownloadOpen(false);
+          }}
+          onDownload={handleDownloadSelection}
+        />
       ) : null}
     </DashboardShell>
   );

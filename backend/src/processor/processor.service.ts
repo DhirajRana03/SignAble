@@ -26,6 +26,67 @@ export interface SignedFieldData {
   width_pct: number;
   height_pct: number;
   value: string;
+  /**
+   * DocuSign-style decoration metadata. Optional — processor falls
+   * back to plain rendering when absent.
+   *
+   * - `label`: "Signed by:" / "Initial" header shown inside the
+   *   bracket frame.
+   * - `signer_name`: recipient display name (currently informational;
+   *   the signature image already encodes it).
+   * - `hash_id`: short, deterministic recipient identifier shown
+   *   beneath the signature. Mirrors the truncated hash in the
+   *   reference mockup.
+   */
+  label?: string;
+  signer_name?: string;
+  hash_id?: string;
+}
+
+/**
+ * One recipient row on the Certificate of Completion. Mirrors the
+ * DocuSign certificate layout — signer identity + timestamped event
+ * trail + adopted signature image.
+ */
+export interface RecipientCertEntry {
+  name: string;
+  email: string;
+  signing_id: string;
+  security_level?: string;
+  sent_at?: string | null;
+  viewed_at?: string | null;
+  signed_at?: string | null;
+  ip_address?: string | null;
+  signature_image?: string | null;
+  adoption_method?: string;
+  disclosure_accepted_at?: string | null;
+}
+
+/**
+ * Audit payload sent to the processor for the Certificate of Completion
+ * page set. Optional — processor renders a minimal fallback when absent.
+ */
+export interface CertificateData {
+  envelope_id: string;
+  subject: string;
+  status?: string;
+  document_pages?: number;
+  certificate_pages?: number;
+  signatures_count?: number;
+  initials_count?: number;
+  autonav?: string;
+  envelope_id_stamping?: string;
+  time_zone?: string;
+  envelope_originator_name?: string;
+  envelope_originator_email?: string;
+  envelope_originator_ip?: string;
+  record_holder_name?: string;
+  record_holder_email?: string;
+  record_status_timestamp?: string | null;
+  location?: string;
+  recipients?: RecipientCertEntry[];
+  envelope_sent_at?: string | null;
+  envelope_completed_at?: string | null;
 }
 
 /**
@@ -82,6 +143,8 @@ export class ProcessorService {
     pdfBuffer: Buffer,
     fields: SignedFieldData[],
     pageDimensions: PageDimension[],
+    certificate?: CertificateData,
+    includeCertificate = false,
   ): Promise<Buffer> {
     try {
       const { data } = await this.client.post<{ signed_pdf_base64: string }>(
@@ -90,6 +153,8 @@ export class ProcessorService {
           pdf_base64: pdfBuffer.toString('base64'),
           fields,
           page_dimensions: pageDimensions,
+          certificate,
+          include_certificate: includeCertificate,
         },
         { maxContentLength: Infinity, maxBodyLength: Infinity },
       );
@@ -97,6 +162,39 @@ export class ProcessorService {
     } catch (err) {
       this.logger.error(`applySignatures failed: ${(err as Error).message}`);
       throw new InternalServerErrorException('Signature applier unavailable');
+    }
+  }
+
+  async buildCertificate(
+    certificate: CertificateData,
+    fields: SignedFieldData[] = [],
+  ): Promise<Buffer> {
+    try {
+      const { data } = await this.client.post<{
+        certificate_pdf_base64: string;
+      }>(
+        '/build-certificate',
+        { certificate, fields },
+        { maxContentLength: Infinity, maxBodyLength: Infinity },
+      );
+      return Buffer.from(data.certificate_pdf_base64, 'base64');
+    } catch (err) {
+      this.logger.error(`buildCertificate failed: ${(err as Error).message}`);
+      throw new InternalServerErrorException('Certificate builder unavailable');
+    }
+  }
+
+  async mergePdfs(pdfs: Buffer[]): Promise<Buffer> {
+    try {
+      const { data } = await this.client.post<{ merged_pdf_base64: string }>(
+        '/merge-pdfs',
+        { pdfs_base64: pdfs.map((b) => b.toString('base64')) },
+        { maxContentLength: Infinity, maxBodyLength: Infinity },
+      );
+      return Buffer.from(data.merged_pdf_base64, 'base64');
+    } catch (err) {
+      this.logger.error(`mergePdfs failed: ${(err as Error).message}`);
+      throw new InternalServerErrorException('PDF merge unavailable');
     }
   }
 

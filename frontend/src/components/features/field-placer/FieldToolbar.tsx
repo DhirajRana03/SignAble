@@ -54,8 +54,8 @@ const GROUP_LABEL: Record<FieldDef['group'], string> = {
 
 export const FIELDS: FieldDef[] = [
   // Signing
-  { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', hint: 'Signer draws or types their signature', defaultSize: { widthPct: 0.143, heightPct: 0.0455 } },
-  { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', hint: 'Signer initials this spot', defaultSize: { widthPct: 0.065, heightPct: 0.0325 } },
+  { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', hint: 'Signer draws or types their signature', defaultSize: { widthPct: 0.2, heightPct: 0.06 } },
+  { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', hint: 'Signer initials this spot', defaultSize: { widthPct: 0.09, heightPct: 0.05 } },
   { id: 'date', type: 'DATE', label: 'Date Signed', icon: Calendar, group: 'signing', hint: 'Auto-fills with signing date', defaultSize: { widthPct: 0.117, heightPct: 0.026 } },
   // Identity
   { id: 'name', type: 'TEXT', label: 'Name', icon: User, group: 'identity', hint: 'Signer types or auto-fills their name', defaultSize: { widthPct: 0.156, heightPct: 0.026 } },

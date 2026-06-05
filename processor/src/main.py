@@ -16,7 +16,11 @@ from pydantic import BaseModel
 from .format_converter import SUPPORTED_EXTS, detect_extension, to_pdf
 from .pdf_processor import pdf_processor
 from .pdf_renderer import pdf_renderer
-from .signature_applier import SignedFieldData, signature_applier
+from .signature_applier import (
+    CertificateData,
+    SignedFieldData,
+    signature_applier,
+)
 
 app = FastAPI(title="SignAble Document Processor", version="0.1.0")
 
@@ -40,10 +44,32 @@ class ApplySignaturesRequest(BaseModel):
     pdf_base64: str
     fields: list[SignedFieldData]
     page_dimensions: list[PageDimension]
+    # Optional DocuSign-style audit trail. Only appended when
+    # `include_certificate=True`; defaults to False so callers get
+    # the bare signed document and persist the certificate separately.
+    certificate: CertificateData | None = None
+    include_certificate: bool = False
 
 
 class ApplySignaturesResponse(BaseModel):
     signed_pdf_base64: str
+
+
+class BuildCertificateRequest(BaseModel):
+    certificate: CertificateData
+    fields: list[SignedFieldData] = []
+
+
+class BuildCertificateResponse(BaseModel):
+    certificate_pdf_base64: str
+
+
+class MergePdfsRequest(BaseModel):
+    pdfs_base64: list[str]
+
+
+class MergePdfsResponse(BaseModel):
+    merged_pdf_base64: str
 
 
 class SupportedFormatsResponse(BaseModel):
@@ -120,9 +146,38 @@ async def apply_signatures(
     try:
         pdf_bytes = base64.b64decode(body.pdf_base64)
         dims = [(d.width, d.height) for d in body.page_dimensions]
-        signed = signature_applier.apply(pdf_bytes, body.fields, dims)
+        signed = signature_applier.apply(
+            pdf_bytes,
+            body.fields,
+            dims,
+            certificate=body.certificate,
+            include_certificate=body.include_certificate,
+        )
         return ApplySignaturesResponse(
             signed_pdf_base64=base64.b64encode(signed).decode()
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Apply failed: {e}")
+
+
+@app.post("/build-certificate", response_model=BuildCertificateResponse)
+async def build_certificate(body: BuildCertificateRequest) -> BuildCertificateResponse:
+    """Render Certificate of Completion as a standalone PDF."""
+    try:
+        cert_bytes = signature_applier.build_certificate(body.certificate, body.fields)
+        return BuildCertificateResponse(
+            certificate_pdf_base64=base64.b64encode(cert_bytes).decode()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Certificate build failed: {e}")
+
+
+@app.post("/merge-pdfs", response_model=MergePdfsResponse)
+async def merge_pdfs(body: MergePdfsRequest) -> MergePdfsResponse:
+    """Concatenate PDFs in order, return combined PDF."""
+    try:
+        decoded = [base64.b64decode(s) for s in body.pdfs_base64 if s]
+        merged = signature_applier.merge_pdfs(decoded)
+        return MergePdfsResponse(merged_pdf_base64=base64.b64encode(merged).decode())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Merge failed: {e}")

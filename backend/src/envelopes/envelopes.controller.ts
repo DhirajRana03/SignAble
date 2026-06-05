@@ -169,13 +169,23 @@ export class EnvelopesController {
   async download(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: User,
+    @Query('type', new DefaultValuePipe('document'))
+    type: 'document' | 'certificate' | 'combined',
     @Res() res: Response,
   ): Promise<void> {
-    const data = await this.envelopesService.download(user.id, id);
+    const validType =
+      type === 'certificate' || type === 'combined' ? type : 'document';
+    const data = await this.envelopesService.download(user.id, id, validType);
+    const suffix =
+      validType === 'certificate'
+        ? 'certificate'
+        : validType === 'combined'
+          ? 'combined'
+          : 'signed';
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="signed-${id}.pdf"`,
+      `attachment; filename="${suffix}-${id}.pdf"`,
     );
     res.send(data);
   }
