@@ -1,6 +1,7 @@
 'use client';
 
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/Button';
@@ -57,14 +58,33 @@ export default function SignedDocumentPage() {
             </p>
           </div>
           {completed ? (
-            <a
-              href={data.signedPdfUrl!}
-              download={`${data.envelopeTitle}.signed.pdf`}
-            >
-              <Button variant="accent" size="sm" className="!rounded-full px-4">
-                <Download className="h-3.5 w-3.5" /> Download
-              </Button>
-            </a>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href={`/verify/${data.envelopeId}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="!rounded-full px-4"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" /> Verify
+                </Button>
+              </Link>
+              <a
+                href={data.signedPdfUrl!}
+                download={`${data.envelopeTitle}.signed.pdf`}
+              >
+                <Button
+                  variant="accent"
+                  size="sm"
+                  className="!rounded-full px-4"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download
+                </Button>
+              </a>
+            </div>
           ) : null}
         </div>
       </header>

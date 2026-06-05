@@ -17,6 +17,7 @@ import { QueuesModule } from './queues/queues.module';
 import { RecipientsModule } from './recipients/recipients.module';
 import { SigningModule } from './signing/signing.module';
 import { StorageModule } from './storage/storage.module';
+import { VerifyModule } from './verify/verify.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import configuration from './config/configuration';
 
@@ -44,6 +45,7 @@ import configuration from './config/configuration';
     RecipientsModule,
     FieldsModule,
     SigningModule,
+    VerifyModule,
     WebhooksModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
