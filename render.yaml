@@ -14,7 +14,7 @@ services:
     runtime: docker
     rootDir: processor
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /health
     autoDeploy: true
 
@@ -24,13 +24,9 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /api/v1/health
     autoDeploy: true
-    disk:
-      name: signable-storage
-      mountPath: /app/storage
-      sizeGB: 1
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -104,7 +100,7 @@ services:
     runtime: docker
     rootDir: frontend
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     autoDeploy: true
     envVars:
       - key: NEXT_PUBLIC_API_URL
@@ -113,11 +109,11 @@ services:
   # ---------- redis (BullMQ job queue) ----------
   - type: redis
     name: signable-redis
-    plan: starter
-    maxmemoryPolicy: noeviction # job queue must not silently drop
+    plan: free
+    maxmemoryPolicy: allkeys-lru # free tier 25MB, must evict to stay up
     ipAllowList: [] # only Render-internal services
 
 databases:
   - name: signable-postgres
-    plan: basic-256mb
+    plan: free
     postgresMajorVersion: "16"
