@@ -25,7 +25,7 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     plan: free
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /api/v1/health/live # liveness only — avoids processor cold-start cascade on free tier
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
