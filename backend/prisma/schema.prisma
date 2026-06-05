@@ -2,7 +2,13 @@
 // All models managed here. Migration applied via `prisma migrate dev`.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Cover every runtime we deploy to:
+  //   native                       — local dev (darwin / linux glibc)
+  //   linux-musl-openssl-3.0.x     — Alpine-based Docker (our Dockerfile)
+  //   debian-openssl-3.0.x         — Render/Railway native Node builders (Debian)
+  //   debian-openssl-1.1.x         — older Debian runtimes (defensive)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
 }
 
 datasource db {

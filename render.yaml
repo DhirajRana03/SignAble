@@ -1,0 +1,89 @@
+# Render Blueprint — three services from one monorepo.
+# https://render.com/docs/blueprint-spec
+#
+# Usage:
+#   1. New + → Blueprint → connect this repo → pick branch `main`.
+#   2. Render reads this file and provisions all three services.
+#   3. Set the secret env vars (JWT_SECRET, EMAIL_*) per service in the dashboard.
+
+services:
+  # ---------- processor (FastAPI / Python) ----------
+  - type: web
+    name: signable-processor
+    runtime: docker
+    rootDir: processor
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /
+    autoDeploy: true
+
+  # ---------- backend (NestJS / Node) ----------
+  - type: web
+    name: signable-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    disk:
+      name: signable-storage
+      mountPath: /app/storage
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: signable-postgres
+          property: connectionString
+      - key: PROCESSOR_URL
+        fromService:
+          type: web
+          name: signable-processor
+          property: hostport
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 30m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: STORAGE_ROOT
+        value: /app/storage
+      - key: QUEUES_INLINE
+        value: "true"
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: EMAIL_PROVIDER
+        value: console
+      - key: EMAIL_FROM
+        value: noreply@signable.com
+      - key: MAX_UPLOAD_BYTES
+        value: "52428800"
+      - key: ALLOWED_ORIGINS
+        fromService:
+          type: web
+          name: signable-frontend
+          property: host
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: signable-frontend
+          property: host
+      - key: STORAGE_URL_BASE
+        sync: false
+
+  # ---------- frontend (Next.js) ----------
+  - type: web
+    name: signable-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # set in dashboard once backend has a public URL
+
+databases:
+  - name: signable-postgres
+    plan: basic-256mb
+    postgresMajorVersion: "16"
