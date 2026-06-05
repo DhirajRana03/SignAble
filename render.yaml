@@ -33,7 +33,7 @@ services:
           name: signable-postgres
           property: connectionString
       - key: PROCESSOR_URL
-        value: http://signable-processor:10000 # Render internal hostname + auto-assigned PORT
+        value: https://signable-processor.onrender.com # free tier — no internal DNS, public URL required
       - key: REDIS_HOST
         fromService:
           type: redis
