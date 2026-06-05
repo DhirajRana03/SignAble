@@ -49,6 +49,15 @@ function validateOptions(
     }
     return;
   }
+  if (fieldType === FieldType.TEXT) {
+    if (
+      options?.placeholder !== undefined &&
+      typeof options.placeholder !== 'string'
+    ) {
+      throw new ValidationError('TEXT options.placeholder must be a string');
+    }
+    return;
+  }
   if (options !== undefined && options !== null) {
     throw new ValidationError(
       `Field type ${fieldType} does not accept options`,
@@ -92,6 +101,8 @@ export class FieldsService {
         heightPct: dto.heightPct,
         fieldType: dto.fieldType,
         required: dto.required ?? true,
+        label: dto.label ?? null,
+        readOnly: dto.readOnly ?? false,
         options: (dto.options ?? undefined) as Prisma.InputJsonValue | undefined,
       },
     });
@@ -150,6 +161,8 @@ export class FieldsService {
         heightPct: dto.heightPct ?? undefined,
         fieldType: dto.fieldType ?? undefined,
         required: dto.required ?? undefined,
+        label: dto.label ?? undefined,
+        readOnly: dto.readOnly ?? undefined,
         options:
           nextOptions === undefined
             ? undefined
@@ -224,6 +237,8 @@ export class FieldsService {
             heightPct: f.heightPct,
             fieldType: f.fieldType,
             required: f.required ?? true,
+            label: f.label ?? null,
+            readOnly: f.readOnly ?? false,
             options: (f.options ?? undefined) as
               | Prisma.InputJsonValue
               | undefined,
