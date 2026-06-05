@@ -1109,8 +1109,14 @@ function RecipientAddForm({
           </p>
         ) : null}
       </div>
-      <Button type="button" variant="secondary" size="md" onClick={submit}>
-        <Plus className="h-3.5 w-3.5" /> Add
+      <Button
+        type="button"
+        variant="accent"
+        size="md"
+        onClick={submit}
+        className="!rounded-full px-5 shadow-glow"
+      >
+        <Plus className="h-4 w-4" strokeWidth={2.5} /> Add
       </Button>
     </div>
   );
@@ -1147,25 +1153,50 @@ function SortableRecipientItem({
   } as React.CSSProperties;
 
   const tones = [
-    'from-violet-400/30 to-indigo-500/30 text-indigo-700',
-    'from-amber-400/30 to-orange-500/30 text-orange-700',
-    'from-emerald-400/30 to-teal-500/30 text-teal-700',
-    'from-sky-400/30 to-blue-500/30 text-blue-700',
-    'from-pink-400/30 to-rose-500/30 text-rose-700',
+    {
+      avatar: 'from-violet-400/30 to-indigo-500/30 text-indigo-700',
+      bar: 'bg-indigo-500',
+    },
+    {
+      avatar: 'from-amber-400/30 to-orange-500/30 text-orange-700',
+      bar: 'bg-orange-500',
+    },
+    {
+      avatar: 'from-emerald-400/30 to-teal-500/30 text-teal-700',
+      bar: 'bg-teal-500',
+    },
+    {
+      avatar: 'from-sky-400/30 to-blue-500/30 text-blue-700',
+      bar: 'bg-blue-500',
+    },
+    {
+      avatar: 'from-pink-400/30 to-rose-500/30 text-rose-700',
+      bar: 'bg-rose-500',
+    },
   ];
   const tone = tones[index % tones.length];
 
   return (
     <li
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, animationDelay: `${index * 60}ms` }}
       className={cn(
-        'group flex items-center gap-2.5 py-2 px-2 -mx-2 rounded-md transition-colors',
+        'group relative flex items-center gap-2.5 py-2.5 px-2 -mx-2 rounded-md',
+        'transition-colors animate-fade-up',
         isDragging
           ? 'bg-white shadow-lifted ring-1 ring-accent/30'
           : 'hover:bg-surface-sunken/60',
       )}
     >
+      {/* Recipient color strip */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute left-0 right-0 bottom-0 h-[2px] rounded-b-md',
+          tone.bar,
+        )}
+      />
+
       {sequential ? (
         <button
           type="button"
@@ -1193,17 +1224,27 @@ function SortableRecipientItem({
       <span
         className={cn(
           'h-8 w-8 grid place-items-center rounded-pill bg-gradient-to-br text-[12px] font-semibold uppercase shrink-0',
-          tone,
+          tone.avatar,
         )}
       >
         {recipient.name[0]}
       </span>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-medium text-ink truncate">
+      {/* Name + email inline — fixed name col, email fills */}
+      <div className="min-w-0 flex-1 grid grid-cols-[minmax(0,12rem)_auto_minmax(0,1fr)] items-center gap-3">
+        <p
+          className="text-[13.5px] font-medium text-ink truncate"
+          title={recipient.name}
+        >
           {recipient.name}
         </p>
-        <p className="text-[12px] text-ink-3 truncate">{recipient.email}</p>
+        <span className="text-ink-4">·</span>
+        <p
+          className="text-[12px] text-ink-3 truncate"
+          title={recipient.email}
+        >
+          {recipient.email}
+        </p>
       </div>
 
       <ActionDropdown value={recipient.role} onChange={onChangeRole} />
@@ -1344,7 +1385,7 @@ function ReviewRow({
         ) : null}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] uppercase tracking-[0.08em] text-ink-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink-3">
           {label}
         </p>
         <p className="text-[13px] text-ink truncate">{value}</p>

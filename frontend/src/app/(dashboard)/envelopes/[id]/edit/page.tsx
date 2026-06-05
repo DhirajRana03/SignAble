@@ -13,7 +13,7 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 export default function EditEnvelopePage() {
   const { id } = useParams<{ id: string }>();
   return (
-    <DashboardShell eyebrow="Continue draft" title="Edit envelope">
+    <DashboardShell eyebrow="Continue draft" title="Edit envelope" wide>
       <EnvelopeComposer draftId={id} />
     </DashboardShell>
   );

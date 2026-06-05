@@ -5,7 +5,7 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 
 export default function NewEnvelopePage() {
   return (
-    <DashboardShell eyebrow="New envelope" title="Create envelope">
+    <DashboardShell eyebrow="New envelope" title="Create envelope" wide>
       <EnvelopeComposer />
     </DashboardShell>
   );
