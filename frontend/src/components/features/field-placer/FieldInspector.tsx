@@ -48,11 +48,13 @@ export function FieldInspector({
   pageUrls,
   activePage,
   totalPages,
+  onJumpToPage,
 }: {
   filename: string;
   pageUrls: string[];
   activePage: number;
   totalPages: number;
+  onJumpToPage?: (pageIndex: number) => void;
 }) {
   const fields = useEnvelopeEditorStore((s) => s.fields);
   const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
@@ -60,10 +62,9 @@ export function FieldInspector({
   const removeField = useEnvelopeEditorStore((s) => s.removeField);
 
   const selected = fields.find((f) => f.tempId === selectedTempId) ?? null;
-  const activeUrl = pageUrls[activePage - 1];
 
   return (
-    <aside className="self-start w-72 shrink-0 h-full overflow-y-auto pr-1 py-2">
+    <aside className="self-start w-56 shrink-0 h-full overflow-y-auto pr-1 py-2">
       {selected ? (
         <FieldEditor
           field={selected}
@@ -73,9 +74,10 @@ export function FieldInspector({
       ) : (
         <PagePreview
           filename={filename}
-          activeUrl={activeUrl}
+          pageUrls={pageUrls}
           activePage={activePage}
           totalPages={totalPages}
+          onJumpToPage={onJumpToPage}
         />
       )}
     </aside>
@@ -86,23 +88,24 @@ export function FieldInspector({
 
 function PagePreview({
   filename,
-  activeUrl,
+  pageUrls,
   activePage,
   totalPages,
+  onJumpToPage,
 }: {
   filename: string;
-  activeUrl: string | undefined;
+  pageUrls: string[];
   activePage: number;
   totalPages: number;
+  onJumpToPage?: (pageIndex: number) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const { src } = useAuthedImage(activeUrl);
 
   return (
     <section className="rounded-xl bg-white/70 backdrop-blur-md border border-white/60 shadow-sm overflow-hidden">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/50">
+      <header className="flex items-center justify-between px-3 py-2.5 border-b border-white/50">
         <p
-          className="text-[14px] font-semibold text-ink truncate"
+          className="text-[12.5px] font-semibold text-ink truncate"
           title={filename}
         >
           {filename}
@@ -110,12 +113,12 @@ function PagePreview({
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="h-7 w-7 grid place-items-center rounded-md text-ink-3 hover:text-ink hover:bg-white/60 transition-colors shrink-0"
+          className="h-6 w-6 grid place-items-center rounded-md text-ink-3 hover:text-ink hover:bg-white/60 transition-colors shrink-0"
           aria-label={collapsed ? 'Expand preview' : 'Collapse preview'}
         >
           <ChevronUp
             className={cn(
-              'h-3.5 w-3.5 transition-transform',
+              'h-3 w-3 transition-transform',
               collapsed && 'rotate-180',
             )}
           />
@@ -123,31 +126,70 @@ function PagePreview({
       </header>
 
       {!collapsed ? (
-        <div className="p-4">
-          <p className="text-[12.5px] text-ink-3 mb-2.5">
-            Pages: {totalPages}
-          </p>
-          <div className="relative rounded-md overflow-hidden border-[3px] border-accent shadow-md">
-            <div className="bg-paper aspect-[8.5/11] relative">
-              {src ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={src}
-                  alt={`Page ${activePage}`}
-                  className="block w-full h-full object-cover"
-                  draggable={false}
-                />
-              ) : (
-                <div className="w-full h-full animate-pulse bg-surface-sunken" />
-              )}
-            </div>
-            <div className="px-3 py-1.5 text-[11.5px] font-mono text-ink-2 bg-white/80 border-t border-border/60">
-              {activePage}
-            </div>
+        <div className="p-3">
+          <p className="text-[11px] text-ink-3 mb-2">Pages: {totalPages}</p>
+          <div className="space-y-2">
+            {pageUrls.map((url, i) => (
+              <PageThumb
+                key={i}
+                url={url}
+                pageNumber={i + 1}
+                active={i + 1 === activePage}
+                onClick={() => onJumpToPage?.(i)}
+              />
+            ))}
           </div>
         </div>
       ) : null}
     </section>
+  );
+}
+
+function PageThumb({
+  url,
+  pageNumber,
+  active,
+  onClick,
+}: {
+  url: string;
+  pageNumber: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const { src } = useAuthedImage(url);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group w-full block rounded-md overflow-hidden transition-all border-2',
+        active
+          ? 'border-accent shadow-md'
+          : 'border-border hover:border-accent/50',
+      )}
+    >
+      <div className="bg-paper aspect-[8.5/11] relative">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt={`Page ${pageNumber}`}
+            className="block w-full h-full object-cover"
+            draggable={false}
+          />
+        ) : (
+          <div className="w-full h-full animate-pulse bg-surface-sunken" />
+        )}
+      </div>
+      <div
+        className={cn(
+          'py-1 text-center text-[10px] font-mono',
+          active ? 'bg-accent-soft text-accent-deep' : 'text-ink-3',
+        )}
+      >
+        {pageNumber}
+      </div>
+    </button>
   );
 }
 

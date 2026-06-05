@@ -12,7 +12,6 @@ import type { Envelope, FieldOptions } from '@/types/envelope.types';
 import { FieldInspector } from './FieldInspector';
 import { FieldOverlay } from './FieldOverlay';
 import { FieldToolbar, type FieldDef } from './FieldToolbar';
-import { ThumbnailStrip } from './ThumbnailStrip';
 import { ZoomControls } from './ZoomControls';
 
 function defaultOptionsFor(def: FieldDef): FieldOptions {
@@ -162,12 +161,7 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
         pageUrls={pageUrls}
         activePage={activePage}
         totalPages={pageUrls.length}
-      />
-
-      <ThumbnailStrip
-        pageUrls={pageUrls}
-        activePage={activePage}
-        onJump={jumpToPage}
+        onJumpToPage={jumpToPage}
       />
 
       <ZoomControls

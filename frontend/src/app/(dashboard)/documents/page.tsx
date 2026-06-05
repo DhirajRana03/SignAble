@@ -11,7 +11,7 @@ export default function DocumentsPage() {
         <div>
           <div className="flex items-baseline justify-between mb-4">
             <h2>All documents</h2>
-            <span className="text-[11px] uppercase tracking-[0.08em] text-ink-3">
+            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink-3">
               Most recent first
             </span>
           </div>
