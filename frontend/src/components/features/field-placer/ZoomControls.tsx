@@ -1,14 +1,16 @@
 'use client';
 
-import { Grid3x3, Maximize2, Minus, Plus } from 'lucide-react';
+import { Grid3x3, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5];
 
 /**
- * Floating glass pill anchored bottom-right. Zoom presets, reset, and
- * grid-snap toggle.
+ * Inline glass pill rendered in the prepare-envelope header bar.
+ * Houses zoom step controls, a percentage readout, a reset action,
+ * and the grid-snap toggle. Designed to sit centered in the header
+ * row above the document canvas.
  */
 export function ZoomControls({
   zoom,
@@ -36,24 +38,14 @@ export function ZoomControls({
   return (
     <div
       className={cn(
-        'fixed bottom-6 right-6 z-30',
         'flex items-center gap-0.5 p-1 rounded-pill',
-        'bg-white/70 backdrop-blur-md border border-white/60 shadow-lg',
+        'bg-white/70 backdrop-blur-md border border-white/60 shadow-sm',
       )}
     >
-      <ZoomButton
-        onClick={onToggleSnap}
-        aria-label={snap ? 'Disable grid snap' : 'Enable grid snap'}
-        title={snap ? 'Grid snap on' : 'Grid snap off'}
-        active={snap}
-      >
-        <Grid3x3 className="h-3.5 w-3.5" />
-      </ZoomButton>
-      <div className="w-px h-5 bg-border mx-0.5" />
       <ZoomButton onClick={dec} aria-label="Zoom out" disabled={safeIndex === 0}>
-        <Minus className="h-3.5 w-3.5" />
+        <ZoomOut className="h-3.5 w-3.5" />
       </ZoomButton>
-      <div className="px-3 text-[11.5px] font-mono text-ink-2 tabular-nums min-w-[3.5rem] text-center">
+      <div className="px-2 text-[11.5px] font-mono text-ink-2 tabular-nums min-w-[3.25rem] text-center">
         {Math.round(zoom * 100)}%
       </div>
       <ZoomButton
@@ -61,11 +53,19 @@ export function ZoomControls({
         aria-label="Zoom in"
         disabled={safeIndex === ZOOM_LEVELS.length - 1}
       >
-        <Plus className="h-3.5 w-3.5" />
+        <ZoomIn className="h-3.5 w-3.5" />
       </ZoomButton>
       <div className="w-px h-5 bg-border mx-0.5" />
-      <ZoomButton onClick={() => onChange(1)} aria-label="Reset zoom">
+      <ZoomButton onClick={() => onChange(1)} aria-label="Reset zoom" title="Reset zoom">
         <Maximize2 className="h-3 w-3" />
+      </ZoomButton>
+      <ZoomButton
+        onClick={onToggleSnap}
+        aria-label={snap ? 'Disable grid snap' : 'Enable grid snap'}
+        title={snap ? 'Grid snap on' : 'Grid snap off'}
+        active={snap}
+      >
+        <Grid3x3 className="h-3.5 w-3.5" />
       </ZoomButton>
     </div>
   );

@@ -6,13 +6,12 @@ import { type RefObject, useEffect, useRef, useState } from 'react';
 import { DocumentViewer } from '@/components/features/document-viewer/DocumentViewer';
 import { useDocument, useDocumentPagesMeta } from '@/hooks/useDocuments';
 import { useEnvelopeEditorStore } from '@/store/envelopeEditorStore';
-import { cn, recipientColor } from '@/lib/utils';
-import type { Envelope, FieldOptions, Recipient } from '@/types/envelope.types';
+import { cn } from '@/lib/utils';
+import type { Envelope, FieldOptions } from '@/types/envelope.types';
 
 import { FieldInspector } from './FieldInspector';
 import { FieldOverlay } from './FieldOverlay';
 import { FieldToolbar, type FieldDef } from './FieldToolbar';
-import { ZoomControls } from './ZoomControls';
 
 function defaultOptionsFor(def: FieldDef): FieldOptions {
   if (def.type === 'DROPDOWN')
@@ -30,7 +29,15 @@ function maybeSnap(value: number, snap: boolean): number {
   return Math.round(value / 0.05) * 0.05;
 }
 
-export function FieldPlacer({ envelope }: { envelope: Envelope }) {
+export function FieldPlacer({
+  envelope,
+  zoom,
+  snap,
+}: {
+  envelope: Envelope;
+  zoom: number;
+  snap: boolean;
+}) {
   const pagesMeta = useDocumentPagesMeta(envelope.documentId);
   const docQuery = useDocument(envelope.documentId);
   const init = useEnvelopeEditorStore((s) => s.init);
@@ -39,18 +46,10 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     (s) => s.setActiveRecipient,
   );
   const activeRecipientId = useEnvelopeEditorStore((s) => s.activeRecipientId);
-  const filterRecipientId = useEnvelopeEditorStore(
-    (s) => s.filterRecipientId,
-  );
-  const setFilterRecipient = useEnvelopeEditorStore(
-    (s) => s.setFilterRecipient,
-  );
   const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
   const removeField = useEnvelopeEditorStore((s) => s.removeField);
   const fieldCount = useEnvelopeEditorStore((s) => s.fields.length);
 
-  const [zoom, setZoom] = useState(1);
-  const [snap, setSnap] = useState(false);
   const [activePage, setActivePage] = useState(1);
   const draggingDefRef = useRef<FieldDef | null>(null);
   const pageRefsRef = useRef<RefObject<HTMLDivElement | null>[]>([]);
@@ -166,35 +165,31 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
         }}
       />
 
-      {/* Doc column — filter strip on top, scrollable canvas below */}
+      {/* Doc column — scrollable canvas. Recipient filter and zoom
+          controls now live in the page header above this region. */}
       <div className="flex-1 min-w-0 h-full flex flex-col bg-slate-100 rounded-lg overflow-hidden">
-        <RecipientFilterStrip
-          recipients={envelope.recipients ?? []}
-          activeId={filterRecipientId}
-          onChange={setFilterRecipient}
-        />
         <div className="flex-1 min-h-0 overflow-y-auto relative">
-        <div className="relative">
-          <DocumentViewer
-            pageUrls={pageUrls}
-            authed
-            zoom={zoom}
-            onPageRefsReady={(refs) => {
-              pageRefsRef.current = refs;
-            }}
-            renderOverlay={(pageIndex, pageRef) => (
-              <FieldOverlay
-                pageIndex={pageIndex}
-                pageRef={pageRef}
-                recipients={envelope.recipients ?? []}
-                snap={snap}
-                onDrop={handleDrop}
-              />
-            )}
-          />
+          <div className="relative">
+            <DocumentViewer
+              pageUrls={pageUrls}
+              authed
+              zoom={zoom}
+              onPageRefsReady={(refs) => {
+                pageRefsRef.current = refs;
+              }}
+              renderOverlay={(pageIndex, pageRef) => (
+                <FieldOverlay
+                  pageIndex={pageIndex}
+                  pageRef={pageRef}
+                  recipients={envelope.recipients ?? []}
+                  snap={snap}
+                  onDrop={handleDrop}
+                />
+              )}
+            />
 
-          {fieldCount === 0 ? <EmptyHint /> : null}
-        </div>
+            {fieldCount === 0 ? <EmptyHint /> : null}
+          </div>
         </div>
       </div>
 
@@ -205,91 +200,7 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
         totalPages={pageUrls.length}
         onJumpToPage={jumpToPage}
       />
-
-      <ZoomControls
-        zoom={zoom}
-        onChange={setZoom}
-        snap={snap}
-        onToggleSnap={() => setSnap((s) => !s)}
-      />
     </div>
-  );
-}
-
-/* ─────────────── Recipient filter strip ─────────────── */
-
-/**
- * Pill-tab strip rendered above the document canvas. Clicking a pill
- * narrows visible chips to a single recipient; All restores the
- * default view. Driven entirely from the editor store so the
- * setting persists across page jumps and zoom changes.
- */
-function RecipientFilterStrip({
-  recipients,
-  activeId,
-  onChange,
-}: {
-  recipients: Recipient[];
-  activeId: string | null;
-  onChange: (id: string | null) => void;
-}) {
-  if (recipients.length <= 1) return null;
-  return (
-    <div className="shrink-0 flex items-center gap-1.5 px-3 py-2 border-b border-white/60 bg-white/50 backdrop-blur-md overflow-x-auto">
-      <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3 mr-1 shrink-0">
-        View
-      </span>
-      <FilterTab
-        active={activeId === null}
-        onClick={() => onChange(null)}
-        label="All"
-      />
-      {recipients.map((r, i) => {
-        const c = recipientColor(i);
-        return (
-          <FilterTab
-            key={r.id}
-            active={activeId === r.id}
-            onClick={() => onChange(r.id)}
-            label={r.name}
-            dotClass={c.dot}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-function FilterTab({
-  active,
-  onClick,
-  label,
-  dotClass,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  dotClass?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-medium transition-colors shrink-0',
-        active
-          ? 'bg-accent text-white shadow-glow'
-          : 'bg-white/70 text-ink-2 border border-border hover:border-accent/40 hover:text-ink',
-      )}
-    >
-      {dotClass ? (
-        <span
-          aria-hidden
-          className={cn('h-2 w-2 rounded-full', dotClass)}
-        />
-      ) : null}
-      <span className="max-w-[10ch] truncate">{label}</span>
-    </button>
   );
 }
 
@@ -319,5 +230,3 @@ function EmptyHint() {
     </div>
   );
 }
-
-

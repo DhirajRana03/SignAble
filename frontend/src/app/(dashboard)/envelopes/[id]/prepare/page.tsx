@@ -2,8 +2,11 @@
 
 import { ArrowLeft, Save, Send } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { FieldPlacer } from '@/components/features/field-placer/FieldPlacer';
+import { RecipientFilterStrip } from '@/components/features/field-placer/RecipientFilterStrip';
+import { ZoomControls } from '@/components/features/field-placer/ZoomControls';
 import { Button } from '@/components/ui/Button';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useBulkSaveFields, useEnvelope, useSendEnvelope } from '@/hooks/useEnvelopes';
@@ -39,7 +42,18 @@ export default function PreparePage() {
   const dirty = useEnvelopeEditorStore((s) => s.dirty);
   const fields = useEnvelopeEditorStore((s) => s.fields);
   const markClean = useEnvelopeEditorStore((s) => s.markClean);
+  const filterRecipientId = useEnvelopeEditorStore(
+    (s) => s.filterRecipientId,
+  );
+  const setFilterRecipient = useEnvelopeEditorStore(
+    (s) => s.setFilterRecipient,
+  );
   const save = useBulkSaveFields(id ?? '');
+
+  // Zoom and snap state are owned by the page so the header can host
+  // the controls while FieldPlacer consumes the values.
+  const [zoom, setZoom] = useState(1);
+  const [snap, setSnap] = useState(false);
 
   if (envelope.isLoading || !envelope.data) {
     return (
@@ -107,7 +121,7 @@ export default function PreparePage() {
   return (
     <div className="h-screen flex flex-col bg-slate-100">
       <header className="shrink-0 bg-slate-50/90 backdrop-blur-md">
-        <div className="flex h-14 items-center gap-3 px-4 md:px-6">
+        <div className="relative flex h-14 items-center gap-3 px-4 md:px-6">
           <button
             type="button"
             onClick={() => router.push(`/envelopes/${env.id}/edit`)}
@@ -116,7 +130,7 @@ export default function PreparePage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-shrink">
             <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3 leading-none mb-0.5">
               Prepare envelope
             </p>
@@ -124,7 +138,32 @@ export default function PreparePage() {
               {env.title}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Recipient filter — left of center. Hides itself when
+              only one recipient exists. */}
+          <div className="flex-1 min-w-0 flex items-center justify-start pl-2">
+            <RecipientFilterStrip
+              recipients={env.recipients ?? []}
+              activeId={filterRecipientId}
+              onChange={setFilterRecipient}
+            />
+          </div>
+
+          {/* Zoom — centered above doc canvas. Absolutely positioned
+              inside the relative header so it stays centered
+              regardless of the title or filter width. */}
+          <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
+            <div className="pointer-events-auto">
+              <ZoomControls
+                zoom={zoom}
+                onChange={setZoom}
+                snap={snap}
+                onToggleSnap={() => setSnap((s) => !s)}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
             <Button
               size="sm"
               loading={save.isPending}
@@ -158,7 +197,7 @@ export default function PreparePage() {
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <ErrorBoundary>
-          <FieldPlacer envelope={env} />
+          <FieldPlacer envelope={env} zoom={zoom} snap={snap} />
         </ErrorBoundary>
       </main>
     </div>
