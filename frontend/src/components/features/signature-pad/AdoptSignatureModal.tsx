@@ -29,27 +29,55 @@ type Tab = 'style' | 'draw' | 'upload';
  */
 const SCRIPT_FONTS: { family: string; label: string }[] = [
   { family: 'Caveat', label: 'Caveat' },
-  { family: 'Dancing Script', label: 'Dancing' },
-  { family: 'Great Vibes', label: 'Vibes' },
+  { family: 'Dancing Script', label: 'Dancing Script' },
+  { family: 'Great Vibes', label: 'Great Vibes' },
   { family: 'Allura', label: 'Allura' },
+  { family: 'Sacramento', label: 'Sacramento' },
+  { family: 'Homemade Apple', label: 'Homemade Apple' },
 ];
 
 /**
- * Render a styled signature/initials string to a transparent PNG. The
- * canvas size is generous so the signed PDF stays crisp when scaled
- * down by the processor. Returns a data URL ready for upload + reuse.
+ * Render a styled signature/initials string to a transparent PNG.
+ *
+ * Canvas sized tightly to glyph metrics. Earlier version used a fixed
+ * 600x200 box with 64px text — left ~70% vertical dead space, so the
+ * processor's preserveAspectRatio shrank the rendered signature to a
+ * fraction of its field. Tight crop + larger font yields a much bigger
+ * visible signature in the final PDF.
  */
 function renderTextToPng(text: string, font: string): string {
+  // 96px hits a reasonable balance: large enough for sharp PDF
+  // rendering after preserveAspectRatio fit, small enough that the
+  // raster doesn't over-bleed vertical padding into the field row.
+  const fontSize = 96;
+  const lineHeight = Math.round(fontSize * 1.2);
+  const cssFont = `${fontSize}px "${font}", cursive`;
+
+  // Measure first on a throwaway context so we can size the real canvas
+  // to the actual ink extent. Script fonts often overhang the baseline,
+  // so we pad both axes.
+  const measureCanvas = document.createElement('canvas');
+  const measureCtx = measureCanvas.getContext('2d')!;
+  measureCtx.font = cssFont;
+  const metrics = measureCtx.measureText(text);
+  const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+  const descent = metrics.actualBoundingBoxDescent || fontSize * 0.35;
+  const textWidth = metrics.width || fontSize * text.length * 0.5;
+
+  const padX = 24;
+  const padY = 16;
+  const width = Math.ceil(textWidth + padX * 2);
+  const height = Math.ceil(Math.max(lineHeight, ascent + descent) + padY * 2);
+
   const canvas = document.createElement('canvas');
-  canvas.width = 600;
-  canvas.height = 200;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d')!;
-  // Wait one paint cycle for FontFace API to finish loading; we cap
-  // the fallback in case the user goes offline.
+  ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = '#111827';
-  ctx.font = `64px "${font}", cursive`;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, 20, 100);
+  ctx.font = cssFont;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, padX, padY + ascent);
   return canvas.toDataURL('image/png');
 }
 
@@ -134,7 +162,7 @@ export function AdoptSignatureModal({
     link.id = id;
     link.rel = 'stylesheet';
     link.href =
-      'https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Dancing+Script:wght@600&family=Great+Vibes&family=Allura&display=swap';
+      'https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Dancing+Script:wght@600&family=Great+Vibes&family=Allura&family=Sacramento&family=Homemade+Apple&display=swap';
     document.head.appendChild(link);
   }, []);
 
@@ -281,14 +309,7 @@ export function AdoptSignatureModal({
               initialsText={initialsText}
               shortId={id}
               font={font}
-              onChangeStyle={() => {
-                // Round-robin to the next font so "Change Style"
-                // visibly cycles without forcing a separate picker UI.
-                const idx = SCRIPT_FONTS.findIndex((f) => f.family === font);
-                const next =
-                  SCRIPT_FONTS[(idx + 1) % SCRIPT_FONTS.length].family;
-                setFont(next);
-              }}
+              onSelectStyle={setFont}
             />
           ) : null}
 
@@ -404,46 +425,101 @@ function SelectStyleTab({
   initialsText,
   shortId,
   font,
-  onChangeStyle,
+  onSelectStyle,
 }: {
   fullName: string;
   initialsText: string;
   shortId: string;
   font: string;
-  onChangeStyle: () => void;
+  onSelectStyle: (family: string) => void;
 }) {
+  const previewName = fullName || 'Your name';
+  const previewInitials = initialsText || 'YN';
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[11.5px] font-semibold tracking-[0.1em] uppercase text-ink-3">
-          Preview
-        </span>
-        <button
-          type="button"
-          onClick={onChangeStyle}
-          className="text-[13px] font-medium text-accent-deep hover:text-accent transition-colors"
-        >
-          Change Style
-        </button>
+    <div className="space-y-3">
+      {/* Active preview — what gets adopted */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10.5px] font-semibold tracking-[0.1em] uppercase text-ink-3">
+            Preview
+          </span>
+          <span className="text-[10.5px] font-medium text-ink-3">
+            Style: <span className="text-ink">{font}</span>
+          </span>
+        </div>
+        <div className="border border-border rounded-md p-3 bg-surface-sunken/30">
+          <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-3">
+            <PreviewCard label="Signed by:" id={shortId}>
+              <span
+                className="block text-2xl text-ink truncate leading-tight"
+                style={{ fontFamily: `"${font}", cursive` }}
+              >
+                {previewName}
+              </span>
+            </PreviewCard>
+            <PreviewCard label="DS">
+              <span
+                className="block text-2xl text-ink truncate leading-tight"
+                style={{ fontFamily: `"${font}", cursive` }}
+              >
+                {previewInitials}
+              </span>
+            </PreviewCard>
+          </div>
+        </div>
       </div>
-      <div className="border border-border rounded-md p-5 bg-surface-sunken/30">
-        <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-5">
-          <PreviewCard label="Signed by:" id={shortId}>
-            <span
-              className="block text-4xl text-ink truncate"
-              style={{ fontFamily: `"${font}", cursive` }}
-            >
-              {fullName || 'Your name'}
-            </span>
-          </PreviewCard>
-          <PreviewCard label="DS">
-            <span
-              className="block text-4xl text-ink truncate"
-              style={{ fontFamily: `"${font}", cursive` }}
-            >
-              {initialsText || 'YN'}
-            </span>
-          </PreviewCard>
+
+      {/* Style picker — every available font tile, click selects */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10.5px] font-semibold tracking-[0.1em] uppercase text-ink-3">
+            Choose a style
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {SCRIPT_FONTS.map((f) => {
+            const active = f.family === font;
+            return (
+              <button
+                key={f.family}
+                type="button"
+                onClick={() => onSelectStyle(f.family)}
+                aria-pressed={active}
+                className={cn(
+                  'group relative rounded-md border-2 px-3 py-2 text-left transition-colors',
+                  'bg-white hover:border-accent-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
+                  active
+                    ? 'border-accent-deep ring-2 ring-accent/20'
+                    : 'border-border',
+                )}
+              >
+                <div className="flex items-baseline justify-between mb-0.5">
+                  <span className="text-[9.5px] font-semibold tracking-[0.1em] uppercase text-ink-3">
+                    {f.label}
+                  </span>
+                  {active ? (
+                    <span className="text-[9.5px] font-semibold tracking-[0.08em] uppercase text-accent-deep">
+                      Selected
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="text-lg text-ink truncate flex-1 leading-tight"
+                    style={{ fontFamily: `"${f.family}", cursive` }}
+                  >
+                    {previewName}
+                  </span>
+                  <span
+                    className="text-base text-ink-2 truncate leading-tight"
+                    style={{ fontFamily: `"${f.family}", cursive` }}
+                  >
+                    {previewInitials}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -460,13 +536,13 @@ function PreviewCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative border-l-2 border-r-2 border-accent rounded-sm bg-white px-4 py-3">
-      <span className="block text-[11.5px] font-semibold text-ink mb-1">
+    <div className="relative border-l-2 border-r-2 border-accent rounded-sm bg-white px-2.5 py-2">
+      <span className="block text-[10px] font-semibold text-ink mb-0.5">
         {label}
       </span>
       {children}
       {id ? (
-        <span className="block mt-2 text-[11px] font-mono font-semibold tracking-wider text-ink-2">
+        <span className="block mt-1 text-[9.5px] font-mono font-semibold tracking-wider text-ink-2">
           {id}…
         </span>
       ) : null}

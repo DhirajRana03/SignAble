@@ -57,8 +57,13 @@ export interface SigningCompletionView {
   recipientName: string;
   recipientStatus: RecipientStatus;
   /**
-   * Token-scoped public URL for the signed PDF. Null until envelope
-   * fully completed.
+   * Token-scoped public URL for the signed document PDF. Null until
+   * envelope fully completed.
    */
   signedPdfUrl: string | null;
+  /**
+   * Token-scoped public URL for the Certificate of Completion PDF.
+   * Null until envelope fully completed.
+   */
+  certificatePdfUrl: string | null;
 }

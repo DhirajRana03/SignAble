@@ -59,7 +59,18 @@ model Envelope {
   message          String?
   status           EnvelopeStatus @default(DRAFT)
   signingOrder     SigningOrder   @default(SEQUENTIAL)
-  signedStorageKey String?
+  /// Signed document PDF — original pages with signature overlays.
+  /// No certificate of completion. Certificate stored separately.
+  signedStorageKey      String?
+  /// Certificate of Completion PDF — multi-page audit trail. Separated
+  /// from the signed document so download surface can offer each
+  /// independently (per DocuSign behaviour).
+  certificateStorageKey String?
+  /// Renderer version stamped at build time. Lets the download path
+  /// detect stale outputs (older renderer, missing new format, etc.)
+  /// and rebuild inline. Null for legacy envelopes signed before
+  /// versioning existed.
+  signedPdfVersion      Int?
   createdAt        DateTime       @default(now())
   sentAt           DateTime?
   completedAt      DateTime?

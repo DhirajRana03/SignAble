@@ -3,9 +3,13 @@
 import { create } from 'zustand';
 
 /**
- * Cross-component coordination for composer unsaved-state guard.
+ * Cross-component coordination for the composer leave-page guard.
  * Composer marks itself dirty; Sidebar intercepts nav clicks and
- * defers navigation via pendingHref until user resolves the prompt.
+ * defers navigation via pendingHref until the user resolves the
+ * Stay / Discard modal.
+ *
+ * Note: draft persistence was moved to the prepare-envelope settings,
+ * so this store no longer carries a saveDraft handler.
  */
 interface ComposerGuardState {
   dirty: boolean;
@@ -13,17 +17,12 @@ interface ComposerGuardState {
   setDirty: (dirty: boolean) => void;
   requestNavigate: (href: string) => void;
   clearPending: () => void;
-  /** Save-as-draft handler registered by composer. */
-  saveDraft: (() => Promise<void> | void) | null;
-  setSaveDraft: (fn: (() => Promise<void> | void) | null) => void;
 }
 
 export const useComposerGuardStore = create<ComposerGuardState>((set) => ({
   dirty: false,
   pendingHref: null,
-  saveDraft: null,
   setDirty: (dirty) => set({ dirty }),
   requestNavigate: (href) => set({ pendingHref: href }),
   clearPending: () => set({ pendingHref: null }),
-  setSaveDraft: (saveDraft) => set({ saveDraft }),
 }));

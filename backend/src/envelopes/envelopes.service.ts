@@ -18,9 +18,14 @@ import {
 } from '../common/exceptions/domain.exceptions';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProcessorService } from '../processor/processor.service';
 import { JOB_NAMES, QUEUE_NAMES } from '../queues/queue-names';
 import { QueueService } from '../queues/queue.service';
 import type { SendSigningRequestJob } from '../queues/queue.types';
+import {
+  SIGNED_PDF_RENDERER_VERSION,
+  SigningService,
+} from '../signing/signing.service';
 import { StorageService } from '../storage/storage.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateEnvelopeDto, UpdateEnvelopeDto } from './dto/envelope.dto';
@@ -44,6 +49,8 @@ export class EnvelopesService {
     private readonly notifications: NotificationsService,
     private readonly webhooks: WebhooksService,
     private readonly queue: QueueService,
+    private readonly signing: SigningService,
+    private readonly processor: ProcessorService,
   ) {}
 
   async create(
@@ -407,12 +414,76 @@ export class EnvelopesService {
     };
   }
 
-  async download(userId: string, envelopeId: string): Promise<Buffer> {
-    const env = await this.get(userId, envelopeId);
-    if (env.status !== EnvelopeStatus.COMPLETED || !env.signedStorageKey) {
+  /**
+   * Download a finalized envelope artifact. `type` selects which file:
+   *   - "document"    — signed pages only (default; matches legacy behaviour).
+   *   - "certificate" — Certificate of Completion only.
+   *   - "combined"    — document followed by certificate, merged on demand.
+   *
+   * Self-heals stale or missing artifacts:
+   *   - Rebuilds when signedStorageKey or certificateStorageKey missing.
+   *   - Rebuilds when signedPdfVersion < current renderer.
+   *   - Older PDFs that pre-date the split (no certificateStorageKey)
+   *     trigger a rebuild so the certificate file gets created.
+   */
+  async download(
+    userId: string,
+    envelopeId: string,
+    type: 'document' | 'certificate' | 'combined' = 'document',
+  ): Promise<Buffer> {
+    let env = await this.get(userId, envelopeId);
+    if (env.status !== EnvelopeStatus.COMPLETED) {
       throw new InvalidStateTransitionError(env.status, 'download');
     }
-    return this.storage.load(env.signedStorageKey);
+
+    const stale =
+      env.signedPdfVersion == null ||
+      env.signedPdfVersion < SIGNED_PDF_RENDERER_VERSION;
+    const certMissing =
+      type !== 'document' && !env.certificateStorageKey;
+    const docMissing = !env.signedStorageKey;
+
+    if (stale || docMissing || certMissing) {
+      this.logger.warn(
+        `download(${envelopeId}): rebuilding (doc=${!docMissing} cert=${!!env.certificateStorageKey} version=${env.signedPdfVersion})`,
+      );
+      try {
+        await this.signing.runFinalizeSignedPdf(envelopeId);
+      } catch (err) {
+        this.logger.error(
+          `download(${envelopeId}) rebuild failed: ${(err as Error).message}`,
+        );
+        if (docMissing) {
+          throw new InvalidStateTransitionError(env.status, 'download');
+        }
+        // Document still readable — fall through with stale copy.
+      }
+      env = await this.get(userId, envelopeId);
+    }
+
+    if (type === 'document') {
+      if (!env.signedStorageKey) {
+        throw new InvalidStateTransitionError(env.status, 'download');
+      }
+      return this.storage.load(env.signedStorageKey);
+    }
+
+    if (type === 'certificate') {
+      if (!env.certificateStorageKey) {
+        throw new InvalidStateTransitionError(env.status, 'download');
+      }
+      return this.storage.load(env.certificateStorageKey);
+    }
+
+    // combined
+    if (!env.signedStorageKey || !env.certificateStorageKey) {
+      throw new InvalidStateTransitionError(env.status, 'download');
+    }
+    const [doc, cert] = await Promise.all([
+      this.storage.load(env.signedStorageKey),
+      this.storage.load(env.certificateStorageKey),
+    ]);
+    return this.processor.mergePdfs([doc, cert]);
   }
 
   private async validateReadyToSend(envelopeId: string): Promise<void> {

@@ -49,10 +49,16 @@ export function SigningFieldOverlay({
               height: f.heightPct * (height || 0),
             }}
             className={cn(
-              'absolute pointer-events-auto rounded-sm transition-all border-2 group',
+              // Outline only — no fill, no pulse animation. Earlier
+              // pulse + tinted fill obscured the document text behind
+              // each field and read as flashing UI noise. Recipients
+              // need to see what they're signing, so stamps render as
+              // a static border with a subtle hover lift.
+              'absolute pointer-events-auto rounded-sm border-2 group',
+              'bg-transparent transition-colors duration-150',
               filled
-                ? 'border-success bg-success/5'
-                : 'border-accent bg-accent-tint/70 hover:bg-accent-tint hover:border-accent-deep shadow-coral animate-pulse-coral',
+                ? 'border-success'
+                : 'border-accent hover:border-accent-deep',
               'flex items-center justify-center',
             )}
           >

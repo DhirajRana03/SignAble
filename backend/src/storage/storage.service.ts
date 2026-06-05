@@ -46,6 +46,11 @@ export class StorageService {
     return this.save(key, data);
   }
 
+  async saveCertificate(envelopeId: string, data: Buffer): Promise<string> {
+    const key = `signed/${envelopeId}/certificate.pdf`;
+    return this.save(key, data);
+  }
+
   async load(key: string): Promise<Buffer> {
     const fullPath = this.resolveSafe(key);
     try {

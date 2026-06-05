@@ -121,9 +121,13 @@ export const envelopeService = {
     );
     return data;
   },
-  async download(id: string): Promise<Blob> {
+  async download(
+    id: string,
+    type: 'document' | 'certificate' | 'combined' = 'document',
+  ): Promise<Blob> {
     const { data } = await apiClient.get(`/envelopes/${id}/download`, {
       responseType: 'blob',
+      params: { type },
     });
     return data;
   },
