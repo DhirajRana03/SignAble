@@ -60,6 +60,15 @@ model Envelope {
   status           EnvelopeStatus @default(DRAFT)
   signingOrder     SigningOrder   @default(SEQUENTIAL)
   signedStorageKey String?
+  /// SHA-256 hex of the integrity payload (envelope id, recipients,
+  /// field values, timestamps). Populated when envelope completes.
+  integrityHash    String?
+  /// HMAC-SHA256 of integrityHash using SIGNING_INTEGRITY_SECRET.
+  /// Recomputed at verification time to detect tampering.
+  integrityMac     String?
+  /// Storage key for the audit-trail certificate PDF generated on
+  /// completion. Null until envelope reaches COMPLETED.
+  auditCertKey     String?
   createdAt        DateTime       @default(now())
   sentAt           DateTime?
   completedAt      DateTime?

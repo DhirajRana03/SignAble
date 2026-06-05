@@ -46,6 +46,16 @@ export class StorageService {
     return this.save(key, data);
   }
 
+  /**
+   * Persist audit certificate PDF beside the signed document. Keeps
+   * the signed/<id>/ prefix so token-scoped file route already
+   * authorizes access without a new allowlist entry.
+   */
+  async saveAuditCertificate(envelopeId: string, data: Buffer): Promise<string> {
+    const key = `signed/${envelopeId}/audit-certificate.pdf`;
+    return this.save(key, data);
+  }
+
   async load(key: string): Promise<Buffer> {
     const fullPath = this.resolveSafe(key);
     try {

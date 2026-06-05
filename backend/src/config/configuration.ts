@@ -64,6 +64,22 @@ export default () => ({
     process.env.MAX_UPLOAD_BYTES ?? String(50 * 1024 * 1024),
     10,
   ),
+
+  /**
+   * Tamper-evident signing chain.
+   *
+   * `signing.integritySecret` — HMAC-SHA256 key used to sign the hash
+   * chain embedded in completed envelopes. Verification endpoint
+   * recomputes the MAC to detect tampering with envelope state.
+   *
+   * Production: set 256-bit hex string via env. Rotating invalidates
+   * all prior verification chains.
+   */
+  signing: {
+    integritySecret:
+      process.env.SIGNING_INTEGRITY_SECRET ??
+      'dev-only-insecure-integrity-secret-rotate-in-production',
+  },
 });
 
 export type AppConfig = ReturnType<typeof import('./configuration').default>;

@@ -16,6 +16,8 @@ import {
 } from '../common/exceptions/domain.exceptions';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditCertificateService } from './audit-certificate.service';
+import { IntegrityService } from './integrity.service';
 import {
   ProcessorService,
   SignedFieldData,
@@ -40,6 +42,8 @@ export class SigningService {
     private readonly notifications: NotificationsService,
     private readonly webhooks: WebhooksService,
     private readonly queue: QueueService,
+    private readonly integrity: IntegrityService,
+    private readonly auditCert: AuditCertificateService,
   ) {}
 
   async getForSigner(token: string) {
@@ -317,21 +321,61 @@ export class SigningService {
         value: f.value ?? '',
       }));
 
-      const signedPdf = await this.processor.applySignatures(
+      const signedPdfRaw = await this.processor.applySignatures(
         pdfBuffer,
         payload,
         processResult.page_dimensions,
       );
 
-      const key = await this.storage.saveSigned(envelopeId, signedPdf);
-      await this.prisma.envelope.update({
-        where: { id: envelopeId },
-        data: { signedStorageKey: key },
-      });
-
-      // Send completion emails
+      // Load post-signing state for integrity computation. Envelope row
+      // not yet stamped with completedAt — use current time, matching
+      // what gets persisted below.
       const recipients = await this.prisma.recipient.findMany({
         where: { envelopeId },
+      });
+      const allFields = await this.prisma.signatureField.findMany({
+        where: { envelopeId },
+      });
+      const envelopeForChain = { ...envelope, completedAt: new Date() };
+      const chain = this.integrity.compute(
+        envelopeForChain,
+        recipients,
+        allFields,
+      );
+
+      // Embed chain into signed PDF metadata (best-effort) then persist.
+      const signedPdf = await this.auditCert.embedIntegrityIntoSignedPdf(
+        signedPdfRaw,
+        chain,
+        envelopeId,
+      );
+      const key = await this.storage.saveSigned(envelopeId, signedPdf);
+
+      // Generate audit certificate PDF.
+      const events = await this.prisma.auditEvent.findMany({
+        where: { envelopeId },
+        orderBy: { createdAt: 'asc' },
+      });
+      const certPdf = await this.auditCert.generate({
+        envelope: envelopeForChain,
+        recipients,
+        fields: allFields,
+        events,
+        integrity: chain,
+      });
+      const certKey = await this.storage.saveAuditCertificate(
+        envelopeId,
+        certPdf,
+      );
+
+      await this.prisma.envelope.update({
+        where: { id: envelopeId },
+        data: {
+          signedStorageKey: key,
+          integrityHash: chain.hash,
+          integrityMac: chain.mac,
+          auditCertKey: certKey,
+        },
       });
       const sender = await this.prisma.user.findUnique({
         where: { id: envelope.userId },
@@ -463,15 +507,19 @@ export class SigningService {
       throw new InvalidStateTransitionError(envelope.status, 'view');
     }
 
-    // Allowed assets: page PNGs for this doc, or signed PDF for this envelope.
+    // Allowed assets:
+    //   - Page PNGs for this envelope's document.
+    //   - Signed PDF for this envelope.
+    //   - Audit certificate PDF for this envelope.
     const pagesPrefix = `pages/${envelope.documentId}/`;
     const signedKey = `signed/${envelope.id}/signed.pdf`;
+    const auditCertKey = `signed/${envelope.id}/audit-certificate.pdf`;
 
     if (filePath.startsWith(pagesPrefix) && filePath.endsWith('.png')) {
       const data = await this.storage.load(filePath);
       return { data, contentType: 'image/png' };
     }
-    if (filePath === signedKey) {
+    if (filePath === signedKey || filePath === auditCertKey) {
       const data = await this.storage.load(filePath);
       return { data, contentType: 'application/pdf' };
     }
