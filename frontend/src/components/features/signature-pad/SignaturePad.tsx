@@ -1,7 +1,7 @@
 'use client';
 
 import { Brush, Type, Upload as UploadIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 
 import { Button } from '@/components/ui/Button';
@@ -120,36 +120,46 @@ export function SignaturePad({
   );
 }
 
-const DrawPanel = ({ ref }: { ref: React.Ref<SignatureCanvas> }) => (
-  <div className="space-y-2">
-    <div className="border border-border rounded-sm bg-paper relative">
-      <SignatureCanvas
-        ref={ref}
-        canvasProps={{
-          width: 600,
-          height: 200,
-          className: 'w-full',
-          style: { width: '100%', height: 200 },
-        }}
-        penColor="#1a1f2e"
-        backgroundColor="rgba(255,255,255,0)"
-      />
-      <div className="absolute bottom-2 left-2 label-mono">
-        sign within the line
+/**
+ * Canvas-backed draw panel. Function components silently drop `ref`,
+ * so wrap in `forwardRef` to forward the parent's ref onto the
+ * underlying `SignatureCanvas`. Clear button reuses the forwarded ref.
+ */
+const DrawPanel = forwardRef<SignatureCanvas, object>(function DrawPanel(
+  _props,
+  ref,
+) {
+  return (
+    <div className="space-y-2">
+      <div className="border border-border rounded-sm bg-paper relative">
+        <SignatureCanvas
+          ref={ref}
+          canvasProps={{
+            width: 600,
+            height: 200,
+            className: 'w-full',
+            style: { width: '100%', height: 200 },
+          }}
+          penColor="#1a1f2e"
+          backgroundColor="rgba(255,255,255,0)"
+        />
+        <div className="absolute bottom-2 left-2 label-mono">
+          sign within the line
+        </div>
+        <div className="absolute bottom-3 right-2 left-12 border-b border-ink-faint" />
       </div>
-      <div className="absolute bottom-3 right-2 left-12 border-b border-ink-faint" />
+      <button
+        onClick={() => {
+          const r = ref as React.MutableRefObject<SignatureCanvas | null>;
+          r?.current?.clear();
+        }}
+        className="text-xs text-ink-faint hover:text-accent font-mono uppercase tracking-wider"
+      >
+        Clear
+      </button>
     </div>
-    <button
-      onClick={() => {
-        const r = ref as React.MutableRefObject<SignatureCanvas | null>;
-        r.current?.clear();
-      }}
-      className="text-xs text-ink-faint hover:text-accent font-mono uppercase tracking-wider"
-    >
-      Clear
-    </button>
-  </div>
-);
+  );
+});
 
 function TypePanel({
   value,

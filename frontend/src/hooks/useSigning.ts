@@ -58,3 +58,25 @@ export function useSigning(token: string) {
     decline,
   };
 }
+
+/**
+ * Public completion view query for the standalone signed-document page.
+ * Polls once envelope still in-progress so signers see signed PDF as
+ * soon as last signer finishes.
+ */
+export function useSigningCompletion(token: string | undefined) {
+  return useQuery({
+    queryKey: ['signing', token, 'completion'],
+    queryFn: () => signingService.getCompletion(token as string),
+    enabled: !!token,
+    refetchInterval: (q) => {
+      const data = q.state.data;
+      if (!data) return false;
+      // Keep polling while pending so signed PDF appears automatically.
+      return data.envelopeStatus === 'COMPLETED' ||
+        data.envelopeStatus === 'VOIDED'
+        ? false
+        : 5000;
+    },
+  });
+}
