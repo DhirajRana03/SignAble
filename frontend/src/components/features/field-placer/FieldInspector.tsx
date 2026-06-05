@@ -22,7 +22,6 @@ import {
 import {
   isCheckboxOptions,
   isDropdownOptions,
-  isTextOptions,
   type FieldType,
 } from '@/types/envelope.types';
 
@@ -258,24 +257,6 @@ function FieldEditor({
           onChange={(v) => onUpdate({ readOnly: v })}
         />
 
-        {field.fieldType === 'TEXT' ? (
-          <Accordion title="Add Text" defaultOpen>
-            <textarea
-              value={
-                isTextOptions(field.options)
-                  ? (field.options.placeholder ?? '')
-                  : ''
-              }
-              onChange={(e) =>
-                onUpdate({ options: { placeholder: e.target.value } })
-              }
-              placeholder="Add Text"
-              rows={4}
-              className="w-full rounded-md border border-border bg-white/80 px-3 py-2 text-[12.5px] text-ink-2 placeholder:text-ink-4 focus:outline-none focus:border-accent/40 resize-y"
-            />
-          </Accordion>
-        ) : null}
-
         {field.fieldType === 'DROPDOWN' ? (
           <DropdownChoicesEditor
             choices={
@@ -347,38 +328,6 @@ function BoolRow({
       />
       <span className="text-[13px] font-medium text-ink-2">{label}</span>
     </label>
-  );
-}
-
-/* ─────────────── Accordion ─────────────── */
-
-function Accordion({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-t border-border/60 pt-3">
-      <button
-        type="button"
-        onClick={() => setOpen((s) => !s)}
-        className="w-full flex items-center justify-between text-left"
-      >
-        <span className="text-[13px] font-semibold text-ink">{title}</span>
-        <ChevronUp
-          className={cn(
-            'h-3.5 w-3.5 text-ink-3 transition-transform',
-            !open && 'rotate-180',
-          )}
-        />
-      </button>
-      {open ? <div className="mt-2.5">{children}</div> : null}
-    </div>
   );
 }
 

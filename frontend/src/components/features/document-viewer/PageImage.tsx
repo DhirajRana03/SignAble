@@ -36,7 +36,10 @@ export const PageImage = forwardRef<HTMLDivElement, Props>(function PageImage(
         style={{ width: `${width}px` }}
         className={cn(
           'relative bg-white shadow-md rounded-sm',
-          'overflow-hidden transition-[width] duration-150',
+          // Page allows overflow so dragged field chips can visually
+          // cross into the gutter / adjacent page during a move. The
+          // drop handler clamps them to the destination page.
+          'transition-[width] duration-150',
         )}
       >
         {loading || !finalSrc ? (

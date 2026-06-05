@@ -12,6 +12,7 @@ import {
 import { Request, Response } from 'express';
 
 import {
+  AdoptSignatureDto,
   DeclineDto,
   SaveProgressDto,
   SubmitSignatureDto,
@@ -78,6 +79,26 @@ export class SigningController {
     @Body() dto: SaveProgressDto,
   ) {
     return this.signingService.saveProgress(token, dto.fieldValues);
+  }
+
+  /**
+   * Persist the recipient's adopted signature + initials. Called once
+   * by the "Adopt Your Signature" modal before the signer touches any
+   * field. Subsequent SIGNATURE/INITIALS clicks reuse this image
+   * directly without re-prompting.
+   */
+  @Post(':token/adopt')
+  @HttpCode(200)
+  adopt(
+    @Param('token') token: string,
+    @Body() dto: AdoptSignatureDto,
+    @Req() req: Request,
+  ) {
+    return this.signingService.adoptSignature(
+      token,
+      dto,
+      this.clientIp(req),
+    );
   }
 
   @Post(':token/submit')

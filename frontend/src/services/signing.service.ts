@@ -1,4 +1,6 @@
 import type {
+  AdoptedSignature,
+  AdoptSignaturePayload,
   SigningCompletionView,
   SigningView,
 } from '@/types/signing.types';
@@ -17,6 +19,16 @@ export const signingService = {
   },
   async markViewed(token: string): Promise<void> {
     await apiClient.post(`/sign/${token}/viewed`);
+  },
+  async adopt(
+    token: string,
+    payload: AdoptSignaturePayload,
+  ): Promise<AdoptedSignature> {
+    const { data } = await apiClient.post<AdoptedSignature>(
+      `/sign/${token}/adopt`,
+      payload,
+    );
+    return data;
   },
   async submit(token: string, fieldValues: Record<string, string>): Promise<void> {
     await apiClient.post(`/sign/${token}/submit`, { fieldValues });

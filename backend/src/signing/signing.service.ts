@@ -96,6 +96,75 @@ export class SigningService {
       fields,
       pageUrls: this.publicPageUrls(token, doc.id, doc.pageCount),
       pageCount: doc.pageCount,
+      // Adopted style — included so the client can skip the modal on
+      // return visits and start applying signatures immediately.
+      adopted: recipient.adoptedAt
+        ? {
+            signature: recipient.adoptedSignature,
+            initials: recipient.adoptedInitials,
+            fullName: recipient.adoptedFullName,
+            initialsText: recipient.adoptedInitialsText,
+            adoptedAt: recipient.adoptedAt,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * Capture the signer's "Adopt Your Signature" choice. Idempotent —
+   * subsequent calls overwrite the previous style (so the user can
+   * re-adopt if they choose Change Style). Logs the first adoption to
+   * the audit trail.
+   */
+  async adoptSignature(
+    token: string,
+    payload: {
+      signature: string;
+      initials: string;
+      fullName: string;
+      initialsText: string;
+    },
+    ip: string | null,
+  ): Promise<{
+    signature: string;
+    initials: string;
+    fullName: string;
+    initialsText: string;
+    adoptedAt: Date;
+  }> {
+    const recipient = await this.getByToken(token);
+    this.assertSignable(recipient);
+
+    const wasFirstAdoption = !recipient.adoptedAt;
+    const now = new Date();
+
+    const updated = await this.prisma.recipient.update({
+      where: { id: recipient.id },
+      data: {
+        adoptedSignature: payload.signature,
+        adoptedInitials: payload.initials,
+        adoptedFullName: payload.fullName,
+        adoptedInitialsText: payload.initialsText,
+        adoptedAt: recipient.adoptedAt ?? now,
+      },
+    });
+
+    if (wasFirstAdoption) {
+      await this.log(
+        recipient.envelopeId,
+        AuditEventType.DOCUMENT_VIEWED,
+        recipient.email,
+        { event: 'signature_adopted' },
+        ip,
+      );
+    }
+
+    return {
+      signature: updated.adoptedSignature!,
+      initials: updated.adoptedInitials!,
+      fullName: updated.adoptedFullName!,
+      initialsText: updated.adoptedInitialsText!,
+      adoptedAt: updated.adoptedAt!,
     };
   }
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { Check, Send, XCircle } from 'lucide-react';
+import { Send, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { DocumentViewer } from '@/components/features/document-viewer/DocumentViewer';
-import { SignaturePad } from '@/components/features/signature-pad/SignaturePad';
+import { AdoptSignatureModal } from '@/components/features/signature-pad/AdoptSignatureModal';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
@@ -24,10 +24,23 @@ export function SigningView({ token }: { token: string }) {
     allRequiredFilled,
     submit,
     decline,
+    adopt,
+    applyAdoptedToFields,
   } = useSigning(token);
   const [activeField, setActiveField] = useState<SignatureField | null>(null);
+  const [adoptOpen, setAdoptOpen] = useState(false);
   const [declineOpen, setDeclineOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
+
+  // Auto-prefill signature/initials fields with the previously-adopted
+  // style the moment server data lands. Lets returning signers skip
+  // the modal entirely.
+  const adopted = query.data?.adopted ?? null;
+  useEffect(() => {
+    if (!adopted || !query.data) return;
+    applyAdoptedToFields(adopted, query.data.fields);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adopted?.adoptedAt, query.data?.envelopeId]);
 
   if (query.isLoading) {
     return (
@@ -108,7 +121,25 @@ export function SigningView({ token }: { token: string }) {
               pageRef={pageRef}
               fields={data.fields}
               values={fieldValues}
-              onFieldClick={(f) => setActiveField(f)}
+              onFieldClick={(f) => {
+                // Signature + initials flow: gate the first click
+                // through the Adopt Your Signature modal. After
+                // adoption, subsequent clicks reapply the stored
+                // image immediately (no modal).
+                if (f.fieldType === 'SIGNATURE' || f.fieldType === 'INITIALS') {
+                  const stored =
+                    f.fieldType === 'SIGNATURE'
+                      ? adopted?.signature
+                      : adopted?.initials;
+                  if (stored) {
+                    setFieldValue(f.id, stored);
+                    return;
+                  }
+                  setAdoptOpen(true);
+                  return;
+                }
+                setActiveField(f);
+              }}
             />
           )}
         />
@@ -155,11 +186,26 @@ export function SigningView({ token }: { token: string }) {
         </div>
       </div>
 
-      {/* Field modal */}
+      {/* Adopt Your Signature modal — DocuSign-style identity capture */}
+      {adoptOpen ? (
+        <AdoptSignatureModal
+          initialName={data.recipientName}
+          initialAdopted={adopted}
+          busy={adopt.isPending}
+          onCancel={() => setAdoptOpen(false)}
+          onAdopt={(payload) => {
+            adopt.mutate(payload, {
+              onSuccess: () => setAdoptOpen(false),
+            });
+          }}
+        />
+      ) : null}
+
+      {/* Field modal — text/date/checkbox/dropdown input only.
+          Signature + initials are handled by the Adopt modal above. */}
       {activeField ? (
         <FieldInputModal
           field={activeField}
-          signerName={data.recipientName}
           onClose={() => setActiveField(null)}
           onConfirm={(value) => {
             setFieldValue(activeField.id, value);
@@ -205,12 +251,10 @@ export function SigningView({ token }: { token: string }) {
 
 function FieldInputModal({
   field,
-  signerName,
   onClose,
   onConfirm,
 }: {
   field: SignatureField;
-  signerName: string;
   onClose: () => void;
   onConfirm: (value: string) => void;
 }) {
@@ -220,38 +264,28 @@ function FieldInputModal({
 
   return (
     <Modal title={`Add ${field.fieldType.toLowerCase()}`} onClose={onClose}>
-      {field.fieldType === 'SIGNATURE' || field.fieldType === 'INITIALS' ? (
-        <SignaturePad
-          signerName={signerName}
-          onConfirm={onConfirm}
-          onCancel={onClose}
+      <div className="space-y-4">
+        <Input
+          autoFocus
+          value={textValue}
+          onChange={(e) => setTextValue(e.target.value)}
+          placeholder={
+            field.fieldType === 'DATE' ? 'MM/DD/YYYY' : 'Type your text'
+          }
         />
-      ) : (
-        <div className="space-y-4">
-          <Input
-            autoFocus
-            value={textValue}
-            onChange={(e) => setTextValue(e.target.value)}
-            placeholder={
-              field.fieldType === 'DATE'
-                ? 'MM/DD/YYYY'
-                : 'Type your text'
-            }
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              variant="accent"
-              disabled={!textValue.trim()}
-              onClick={() => onConfirm(textValue)}
-            >
-              Apply
-            </Button>
-          </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="accent"
+            disabled={!textValue.trim()}
+            onClick={() => onConfirm(textValue)}
+          >
+            Apply
+          </Button>
         </div>
-      )}
+      </div>
     </Modal>
   );
 }

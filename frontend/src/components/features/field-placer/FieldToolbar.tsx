@@ -21,7 +21,8 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { cn, initials, recipientColor } from '@/lib/utils';
 import {
@@ -29,6 +30,8 @@ import {
   type EditorField,
 } from '@/store/envelopeEditorStore';
 import type { FieldType, Recipient } from '@/types/envelope.types';
+
+import { findPageAtPoint } from './dragUtils';
 
 export interface FieldDef {
   id: string;
@@ -51,36 +54,51 @@ const GROUP_LABEL: Record<FieldDef['group'], string> = {
 
 export const FIELDS: FieldDef[] = [
   // Signing
-  { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', hint: 'Signer draws or types their signature', defaultSize: { widthPct: 0.22, heightPct: 0.07 } },
-  { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', hint: 'Signer initials this spot', defaultSize: { widthPct: 0.1, heightPct: 0.05 } },
-  { id: 'date', type: 'DATE', label: 'Date Signed', icon: Calendar, group: 'signing', hint: 'Auto-fills with signing date', defaultSize: { widthPct: 0.18, heightPct: 0.04 } },
+  { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', hint: 'Signer draws or types their signature', defaultSize: { widthPct: 0.143, heightPct: 0.0455 } },
+  { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', hint: 'Signer initials this spot', defaultSize: { widthPct: 0.065, heightPct: 0.0325 } },
+  { id: 'date', type: 'DATE', label: 'Date Signed', icon: Calendar, group: 'signing', hint: 'Auto-fills with signing date', defaultSize: { widthPct: 0.117, heightPct: 0.026 } },
   // Identity
-  { id: 'name', type: 'TEXT', label: 'Name', icon: User, group: 'identity', hint: 'Signer types or auto-fills their name', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
-  { id: 'email', type: 'TEXT', label: 'Email', icon: AtSign, group: 'identity', disabled: true, hint: 'Auto-filled from recipient', defaultSize: { widthPct: 0.28, heightPct: 0.04 } },
-  { id: 'company', type: 'TEXT', label: 'Company', icon: Building2, group: 'identity', hint: 'Signer types their company', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
-  { id: 'title', type: 'TEXT', label: 'Title', icon: Briefcase, group: 'identity', hint: 'Signer types their job title', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
-  { id: 'phone', type: 'TEXT', label: 'Phone', icon: Phone, group: 'identity', hint: 'Signer types a phone number', defaultSize: { widthPct: 0.2, heightPct: 0.04 } },
-  { id: 'address', type: 'TEXT', label: 'Address', icon: Home, group: 'identity', hint: 'Signer types a mailing address', defaultSize: { widthPct: 0.3, heightPct: 0.05 } },
+  { id: 'name', type: 'TEXT', label: 'Name', icon: User, group: 'identity', hint: 'Signer types or auto-fills their name', defaultSize: { widthPct: 0.156, heightPct: 0.026 } },
+  { id: 'email', type: 'TEXT', label: 'Email', icon: AtSign, group: 'identity', disabled: true, hint: 'Auto-filled from recipient', defaultSize: { widthPct: 0.182, heightPct: 0.026 } },
+  { id: 'company', type: 'TEXT', label: 'Company', icon: Building2, group: 'identity', hint: 'Signer types their company', defaultSize: { widthPct: 0.156, heightPct: 0.026 } },
+  { id: 'title', type: 'TEXT', label: 'Title', icon: Briefcase, group: 'identity', hint: 'Signer types their job title', defaultSize: { widthPct: 0.143, heightPct: 0.026 } },
+  { id: 'phone', type: 'TEXT', label: 'Phone', icon: Phone, group: 'identity', hint: 'Signer types a phone number', defaultSize: { widthPct: 0.13, heightPct: 0.026 } },
+  { id: 'address', type: 'TEXT', label: 'Address', icon: Home, group: 'identity', hint: 'Signer types a mailing address', defaultSize: { widthPct: 0.195, heightPct: 0.0325 } },
   // Data
-  { id: 'text', type: 'TEXT', label: 'Text', icon: Type, group: 'data', hint: 'Free-form text input', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
-  { id: 'number', type: 'TEXT', label: 'Number', icon: Hash, group: 'data', hint: 'Numeric input', defaultSize: { widthPct: 0.14, heightPct: 0.04 } },
-  { id: 'checkbox', type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare, group: 'data', hint: 'Yes/no checkbox', defaultSize: { widthPct: 0.03, heightPct: 0.025 } },
-  { id: 'dropdown', type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data', hint: 'Pick from a list of choices', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
+  { id: 'text', type: 'TEXT', label: 'Text', icon: Type, group: 'data', hint: 'Free-form text input', defaultSize: { widthPct: 0.143, heightPct: 0.026 } },
+  { id: 'number', type: 'TEXT', label: 'Number', icon: Hash, group: 'data', hint: 'Numeric input', defaultSize: { widthPct: 0.091, heightPct: 0.026 } },
+  { id: 'checkbox', type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare, group: 'data', hint: 'Yes/no checkbox', defaultSize: { widthPct: 0.039, heightPct: 0.0325 } },
+  { id: 'dropdown', type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data', hint: 'Pick from a list of choices', defaultSize: { widthPct: 0.143, heightPct: 0.026 } },
   // Advanced
-  { id: 'note', type: 'TEXT', label: 'Note', icon: StickyNote, group: 'advanced', hint: 'Long-form note from the signer', defaultSize: { widthPct: 0.26, heightPct: 0.06 } },
-  { id: 'decline', type: 'CHECKBOX', label: 'Decline', icon: XCircle, group: 'advanced', hint: 'Signer can opt out of this section', defaultSize: { widthPct: 0.04, heightPct: 0.03 } },
+  { id: 'note', type: 'TEXT', label: 'Note', icon: StickyNote, group: 'advanced', hint: 'Long-form note from the signer', defaultSize: { widthPct: 0.169, heightPct: 0.039 } },
+  { id: 'decline', type: 'CHECKBOX', label: 'Decline', icon: XCircle, group: 'advanced', hint: 'Signer can opt out of this section', defaultSize: { widthPct: 0.052, heightPct: 0.039 } },
 ];
 
 /**
  * DocuSign-style left rail. Recipient dropdown on top, field search,
  * vertical list of field rows grouped by purpose with divider lines.
  */
+/**
+ * Pointer-driven palette drop callback.
+ *
+ * Fires once on pointer release when the cursor is inside a page. Caller
+ * receives the chosen field def, the destination 1-based page number,
+ * and percent coordinates relative to that page so it can hand off to
+ * the editor store without re-measuring.
+ */
+export interface PaletteDropPayload {
+  def: FieldDef;
+  pageNumber: number;
+  xPct: number;
+  yPct: number;
+}
+
 export function FieldToolbar({
   recipients,
-  onDragStart,
+  onPaletteDrop,
 }: {
   recipients: Recipient[];
-  onDragStart: (def: FieldDef) => void;
+  onPaletteDrop: (payload: PaletteDropPayload) => void;
 }) {
   const activeRecipientId = useEnvelopeEditorStore((s) => s.activeRecipientId);
   const setActiveRecipient = useEnvelopeEditorStore(
@@ -88,6 +106,7 @@ export function FieldToolbar({
   );
   const fields = useEnvelopeEditorStore((s) => s.fields);
   const [query, setQuery] = useState('');
+  const [drag, setDrag] = useState<PaletteDragState | null>(null);
 
   const activeIdx = recipients.findIndex((r) => r.id === activeRecipientId);
   const activeColor = recipientColor(Math.max(0, activeIdx));
@@ -147,7 +166,8 @@ export function FieldToolbar({
                   locked={!!f.disabled}
                   bgClass={activeColor.bg}
                   fgClass={activeColor.fg}
-                  onDragStart={onDragStart}
+                  barClass={activeColor.bar}
+                  onBeginDrag={(payload) => setDrag(payload)}
                 />
               ))}
             </div>
@@ -155,6 +175,16 @@ export function FieldToolbar({
         )}
       </section>
 
+      {drag ? (
+        <PaletteDragGhost
+          state={drag}
+          color={activeColor}
+          onDrop={(payload) => {
+            setDrag(null);
+            if (payload) onPaletteDrop(payload);
+          }}
+        />
+      ) : null}
     </aside>
   );
 }
@@ -262,42 +292,75 @@ function RecipientDropdown({
 
 /* ─────────────── Field row ─────────────── */
 
+/**
+ * Snapshot of the row geometry at pointerdown, plus live pointer state.
+ * Mirrors DocuSign's behaviour: the palette tile lifts in place as a
+ * blurred mini ghost while travelling, then snaps to a full-scale
+ * preview the moment the cursor enters a page.
+ */
+interface PaletteDragState {
+  def: FieldDef;
+  pointerId: number;
+  /** Pointer position now (viewport coords). Drives ghost translate. */
+  pointerX: number;
+  pointerY: number;
+  /** Pointer offset inside the source tile so the ghost picks up exactly under the cursor. */
+  offsetX: number;
+  offsetY: number;
+  /** Source tile pixel size — used for the in-flight blurred preview. */
+  tileWidth: number;
+  tileHeight: number;
+}
+
 function FieldRow({
   def,
   disabled,
   locked,
   bgClass,
   fgClass,
-  onDragStart,
+  barClass,
+  onBeginDrag,
 }: {
   def: FieldDef;
   disabled: boolean;
   locked: boolean;
   bgClass: string;
   fgClass: string;
-  onDragStart: (def: FieldDef) => void;
+  barClass: string;
+  onBeginDrag: (state: PaletteDragState) => void;
 }) {
   const Icon = def.icon;
+  const rootRef = useRef<HTMLButtonElement | null>(null);
   return (
     <button
+      ref={rootRef}
       type="button"
       disabled={disabled}
-      draggable={!disabled}
-      onDragStart={(e) => {
+      onPointerDown={(e) => {
         if (disabled) return;
-        e.dataTransfer.effectAllowed = 'copy';
-        e.dataTransfer.setData('text/plain', def.id);
-        const img = new Image();
-        img.src =
-          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        e.dataTransfer.setDragImage(img, 0, 0);
-        onDragStart(def);
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        const el = rootRef.current;
+        if (!el) return;
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        onBeginDrag({
+          def,
+          pointerId: e.pointerId,
+          pointerX: e.clientX,
+          pointerY: e.clientY,
+          offsetX: e.clientX - rect.left,
+          offsetY: e.clientY - rect.top,
+          tileWidth: rect.width,
+          tileHeight: rect.height,
+        });
       }}
       title={
         locked
           ? `${def.label} - ${def.hint ?? 'unavailable'}`
           : (def.hint ?? def.label)
       }
+      data-bar-class={barClass}
+      style={{ touchAction: 'none' }}
       className={cn(
         'w-full flex items-center gap-2 rounded-lg px-1.5 py-1.5',
         'transition-colors duration-100',
@@ -323,6 +386,175 @@ function FieldRow({
         <Lock className="h-3 w-3 text-ink-4 shrink-0" />
       ) : null}
     </button>
+  );
+}
+
+/* ─────────────── Palette drag ghost ─────────────── */
+
+/**
+ * Floating ghost mirroring DocuSign palette drag:
+ *   - In flight: blurred mini badge tracking pointer, no commit.
+ *   - Over a page: snaps to a full-scale, recipient-tinted preview at
+ *     the same pixel size the dropped chip will use, anchored at the
+ *     pointer offset.
+ *   - Release: invokes onDrop with destination page + clamped pct
+ *     coordinates, or null if released outside any page.
+ */
+function PaletteDragGhost({
+  state,
+  color,
+  onDrop,
+}: {
+  state: PaletteDragState;
+  color: { bg: string; fg: string; bar: string };
+  onDrop: (payload: PaletteDropPayload | null) => void;
+}) {
+  // `live` tracks pointer + the currently-hovered page, recomputed on
+  // every pointermove. Mutating refs keeps re-renders cheap (60Hz drag).
+  const [live, setLive] = useState<{
+    x: number;
+    y: number;
+    pageWidth: number | null;
+    pageRect: DOMRect | null;
+  }>({
+    x: state.pointerX,
+    y: state.pointerY,
+    pageWidth: null,
+    pageRect: null,
+  });
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== state.pointerId) return;
+      e.preventDefault();
+      const hit = findPageAtPoint(e.clientX, e.clientY);
+      setLive({
+        x: e.clientX,
+        y: e.clientY,
+        pageWidth: hit ? hit.rect.width : null,
+        pageRect: hit ? hit.rect : null,
+      });
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerId !== state.pointerId) return;
+      const hit = findPageAtPoint(e.clientX, e.clientY);
+      if (!hit) {
+        onDrop(null);
+        return;
+      }
+      // Anchor at top-left of cursor — matches the chip preview the
+      // user just released. Clamp so the chip fits the page.
+      const { widthPct, heightPct } = state.def.defaultSize;
+      const xPct = Math.min(
+        Math.max((e.clientX - hit.rect.left) / hit.rect.width, 0),
+        Math.max(0, 1 - widthPct),
+      );
+      const yPct = Math.min(
+        Math.max((e.clientY - hit.rect.top) / hit.rect.height, 0),
+        Math.max(0, 1 - heightPct),
+      );
+      onDrop({
+        def: state.def,
+        pageNumber: hit.pageNumber,
+        xPct,
+        yPct,
+      });
+    };
+    const onCancel = (e: PointerEvent) => {
+      if (e.pointerId !== state.pointerId) return;
+      onDrop(null);
+    };
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+    };
+  }, [state, onDrop]);
+
+  if (typeof document === 'undefined') return null;
+
+  const Icon = state.def.icon;
+  const overPage = live.pageWidth != null;
+
+  // Full-scale chip preview matches the eventual placed-chip width
+  // exactly, so the drop position is WYSIWYG.
+  const previewWidthPx =
+    overPage && live.pageWidth ? state.def.defaultSize.widthPct * live.pageWidth : 0;
+  const previewHeightPx =
+    overPage && live.pageRect
+      ? state.def.defaultSize.heightPct * live.pageRect.height
+      : 0;
+
+  return createPortal(
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 z-[60]"
+    >
+      {overPage ? (
+        <div
+          // Full-scale preview, anchored at the cursor's top-left so
+          // pointer position == future chip top-left.
+          style={{
+            position: 'absolute',
+            left: live.x,
+            top: live.y,
+            width: Math.max(previewWidthPx, 28),
+            height: Math.max(previewHeightPx, 18),
+            transition: 'opacity 90ms ease-out',
+          }}
+          className={cn(
+            'rounded-md flex items-center justify-center',
+            'border-2 border-solid border-accent ring-2 ring-accent/30 shadow-lg',
+            color.bg,
+            color.fg,
+            `border-l-4 ${color.bar}`,
+          )}
+        >
+          <div className="flex items-center gap-1 px-1.5 min-w-0">
+            <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+            <span className="text-[10px] font-semibold uppercase tracking-wider truncate">
+              {state.def.label}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div
+          // Mini blurred badge tracking the pointer between palette
+          // and page. Slightly translucent + blur filter to read as
+          // "in flight" rather than placed.
+          style={{
+            position: 'absolute',
+            left: live.x - state.offsetX,
+            top: live.y - state.offsetY,
+            width: state.tileWidth,
+            height: state.tileHeight,
+            filter: 'blur(0.4px)',
+            opacity: 0.85,
+          }}
+          className={cn(
+            'rounded-lg flex items-center gap-2 px-1.5 py-1.5',
+            'bg-white/80 backdrop-blur-md border border-white/70 shadow-lg',
+          )}
+        >
+          <span
+            className={cn(
+              'h-7 w-7 grid place-items-center rounded-md shrink-0 border border-current/20',
+              color.bg,
+              color.fg,
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+          </span>
+          <span className="flex-1 text-left text-[12px] font-medium text-ink-2 truncate">
+            {state.def.label}
+          </span>
+        </div>
+      )}
+    </div>,
+    document.body,
   );
 }
 

@@ -11,7 +11,11 @@ import type { Envelope, FieldOptions } from '@/types/envelope.types';
 
 import { FieldInspector } from './FieldInspector';
 import { FieldOverlay } from './FieldOverlay';
-import { FieldToolbar, type FieldDef } from './FieldToolbar';
+import {
+  FieldToolbar,
+  type FieldDef,
+  type PaletteDropPayload,
+} from './FieldToolbar';
 
 function defaultOptionsFor(def: FieldDef): FieldOptions {
   if (def.type === 'DROPDOWN')
@@ -51,7 +55,6 @@ export function FieldPlacer({
   const fieldCount = useEnvelopeEditorStore((s) => s.fields.length);
 
   const [activePage, setActivePage] = useState(1);
-  const draggingDefRef = useRef<FieldDef | null>(null);
   const pageRefsRef = useRef<RefObject<HTMLDivElement | null>[]>([]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,22 +65,22 @@ export function FieldPlacer({
     }
   }, [envelope.id]);
 
-  const handleDrop = (
-    pageIndex: number,
-    _pageRef: RefObject<HTMLDivElement | null>,
-    xPctRaw: number,
-    yPctRaw: number,
-  ) => {
-    const def = draggingDefRef.current;
-    if (!def || !activeRecipientId) return;
+  /**
+   * Palette-driven drop. FieldToolbar runs its own pointer drag (DocuSign
+   * style — blurred ghost in flight, full-scale preview over a page),
+   * then hands the resolved page + percentage coordinates here. We only
+   * apply snap and clamp once before committing to the store.
+   */
+  const handlePaletteDrop = ({ def, pageNumber, xPct, yPct }: PaletteDropPayload) => {
+    if (!activeRecipientId) return;
     const { widthPct, heightPct } = def.defaultSize;
-    const xPct = Math.min(Math.max(maybeSnap(xPctRaw, snap), 0), 1 - widthPct);
-    const yPct = Math.min(Math.max(maybeSnap(yPctRaw, snap), 0), 1 - heightPct);
+    const clampedX = Math.min(Math.max(maybeSnap(xPct, snap), 0), 1 - widthPct);
+    const clampedY = Math.min(Math.max(maybeSnap(yPct, snap), 0), 1 - heightPct);
     addField({
       recipientId: activeRecipientId,
-      pageNumber: pageIndex + 1,
-      xPct,
-      yPct,
+      pageNumber,
+      xPct: clampedX,
+      yPct: clampedY,
       widthPct,
       heightPct,
       fieldType: def.type,
@@ -85,7 +88,6 @@ export function FieldPlacer({
       required: true,
       options: defaultOptionsFor(def),
     });
-    draggingDefRef.current = null;
   };
 
   const jumpToPage = (pageIndex: number) => {
@@ -160,9 +162,7 @@ export function FieldPlacer({
     <div className="h-full flex gap-3 px-3 pb-3">
       <FieldToolbar
         recipients={envelope.recipients ?? []}
-        onDragStart={(def) => {
-          draggingDefRef.current = def;
-        }}
+        onPaletteDrop={handlePaletteDrop}
       />
 
       {/* Doc column — scrollable canvas. Recipient filter and zoom
@@ -183,7 +183,6 @@ export function FieldPlacer({
                   pageRef={pageRef}
                   recipients={envelope.recipients ?? []}
                   snap={snap}
-                  onDrop={handleDrop}
                 />
               )}
             />
@@ -210,7 +209,7 @@ function EmptyHint() {
   return (
     <div
       className={cn(
-        'pointer-events-none absolute top-24 left-1/2 -translate-x-1/2 z-10',
+        'pointer-events-none absolute top-6 right-6 z-10',
         'rounded-xl bg-white/80 backdrop-blur-md border border-white/60 shadow-lg',
         'px-5 py-4 flex items-center gap-3 max-w-xs',
       )}
