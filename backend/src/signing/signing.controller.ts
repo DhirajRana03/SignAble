@@ -3,11 +3,13 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpException,
   Param,
   Post,
   Req,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 import {
   DeclineDto,
@@ -27,6 +29,40 @@ export class SigningController {
   @Get(':token')
   getView(@Param('token') token: string) {
     return this.signingService.getForSigner(token);
+  }
+
+  /**
+   * Public completion view — returns signed PDF URL once envelope
+   * completed. Drives standalone post-sign confirmation page so
+   * recipients see only the document, not the platform shell.
+   */
+  @Get(':token/completion')
+  getCompletion(@Param('token') token: string) {
+    return this.signingService.getCompletionForToken(token);
+  }
+
+  /**
+   * Token-scoped public file route. Signer fetches page PNGs without
+   * JWT. Wildcard `0` captures everything after `/files/`.
+   */
+  @Get(':token/files/*')
+  async serveFile(
+    @Param('token') token: string,
+    @Param('0') filePath: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const { data, contentType } = await this.signingService.loadFileForToken(
+        token,
+        filePath,
+      );
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.send(data);
+    } catch (err) {
+      const msg = (err as Error).message ?? 'File not found';
+      throw new HttpException(msg, 404);
+    }
   }
 
   @Post(':token/viewed')
