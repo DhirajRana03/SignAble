@@ -33,10 +33,7 @@ services:
           name: signable-postgres
           property: connectionString
       - key: PROCESSOR_URL
-        fromService:
-          type: web
-          name: signable-processor
-          property: hostport
+        value: http://signable-processor:10000 # Render internal hostname + auto-assigned PORT
       - key: REDIS_HOST
         fromService:
           type: redis
@@ -82,15 +79,9 @@ services:
       - key: MAX_UPLOAD_BYTES
         value: "52428800"
       - key: ALLOWED_ORIGINS
-        fromService:
-          type: web
-          name: signable-frontend
-          property: host
+        value: https://signable-frontend.onrender.com
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: signable-frontend
-          property: host
+        value: https://signable-frontend.onrender.com
       - key: STORAGE_URL_BASE
         sync: false # set to https://<backend-host>/api/v1/files after first deploy
 
