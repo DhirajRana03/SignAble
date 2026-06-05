@@ -79,15 +79,15 @@ services:
       - key: MAX_UPLOAD_BYTES
         value: "52428800"
       - key: ALLOWED_ORIGINS
-        value: https://signable.onrender.com
+        value: https://signable-app.onrender.com
       - key: FRONTEND_URL
-        value: https://signable.onrender.com
+        value: https://signable-app.onrender.com
       - key: STORAGE_URL_BASE
         sync: false # set to https://<backend-host>/api/v1/files after first deploy
 
   # ---------- frontend (Next.js) ----------
   - type: web
-    name: signable
+    name: signable-app
     runtime: docker
     rootDir: frontend
     dockerfilePath: ./Dockerfile
