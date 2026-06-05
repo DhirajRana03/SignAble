@@ -14,7 +14,7 @@ import Link from 'next/link';
 
 import { ActivityFeed } from '@/components/features/dashboard/ActivityFeed';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { useEnvelopes } from '@/hooks/useEnvelopes';
+import { useEnvelopes, useInboxEnvelopes } from '@/hooks/useEnvelopes';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import type { Envelope, EnvelopeStatus } from '@/types/envelope.types';
@@ -25,7 +25,12 @@ interface NavCard {
   label: string;
   href: string;
   icon: LucideIcon;
-  statuses: EnvelopeStatus[];
+  /**
+   * Statuses filtered against owned-envelopes list. Omit for cards that
+   * count from a different source (e.g. inbox uses recipient endpoint).
+   */
+  statuses?: EnvelopeStatus[];
+  source?: 'owned' | 'inbox';
   tone: Tone;
 }
 
@@ -42,7 +47,7 @@ const NAV_CARDS: NavCard[] = [
     label: 'Inbox',
     href: '/inbox',
     icon: Inbox,
-    statuses: ['SENT', 'IN_PROGRESS'],
+    source: 'inbox',
     tone: 'indigo',
   },
   {
@@ -50,6 +55,7 @@ const NAV_CARDS: NavCard[] = [
     href: '/sent',
     icon: Send,
     statuses: ['SENT', 'IN_PROGRESS'],
+    source: 'owned',
     tone: 'rose',
   },
   {
@@ -57,6 +63,7 @@ const NAV_CARDS: NavCard[] = [
     href: '/completed',
     icon: CheckCircle2,
     statuses: ['COMPLETED'],
+    source: 'owned',
     tone: 'emerald',
   },
   {
@@ -64,6 +71,7 @@ const NAV_CARDS: NavCard[] = [
     href: '/drafts',
     icon: FileEdit,
     statuses: ['DRAFT'],
+    source: 'owned',
     tone: 'amber',
   },
   {
@@ -71,6 +79,7 @@ const NAV_CARDS: NavCard[] = [
     href: '/archive',
     icon: Archive,
     statuses: ['VOIDED', 'EXPIRED'],
+    source: 'owned',
     tone: 'slate',
   },
 ];
@@ -86,11 +95,24 @@ function countByStatus(
 export default function DashboardHome() {
   const user = useAuthStore((s) => s.user);
   const { data: envelopes = [] } = useEnvelopes();
+  const { data: inboxEnvelopes = [] } = useInboxEnvelopes();
+
+  const countFor = (card: NavCard): number => {
+    if (card.source === 'inbox') {
+      // Inbox shows envelopes awaiting current user's signature.
+      // Filter to active states; exclude already-signed/declined recipient rows.
+      return inboxEnvelopes.filter(
+        (e) => e.status === 'SENT' || e.status === 'IN_PROGRESS',
+      ).length;
+    }
+    return countByStatus(envelopes, card.statuses ?? []);
+  };
 
   return (
     <DashboardShell
-      eyebrow={`Welcome back, ${user?.name?.split(' ')[0] ?? 'there'}`}
+      eyebrow={`Welcome back, ${user?.name ?? 'there'}`}
       title="Dashboard"
+      wide
     >
       <div className="space-y-8 pb-16">
         <Link
@@ -116,7 +138,7 @@ export default function DashboardHome() {
             <NavTile
               key={card.href}
               card={card}
-              count={countByStatus(envelopes, card.statuses)}
+              count={countFor(card)}
               index={i}
             />
           ))}

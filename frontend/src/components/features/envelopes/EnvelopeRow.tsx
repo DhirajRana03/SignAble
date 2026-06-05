@@ -1,32 +1,37 @@
 'use client';
 
-import { FileText, Pencil, Trash2, Users } from 'lucide-react';
+import { Eye, FileText, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
-import { useDeleteEnvelope } from '@/hooks/useEnvelopes';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { cn, formatDate, formatRelative } from '@/lib/utils';
 import type { Envelope } from '@/types/envelope.types';
 
 /**
- * Draft envelope row. Single-line layout showing icon, title, status,
- * signers, created/modified timestamps, and actions. Replaces card grid
- * with denser list view for scanning many drafts quickly.
+ * Shared row layout used by Sent, Inbox, Archive, Completed buckets.
+ * Mirrors DraftRow structure so envelope lists share visual rhythm:
+ * document icon, title, signer progress, status, sent/modified dates,
+ * action button on right. Action defaults to View.
  */
-export function DraftRow({
+export function EnvelopeRow({
   envelope,
   index,
+  actionHref,
+  actionLabel = 'View',
+  actionIcon: ActionIcon = Eye,
+  dateLabel = 'Date & Time',
 }: {
   envelope: Envelope;
   index: number;
+  actionHref?: string;
+  actionLabel?: string;
+  actionIcon?: LucideIcon;
+  dateLabel?: string;
 }) {
   const recipients = envelope.recipients ?? [];
   const signed = recipients.filter((r) => r.status === 'SIGNED').length;
-  const editHref = `/envelopes/${envelope.id}/edit`;
-  const del = useDeleteEnvelope();
-  const [confirming, setConfirming] = useState(false);
-
+  const href = actionHref ?? `/envelopes/${envelope.id}`;
   const hasDocument = !!envelope.documentId;
   const recipientLabel =
     recipients.length > 0 ? recipients.map((r) => r.name).join(', ') : '—';
@@ -57,7 +62,7 @@ export function DraftRow({
       {/* Title */}
       <div className="min-w-0 flex-1 basis-0 flex items-center gap-2.5">
         <h3 className="text-[13.5px] font-semibold text-ink truncate leading-tight">
-          {envelope.title || 'Untitled draft'}
+          {envelope.title || 'Untitled envelope'}
         </h3>
       </div>
 
@@ -66,12 +71,12 @@ export function DraftRow({
         <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
           Status
         </span>
-        <span className="mt-0.5 text-[11px] font-mono uppercase tracking-[0.06em] text-accent-deep">
-          Draft
-        </span>
+        <div className="mt-0.5">
+          <StatusBadge status={envelope.status} />
+        </div>
       </div>
 
-      {/* Signers */}
+      {/* Signers + progress */}
       <div className="hidden md:flex flex-col flex-[2_2_0%] min-w-0">
         <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
           Signers
@@ -85,10 +90,7 @@ export function DraftRow({
             </span>
           </div>
           <span
-            className={cn(
-              'text-[11.5px] truncate min-w-0',
-              recipients.length > 0 ? 'text-ink-3' : 'text-ink-4',
-            )}
+            className={cn('text-[11.5px] text-ink-3 truncate min-w-0')}
             title={recipientLabel}
           >
             {recipientLabel}
@@ -99,7 +101,7 @@ export function DraftRow({
       {/* Date & Time */}
       <div className="hidden lg:flex flex-col flex-1 basis-0 min-w-0">
         <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
-          Date &amp; Time
+          {dateLabel}
         </span>
         <span className="text-[12px] text-ink-3 truncate">
           {formatDate(envelope.createdAt)}
@@ -118,45 +120,12 @@ export function DraftRow({
 
       {/* Actions */}
       <div className="flex items-center gap-2 shrink-0">
-        <Link href={editHref}>
+        <Link href={href}>
           <Button variant="accent" size="sm" className="!rounded-full px-4">
-            <Pencil className="h-3 w-3" /> Edit
+            <ActionIcon className="h-3 w-3" /> {actionLabel}
           </Button>
         </Link>
-        {!confirming ? (
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setConfirming(true)}
-            aria-label="Delete draft"
-            className="!rounded-full px-4 border border-red-500 text-red-600 bg-transparent hover:bg-red-50 hover:text-red-700 hover:border-red-600"
-          >
-            <Trash2 className="h-3 w-3" /> Delete
-          </Button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              onClick={() => del.mutate(envelope.id)}
-              loading={del.isPending}
-              className="!rounded-full px-4 border border-red-500 text-red-600 bg-transparent hover:bg-red-50 hover:text-red-700 hover:border-red-600"
-            >
-              Confirm
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setConfirming(false)}
-              className="!rounded-full px-4"
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
       </div>
     </article>
   );
 }
-
-// Backwards-compat alias for callers still importing DraftCard
-export const DraftCard = DraftRow;

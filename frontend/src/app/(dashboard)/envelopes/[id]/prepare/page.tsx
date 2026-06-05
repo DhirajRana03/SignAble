@@ -21,7 +21,7 @@ export default function PreparePage() {
 
   if (envelope.isLoading || !envelope.data) {
     return (
-      <div className="min-h-screen grid place-items-center">
+      <div className="h-screen grid place-items-center">
         <span className="label-mono animate-pulse">loading envelope…</span>
       </div>
     );
@@ -101,7 +101,7 @@ export default function PreparePage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3 leading-none mb-0.5">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3 leading-none mb-0.5">
               Prepare envelope
             </p>
             <h1 className="truncate text-[15px] font-semibold tracking-[-0.022em] text-ink leading-tight">

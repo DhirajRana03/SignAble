@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   AuditEvent,
   AuditEventType,
@@ -36,6 +36,8 @@ const ALLOWED_TRANSITIONS: Record<EnvelopeStatus, EnvelopeStatus[]> = {
 
 @Injectable()
 export class EnvelopesService {
+  private readonly logger = new Logger(EnvelopesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -463,6 +465,17 @@ export class EnvelopesService {
     }
   }
 
+  /**
+   * Maximum audit events retained per envelope-owning user. Older events
+   * beyond this cap are pruned after each new event write to keep the
+   * recent-activity feed bounded.
+   *
+   * WARNING: Audit events form the legal signing trail. Pruning weakens
+   * post-hoc verification of completed envelopes. If long-term audit
+   * retention is required, raise this cap or remove the prune step.
+   */
+  private static readonly ACTIVITY_RETENTION_LIMIT = 15;
+
   private async log(
     envelopeId: string,
     eventType: AuditEventType,
@@ -482,6 +495,41 @@ export class EnvelopesService {
     // Webhook fan-out runs after audit row commits; resolves envelope owner
     // for routing. Errors swallowed inside service — never block audit path.
     void this.fanOutWebhook(envelopeId, eventType, metadata);
+    // Best-effort prune. Failures must not break the write path.
+    void this.pruneOldEvents(envelopeId);
+  }
+
+  /**
+   * Cap audit events per envelope owner to ACTIVITY_RETENTION_LIMIT.
+   * Resolves owner from envelope, finds events beyond the cap (oldest
+   * first), deletes them.
+   */
+  private async pruneOldEvents(envelopeId: string): Promise<void> {
+    try {
+      const env = await this.prisma.envelope.findUnique({
+        where: { id: envelopeId },
+        select: { userId: true },
+      });
+      if (!env) return;
+
+      const cap = EnvelopesService.ACTIVITY_RETENTION_LIMIT;
+      const stale = await this.prisma.auditEvent.findMany({
+        where: { envelope: { userId: env.userId } },
+        orderBy: { createdAt: 'desc' },
+        skip: cap,
+        select: { id: true },
+      });
+      if (stale.length === 0) return;
+
+      await this.prisma.auditEvent.deleteMany({
+        where: { id: { in: stale.map((e) => e.id) } },
+      });
+    } catch (err) {
+      // Swallow — prune is best-effort housekeeping, never block main flow.
+      this.logger.warn(
+        `audit prune failed for envelope ${envelopeId}: ${(err as Error).message}`,
+      );
+    }
   }
 
   private async fanOutWebhook(

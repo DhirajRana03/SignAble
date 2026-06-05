@@ -31,7 +31,7 @@ export function SigningView({ token }: { token: string }) {
 
   if (query.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center">
         <span className="label-mono animate-pulse">preparing envelope…</span>
       </div>
     );
@@ -39,7 +39,7 @@ export function SigningView({ token }: { token: string }) {
 
   if (query.error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
+      <div className="h-screen flex items-center justify-center p-8">
         <div className="sheet p-10 max-w-md text-center">
           <h2 className="font-display text-2xl mb-2">
             This envelope is unavailable
@@ -58,7 +58,7 @@ export function SigningView({ token }: { token: string }) {
   const completedCount = required.filter((f) => fieldValues[f.id]).length;
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className="h-screen overflow-y-auto pb-32">
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-paper/90 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-6 h-16 flex items-center gap-4">

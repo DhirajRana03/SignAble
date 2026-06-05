@@ -7,15 +7,23 @@ export function Topbar({
   eyebrow,
   actions,
   onMenuClick,
+  wide = false,
 }: {
   title: string;
-  eyebrow?: string;
+  eyebrow?: React.ReactNode;
   actions?: React.ReactNode;
   onMenuClick?: () => void;
+  wide?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-20 bg-surface-0/70 backdrop-blur-lg backdrop-saturate-150">
-      <div className="flex h-16 items-center gap-3 px-4 md:px-6 lg:px-8 pt-3">
+    <header className="shrink-0 z-20 bg-surface-0/70 backdrop-blur-lg backdrop-saturate-150">
+      <div
+        className={
+          wide
+            ? 'flex h-16 items-center gap-3 px-3 md:px-5 lg:px-6 pt-3'
+            : 'flex h-16 items-center gap-3 px-5 md:px-8 lg:px-12 pt-3'
+        }
+      >
         {onMenuClick ? (
           <button
             onClick={onMenuClick}
@@ -28,13 +36,15 @@ export function Topbar({
 
         <div className="min-w-0 flex-1">
           {eyebrow ? (
-            <p className="text-[10.5px] uppercase tracking-[0.08em] text-ink-3 hidden sm:block leading-none mb-1">
+            <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3 hidden sm:block leading-none mb-1">
               {eyebrow}
-            </p>
+            </div>
           ) : null}
-          <h1 className="truncate text-[17px] font-semibold tracking-[-0.022em] text-ink leading-tight">
-            {title}
-          </h1>
+          {title ? (
+            <h1 className="truncate text-[17px] font-semibold tracking-[-0.022em] text-ink leading-tight">
+              {title}
+            </h1>
+          ) : null}
         </div>
 
         {actions ? (

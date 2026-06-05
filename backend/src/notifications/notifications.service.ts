@@ -20,6 +20,12 @@ export interface CompletionPayload {
   name: string;
   envelopeTitle: string;
   envelopeId: string;
+  /**
+   * Recipient signing token. Present for envelope signers — drives
+   * standalone post-sign view (no platform shell). Absent for the
+   * envelope owner — they get the dashboard URL.
+   */
+  signingToken?: string;
 }
 
 type ProviderName = 'console' | 'smtp' | 'sendgrid' | 'postmark';
@@ -55,7 +61,11 @@ export class NotificationsService {
   }
 
   async sendCompletion(payload: CompletionPayload): Promise<void> {
-    const url = `${this.frontendUrl()}/envelopes/${payload.envelopeId}`;
+    // Recipients (token present) land on standalone signed-document view.
+    // Owner (no token) lands on dashboard envelope detail.
+    const url = payload.signingToken
+      ? `${this.frontendUrl()}/sign/${payload.signingToken}/document`
+      : `${this.frontendUrl()}/envelopes/${payload.envelopeId}`;
     const html = this.renderCompletionHtml(
       payload.name,
       payload.envelopeTitle,

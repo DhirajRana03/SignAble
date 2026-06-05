@@ -1,9 +1,18 @@
-import type { SigningView } from '@/types/signing.types';
+import type {
+  SigningCompletionView,
+  SigningView,
+} from '@/types/signing.types';
 import { apiClient } from './api-client';
 
 export const signingService = {
   async getView(token: string): Promise<SigningView> {
     const { data } = await apiClient.get<SigningView>(`/sign/${token}`);
+    return data;
+  },
+  async getCompletion(token: string): Promise<SigningCompletionView> {
+    const { data } = await apiClient.get<SigningCompletionView>(
+      `/sign/${token}/completion`,
+    );
     return data;
   },
   async markViewed(token: string): Promise<void> {

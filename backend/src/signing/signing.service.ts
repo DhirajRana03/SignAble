@@ -94,7 +94,7 @@ export class SigningService {
       recipientEmail: recipient.email,
       recipientStatus: recipient.status,
       fields,
-      pageUrls: this.storage.pageUrls(doc.id, doc.pageCount),
+      pageUrls: this.publicPageUrls(token, doc.id, doc.pageCount),
       pageCount: doc.pageCount,
     };
   }
@@ -343,6 +343,7 @@ export class SigningService {
           name: r.name,
           envelopeTitle: envelope.title,
           envelopeId,
+          signingToken: r.signingToken,
         });
       }
       if (sender) {
@@ -439,6 +440,103 @@ export class SigningService {
     return recipient;
   }
 
+  /**
+   * Token-scoped file loader for public signing page. Validates token,
+   * confirms file belongs to envelope document. Allows page PNGs +
+   * signed PDF for this envelope only — blocks path traversal +
+   * unrelated documents.
+   *
+   * Returns raw bytes for controller to stream.
+   */
+  async loadFileForToken(
+    token: string,
+    filePath: string,
+  ): Promise<{ data: Buffer; contentType: string }> {
+    const recipient = await this.getByToken(token);
+    // Token holders can view document even after they've signed.
+    const envelope = await this.prisma.envelope.findUnique({
+      where: { id: recipient.envelopeId },
+      select: { id: true, documentId: true, status: true },
+    });
+    if (!envelope) throw new NotFoundError('Envelope', recipient.envelopeId);
+    if (envelope.status === EnvelopeStatus.VOIDED) {
+      throw new InvalidStateTransitionError(envelope.status, 'view');
+    }
+
+    // Allowed assets: page PNGs for this doc, or signed PDF for this envelope.
+    const pagesPrefix = `pages/${envelope.documentId}/`;
+    const signedKey = `signed/${envelope.id}/signed.pdf`;
+
+    if (filePath.startsWith(pagesPrefix) && filePath.endsWith('.png')) {
+      const data = await this.storage.load(filePath);
+      return { data, contentType: 'image/png' };
+    }
+    if (filePath === signedKey) {
+      const data = await this.storage.load(filePath);
+      return { data, contentType: 'application/pdf' };
+    }
+    throw new NotFoundError('File', filePath);
+  }
+
+  /**
+   * Public completion view. Returns minimal envelope info + signed PDF
+   * URL once envelope completed. Used by standalone post-sign page so
+   * recipients can view/download signed copy without auth.
+   */
+  async getCompletionForToken(token: string) {
+    const recipient = await this.getByToken(token);
+    const envelope = await this.prisma.envelope.findUnique({
+      where: { id: recipient.envelopeId },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        completedAt: true,
+      },
+    });
+    if (!envelope) throw new NotFoundError('Envelope', recipient.envelopeId);
+
+    const base =
+      process.env.STORAGE_URL_BASE?.replace(/\/files$/, '') ??
+      'http://localhost:8000/api/v1';
+    const signedKey = `signed/${envelope.id}/signed.pdf`;
+    const signedPdfUrl =
+      envelope.status === EnvelopeStatus.COMPLETED
+        ? `${base}/sign/${token}/files/${signedKey}`
+        : null;
+
+    return {
+      envelopeId: envelope.id,
+      envelopeTitle: envelope.title,
+      envelopeStatus: envelope.status,
+      completedAt: envelope.completedAt,
+      recipientName: recipient.name,
+      recipientStatus: recipient.status,
+      signedPdfUrl,
+    };
+  }
+
+  /**
+   * Build token-scoped public URLs for the signer's document pages.
+   * Replaces auth-protected `/files/*` paths with `/sign/:token/files/*`
+   * so signers can fetch images without JWT.
+   */
+  publicPageUrls(token: string, documentId: string, pageCount: number): string[] {
+    const base =
+      process.env.STORAGE_URL_BASE?.replace(/\/files$/, '') ??
+      'http://localhost:8000/api/v1';
+    return Array.from({ length: pageCount }, (_, i) => {
+      const key = `pages/${documentId}/page_${String(i + 1).padStart(4, '0')}.png`;
+      return `${base}/sign/${token}/files/${key}`;
+    });
+  }
+
+  /**
+   * Mirror of EnvelopesService.ACTIVITY_RETENTION_LIMIT. Kept here to
+   * avoid cross-service coupling. Update both if cap changes.
+   */
+  private static readonly ACTIVITY_RETENTION_LIMIT = 15;
+
   private async log(
     envelopeId: string,
     eventType: AuditEventType,
@@ -456,6 +554,41 @@ export class SigningService {
       },
     });
     void this.fanOutWebhook(envelopeId, eventType, metadata, actorEmail);
+    void this.pruneOldEvents(envelopeId);
+  }
+
+  /**
+   * Cap audit events per envelope owner. Mirrors EnvelopesService prune
+   * to keep recipient-driven events (sign/decline/view) bounded too.
+   *
+   * WARNING: Deletes legal audit data. Disable if regulatory retention
+   * required.
+   */
+  private async pruneOldEvents(envelopeId: string): Promise<void> {
+    try {
+      const env = await this.prisma.envelope.findUnique({
+        where: { id: envelopeId },
+        select: { userId: true },
+      });
+      if (!env) return;
+
+      const cap = SigningService.ACTIVITY_RETENTION_LIMIT;
+      const stale = await this.prisma.auditEvent.findMany({
+        where: { envelope: { userId: env.userId } },
+        orderBy: { createdAt: 'desc' },
+        skip: cap,
+        select: { id: true },
+      });
+      if (stale.length === 0) return;
+
+      await this.prisma.auditEvent.deleteMany({
+        where: { id: { in: stale.map((e) => e.id) } },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `audit prune failed for envelope ${envelopeId}: ${(err as Error).message}`,
+      );
+    }
   }
 
   private async fanOutWebhook(

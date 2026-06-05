@@ -57,8 +57,18 @@ function describe(item: ActivityItem): string {
   }
 }
 
+const EVENT_LABEL: Record<AuditEventType, string> = {
+  ENVELOPE_CREATED: 'Created',
+  ENVELOPE_SENT: 'Sent',
+  DOCUMENT_VIEWED: 'Viewed',
+  RECIPIENT_SIGNED: 'Signed',
+  RECIPIENT_DECLINED: 'Declined',
+  ENVELOPE_COMPLETED: 'Completed',
+  ENVELOPE_VOIDED: 'Voided',
+};
+
 export function ActivityFeed() {
-  const { data, isLoading } = useRecentActivity(10);
+  const { data, isLoading } = useRecentActivity(15);
 
   return (
     <section>
@@ -67,14 +77,19 @@ export function ActivityFeed() {
           <span className="eyebrow">Recent activity</span>
           <h2 className="mt-1.5">What is happening</h2>
         </div>
+        {data?.length ? (
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink-3">
+            {data.length} events
+          </span>
+        ) : null}
       </div>
 
       {isLoading ? (
-        <div className="glass overflow-hidden">
-          {[...Array(4)].map((_, i) => (
+        <div className="flex flex-col gap-2">
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="px-4 py-3 flex items-center gap-3 animate-pulse"
+              className="glass px-4 py-3 h-14 animate-pulse flex items-center gap-3"
             >
               <div className="h-8 w-8 rounded-full bg-surface-sunken shrink-0" />
               <div className="flex-1 space-y-1.5">
@@ -87,13 +102,13 @@ export function ActivityFeed() {
       ) : !data?.length ? (
         <div className="glass p-10 text-center">
           <p className="text-[14px] text-ink-3">
-            No activity yet. Latest events will appear here.
+            No activity yet. Latest events appear here.
           </p>
         </div>
       ) : (
-        <ol className="glass overflow-hidden divide-y divide-border/60">
-          {data.map((item) => (
-            <ActivityRow key={item.id} item={item} />
+        <ol className="flex flex-col gap-2">
+          {data.map((item, i) => (
+            <ActivityRow key={item.id} item={item} index={i} />
           ))}
         </ol>
       )}
@@ -101,29 +116,60 @@ export function ActivityFeed() {
   );
 }
 
-function ActivityRow({ item }: { item: ActivityItem }) {
+function ActivityRow({ item, index }: { item: ActivityItem; index: number }) {
   const meta = EVENT_META[item.eventType] ?? EVENT_META.ENVELOPE_CREATED;
   const Icon = meta.icon;
+  const label = EVENT_LABEL[item.eventType] ?? item.eventType;
+  const actor = item.actorEmail?.split('@')[0] ?? '';
   return (
     <li>
       <Link
         href={`/envelopes/${item.envelopeId}`}
-        className="group flex items-center gap-3 px-4 py-3 hover:bg-surface-sunken/60 transition-colors"
+        className={cn(
+          'group glass flex items-center gap-4 px-4 py-3 animate-fade-up',
+          'transition-all duration-200',
+          'hover:border-accent/40 hover:shadow-lifted',
+        )}
+        style={{ animationDelay: `${index * 24}ms` }}
       >
         <span
           className={cn(
-            'h-8 w-8 grid place-items-center rounded-full shrink-0',
+            'h-9 w-9 grid place-items-center rounded-full shrink-0 ring-1 ring-white/60',
             meta.tone,
           )}
         >
-          <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+          <Icon className="h-4 w-4" strokeWidth={2} />
         </span>
-        <p className="flex-1 text-[13px] text-ink-2 truncate">
-          {describe(item)}
-        </p>
-        <span className="text-[11px] text-ink-4 shrink-0">
-          {formatRelative(item.createdAt)}
-        </span>
+
+        <div className="flex flex-col min-w-0 flex-[2_2_0%]">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
+            {label}
+          </span>
+          <p className="mt-0.5 text-[13px] text-ink truncate">
+            {describe(item)}
+          </p>
+        </div>
+
+        <div className="hidden md:flex flex-col flex-1 basis-0 min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
+            Actor
+          </span>
+          <span
+            className="mt-0.5 text-[12px] text-ink-3 truncate"
+            title={item.actorEmail}
+          >
+            {actor || '—'}
+          </span>
+        </div>
+
+        <div className="hidden lg:flex flex-col flex-1 basis-0 min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
+            When
+          </span>
+          <span className="mt-0.5 text-[12px] text-ink-3 truncate">
+            {formatRelative(item.createdAt)}
+          </span>
+        </div>
       </Link>
     </li>
   );
