@@ -9,8 +9,10 @@ import {
   IsNumber,
   IsObject,
   IsOptional,
+  IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -51,9 +53,24 @@ export class CreateFieldDto {
   required?: boolean;
 
   /**
+   * Palette tile label (e.g. "Name", "Email"). Metadata only — backend
+   * doesn't validate it against tile names; the frontend uses it to
+   * re-display the user's original choice on draft reload.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  label?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readOnly?: boolean;
+
+  /**
    * Type-specific config:
    * - DROPDOWN: { choices: string[] }
    * - CHECKBOX: { label?: string }
+   * - TEXT: { placeholder?: string }
    * - others: null/omitted
    */
   @IsOptional()
@@ -102,6 +119,15 @@ export class UpdateFieldDto {
   @IsOptional()
   @IsBoolean()
   required?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  label?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readOnly?: boolean;
 
   @IsOptional()
   @IsObject()

@@ -12,7 +12,6 @@ import type { Envelope, FieldOptions } from '@/types/envelope.types';
 import { FieldInspector } from './FieldInspector';
 import { FieldOverlay } from './FieldOverlay';
 import { FieldToolbar, type FieldDef } from './FieldToolbar';
-import { ZoomControls } from './ZoomControls';
 
 function defaultOptionsFor(def: FieldDef): FieldOptions {
   if (def.type === 'DROPDOWN')
@@ -30,7 +29,15 @@ function maybeSnap(value: number, snap: boolean): number {
   return Math.round(value / 0.05) * 0.05;
 }
 
-export function FieldPlacer({ envelope }: { envelope: Envelope }) {
+export function FieldPlacer({
+  envelope,
+  zoom,
+  snap,
+}: {
+  envelope: Envelope;
+  zoom: number;
+  snap: boolean;
+}) {
   const pagesMeta = useDocumentPagesMeta(envelope.documentId);
   const docQuery = useDocument(envelope.documentId);
   const init = useEnvelopeEditorStore((s) => s.init);
@@ -39,10 +46,10 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     (s) => s.setActiveRecipient,
   );
   const activeRecipientId = useEnvelopeEditorStore((s) => s.activeRecipientId);
+  const selectedTempId = useEnvelopeEditorStore((s) => s.selectedTempId);
+  const removeField = useEnvelopeEditorStore((s) => s.removeField);
   const fieldCount = useEnvelopeEditorStore((s) => s.fields.length);
 
-  const [zoom, setZoom] = useState(1);
-  const [snap, setSnap] = useState(false);
   const [activePage, setActivePage] = useState(1);
   const draggingDefRef = useRef<FieldDef | null>(null);
   const pageRefsRef = useRef<RefObject<HTMLDivElement | null>[]>([]);
@@ -88,6 +95,33 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
     setActivePage(pageIndex + 1);
   };
 
+  /**
+   * Keyboard shortcut: Delete / Backspace removes the selected chip.
+   * Skipped when focus is inside an editable control so the user can
+   * still backspace through property-panel inputs without losing the
+   * chip itself.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (!selectedTempId) return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      removeField(selectedTempId);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedTempId, removeField]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const observer = new IntersectionObserver(
@@ -131,28 +165,31 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
         }}
       />
 
-      {/* Doc scroll container — owns vertical scroll */}
-      <div className="flex-1 min-w-0 h-full overflow-y-auto relative bg-slate-100 rounded-lg">
-        <div className="relative">
-          <DocumentViewer
-            pageUrls={pageUrls}
-            authed
-            zoom={zoom}
-            onPageRefsReady={(refs) => {
-              pageRefsRef.current = refs;
-            }}
-            renderOverlay={(pageIndex, pageRef) => (
-              <FieldOverlay
-                pageIndex={pageIndex}
-                pageRef={pageRef}
-                recipients={envelope.recipients ?? []}
-                snap={snap}
-                onDrop={handleDrop}
-              />
-            )}
-          />
+      {/* Doc column — scrollable canvas. Recipient filter and zoom
+          controls now live in the page header above this region. */}
+      <div className="flex-1 min-w-0 h-full flex flex-col bg-slate-100 rounded-lg overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto relative">
+          <div className="relative">
+            <DocumentViewer
+              pageUrls={pageUrls}
+              authed
+              zoom={zoom}
+              onPageRefsReady={(refs) => {
+                pageRefsRef.current = refs;
+              }}
+              renderOverlay={(pageIndex, pageRef) => (
+                <FieldOverlay
+                  pageIndex={pageIndex}
+                  pageRef={pageRef}
+                  recipients={envelope.recipients ?? []}
+                  snap={snap}
+                  onDrop={handleDrop}
+                />
+              )}
+            />
 
-          {fieldCount === 0 ? <EmptyHint /> : null}
+            {fieldCount === 0 ? <EmptyHint /> : null}
+          </div>
         </div>
       </div>
 
@@ -162,13 +199,6 @@ export function FieldPlacer({ envelope }: { envelope: Envelope }) {
         activePage={activePage}
         totalPages={pageUrls.length}
         onJumpToPage={jumpToPage}
-      />
-
-      <ZoomControls
-        zoom={zoom}
-        onChange={setZoom}
-        snap={snap}
-        onToggleSnap={() => setSnap((s) => !s)}
       />
     </div>
   );
@@ -200,5 +230,3 @@ function EmptyHint() {
     </div>
   );
 }
-
-

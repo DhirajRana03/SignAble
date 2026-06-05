@@ -37,29 +37,38 @@ export interface FieldDef {
   icon: LucideIcon;
   group: 'signing' | 'identity' | 'data' | 'advanced';
   disabled?: boolean;
+  /** Hover hint surfaced via `title` on the field tile. */
+  hint?: string;
   defaultSize: { widthPct: number; heightPct: number };
 }
 
+const GROUP_LABEL: Record<FieldDef['group'], string> = {
+  signing: 'Signing',
+  identity: 'Identity',
+  data: 'Data',
+  advanced: 'Advanced',
+};
+
 export const FIELDS: FieldDef[] = [
   // Signing
-  { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', defaultSize: { widthPct: 0.22, heightPct: 0.07 } },
-  { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', defaultSize: { widthPct: 0.1, heightPct: 0.05 } },
-  { id: 'date', type: 'DATE', label: 'Date Signed', icon: Calendar, group: 'signing', defaultSize: { widthPct: 0.18, heightPct: 0.04 } },
+  { id: 'signature', type: 'SIGNATURE', label: 'Signature', icon: PenLine, group: 'signing', hint: 'Signer draws or types their signature', defaultSize: { widthPct: 0.22, heightPct: 0.07 } },
+  { id: 'initial', type: 'INITIALS', label: 'Initial', icon: IdCard, group: 'signing', hint: 'Signer initials this spot', defaultSize: { widthPct: 0.1, heightPct: 0.05 } },
+  { id: 'date', type: 'DATE', label: 'Date Signed', icon: Calendar, group: 'signing', hint: 'Auto-fills with signing date', defaultSize: { widthPct: 0.18, heightPct: 0.04 } },
   // Identity
-  { id: 'name', type: 'TEXT', label: 'Name', icon: User, group: 'identity', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
-  { id: 'email', type: 'TEXT', label: 'Email', icon: AtSign, group: 'identity', disabled: true, defaultSize: { widthPct: 0.28, heightPct: 0.04 } },
-  { id: 'company', type: 'TEXT', label: 'Company', icon: Building2, group: 'identity', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
-  { id: 'title', type: 'TEXT', label: 'Title', icon: Briefcase, group: 'identity', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
-  { id: 'phone', type: 'TEXT', label: 'Phone', icon: Phone, group: 'identity', defaultSize: { widthPct: 0.2, heightPct: 0.04 } },
-  { id: 'address', type: 'TEXT', label: 'Address', icon: Home, group: 'identity', defaultSize: { widthPct: 0.3, heightPct: 0.05 } },
+  { id: 'name', type: 'TEXT', label: 'Name', icon: User, group: 'identity', hint: 'Signer types or auto-fills their name', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
+  { id: 'email', type: 'TEXT', label: 'Email', icon: AtSign, group: 'identity', disabled: true, hint: 'Auto-filled from recipient', defaultSize: { widthPct: 0.28, heightPct: 0.04 } },
+  { id: 'company', type: 'TEXT', label: 'Company', icon: Building2, group: 'identity', hint: 'Signer types their company', defaultSize: { widthPct: 0.24, heightPct: 0.04 } },
+  { id: 'title', type: 'TEXT', label: 'Title', icon: Briefcase, group: 'identity', hint: 'Signer types their job title', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
+  { id: 'phone', type: 'TEXT', label: 'Phone', icon: Phone, group: 'identity', hint: 'Signer types a phone number', defaultSize: { widthPct: 0.2, heightPct: 0.04 } },
+  { id: 'address', type: 'TEXT', label: 'Address', icon: Home, group: 'identity', hint: 'Signer types a mailing address', defaultSize: { widthPct: 0.3, heightPct: 0.05 } },
   // Data
-  { id: 'text', type: 'TEXT', label: 'Text', icon: Type, group: 'data', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
-  { id: 'number', type: 'TEXT', label: 'Number', icon: Hash, group: 'data', defaultSize: { widthPct: 0.14, heightPct: 0.04 } },
-  { id: 'checkbox', type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare, group: 'data', defaultSize: { widthPct: 0.03, heightPct: 0.025 } },
-  { id: 'dropdown', type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
+  { id: 'text', type: 'TEXT', label: 'Text', icon: Type, group: 'data', hint: 'Free-form text input', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
+  { id: 'number', type: 'TEXT', label: 'Number', icon: Hash, group: 'data', hint: 'Numeric input', defaultSize: { widthPct: 0.14, heightPct: 0.04 } },
+  { id: 'checkbox', type: 'CHECKBOX', label: 'Checkbox', icon: CheckSquare, group: 'data', hint: 'Yes/no checkbox', defaultSize: { widthPct: 0.03, heightPct: 0.025 } },
+  { id: 'dropdown', type: 'DROPDOWN', label: 'Dropdown', icon: ChevronDown, group: 'data', hint: 'Pick from a list of choices', defaultSize: { widthPct: 0.22, heightPct: 0.04 } },
   // Advanced
-  { id: 'note', type: 'TEXT', label: 'Note', icon: StickyNote, group: 'advanced', defaultSize: { widthPct: 0.26, heightPct: 0.06 } },
-  { id: 'decline', type: 'CHECKBOX', label: 'Decline', icon: XCircle, group: 'advanced', defaultSize: { widthPct: 0.04, heightPct: 0.03 } },
+  { id: 'note', type: 'TEXT', label: 'Note', icon: StickyNote, group: 'advanced', hint: 'Long-form note from the signer', defaultSize: { widthPct: 0.26, heightPct: 0.06 } },
+  { id: 'decline', type: 'CHECKBOX', label: 'Decline', icon: XCircle, group: 'advanced', hint: 'Signer can opt out of this section', defaultSize: { widthPct: 0.04, heightPct: 0.03 } },
 ];
 
 /**
@@ -118,12 +127,6 @@ export function FieldToolbar({
           </div>
         </div>
 
-        <div className="px-3 pt-2.5 pb-1.5">
-          <p className="text-[10.5px] font-semibold text-ink-2">
-            Standard Fields
-          </p>
-        </div>
-
         {groups.map((g, idx) =>
           g.items.length === 0 ? null : (
             <div
@@ -133,6 +136,9 @@ export function FieldToolbar({
                 idx > 0 && 'border-t border-white/40 pt-1.5 mt-0.5',
               )}
             >
+              <p className="px-2 pt-1.5 pb-1 text-[9.5px] font-bold uppercase tracking-[0.08em] text-ink-3">
+                {GROUP_LABEL[g.id]}
+              </p>
               {g.items.map((f) => (
                 <FieldRow
                   key={f.id}
@@ -287,7 +293,11 @@ function FieldRow({
         e.dataTransfer.setDragImage(img, 0, 0);
         onDragStart(def);
       }}
-      title={locked ? `${def.label} (unavailable)` : def.label}
+      title={
+        locked
+          ? `${def.label} - ${def.hint ?? 'unavailable'}`
+          : (def.hint ?? def.label)
+      }
       className={cn(
         'w-full flex items-center gap-2 rounded-lg px-1.5 py-1.5',
         'transition-colors duration-100',

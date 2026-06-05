@@ -19,7 +19,12 @@ import {
   useEnvelopeEditorStore,
   type EditorField,
 } from '@/store/envelopeEditorStore';
-import type { FieldType } from '@/types/envelope.types';
+import {
+  isCheckboxOptions,
+  isDropdownOptions,
+  isTextOptions,
+  type FieldType,
+} from '@/types/envelope.types';
 
 const FIELD_LABEL: Record<FieldType, string> = {
   SIGNATURE: 'Signature',
@@ -205,7 +210,12 @@ function FieldEditor({
   onRemove: () => void;
 }) {
   const Icon = FIELD_ICON[field.fieldType];
-  const label = FIELD_LABEL[field.fieldType];
+  const typeLabel = FIELD_LABEL[field.fieldType];
+  // Palette tile label (e.g. "Name") overrides the generic enum label
+  // when present. The enum still appears as a small chip below so the
+  // user knows what backend type they're editing.
+  const headerLabel = field.label ?? typeLabel;
+  const showTypeChip = !!field.label && field.label !== typeLabel;
 
   return (
     <section className="rounded-xl bg-white/80 backdrop-blur-md border border-white/60 shadow-sm overflow-hidden">
@@ -215,9 +225,16 @@ function FieldEditor({
           <span className="h-8 w-8 grid place-items-center rounded-md bg-sky-100 text-sky-700 border border-sky-200/60 shrink-0">
             <Icon className="h-4 w-4" strokeWidth={2} />
           </span>
-          <p className="text-[14px] font-semibold text-ink truncate">
-            {label}
-          </p>
+          <div className="min-w-0 flex flex-col">
+            <p className="text-[14px] font-semibold text-ink truncate">
+              {headerLabel}
+            </p>
+            {showTypeChip ? (
+              <span className="text-[9.5px] font-mono uppercase tracking-[0.08em] text-accent-deep">
+                {typeLabel} field
+              </span>
+            ) : null}
+          </div>
         </div>
         <button
           type="button"
@@ -245,12 +262,12 @@ function FieldEditor({
           <Accordion title="Add Text" defaultOpen>
             <textarea
               value={
-                (field.options && 'placeholder' in field.options
-                  ? (field.options as { placeholder?: string }).placeholder
-                  : '') ?? ''
+                isTextOptions(field.options)
+                  ? (field.options.placeholder ?? '')
+                  : ''
               }
               onChange={(e) =>
-                onUpdate({ options: { placeholder: e.target.value } as never })
+                onUpdate({ options: { placeholder: e.target.value } })
               }
               placeholder="Add Text"
               rows={4}
@@ -262,9 +279,7 @@ function FieldEditor({
         {field.fieldType === 'DROPDOWN' ? (
           <DropdownChoicesEditor
             choices={
-              (field.options && 'choices' in field.options
-                ? field.options.choices
-                : undefined) ?? []
+              isDropdownOptions(field.options) ? field.options.choices : []
             }
             onChange={(choices) => onUpdate({ options: { choices } })}
           />
@@ -277,9 +292,9 @@ function FieldEditor({
               id="cb-label"
               placeholder="Agree to terms"
               value={
-                (field.options && 'label' in field.options
-                  ? field.options.label
-                  : '') ?? ''
+                isCheckboxOptions(field.options)
+                  ? (field.options.label ?? '')
+                  : ''
               }
               onChange={(e) => onUpdate({ options: { label: e.target.value } })}
             />

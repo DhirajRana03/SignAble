@@ -44,12 +44,12 @@ export function initials(name: string): string {
 // Each entry uses tailwind primitives — recipients still get distinct hues
 // without fighting the definable-style coral accent.
 const RECIPIENT_PALETTE = [
-  { bg: 'bg-orange-100', fg: 'text-orange-900', ring: 'ring-orange-300' },
-  { bg: 'bg-amber-100', fg: 'text-amber-900', ring: 'ring-amber-300' },
-  { bg: 'bg-teal-100', fg: 'text-teal-900', ring: 'ring-teal-300' },
-  { bg: 'bg-rose-100', fg: 'text-rose-900', ring: 'ring-rose-300' },
-  { bg: 'bg-emerald-100', fg: 'text-emerald-900', ring: 'ring-emerald-300' },
-  { bg: 'bg-stone-200', fg: 'text-stone-900', ring: 'ring-stone-400' },
+  { bg: 'bg-orange-100', fg: 'text-orange-900', ring: 'ring-orange-300', bar: 'border-l-orange-500', dot: 'bg-orange-500' },
+  { bg: 'bg-amber-100', fg: 'text-amber-900', ring: 'ring-amber-300', bar: 'border-l-amber-500', dot: 'bg-amber-500' },
+  { bg: 'bg-teal-100', fg: 'text-teal-900', ring: 'ring-teal-300', bar: 'border-l-teal-500', dot: 'bg-teal-500' },
+  { bg: 'bg-rose-100', fg: 'text-rose-900', ring: 'ring-rose-300', bar: 'border-l-rose-500', dot: 'bg-rose-500' },
+  { bg: 'bg-emerald-100', fg: 'text-emerald-900', ring: 'ring-emerald-300', bar: 'border-l-emerald-500', dot: 'bg-emerald-500' },
+  { bg: 'bg-stone-200', fg: 'text-stone-900', ring: 'ring-stone-400', bar: 'border-l-stone-500', dot: 'bg-stone-500' },
 ];
 
 export function recipientColor(index: number) {

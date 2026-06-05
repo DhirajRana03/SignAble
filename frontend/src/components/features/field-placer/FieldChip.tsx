@@ -12,7 +12,7 @@ import { type CSSProperties, useRef } from 'react';
 
 import { useEnvelopeEditorStore, type EditorField } from '@/store/envelopeEditorStore';
 import { cn, recipientColor } from '@/lib/utils';
-import type { FieldType } from '@/types/envelope.types';
+import { isTextOptions, type FieldType } from '@/types/envelope.types';
 
 const FIELD_LABEL: Record<FieldType, string> = {
   SIGNATURE: 'Sign',
@@ -35,9 +35,16 @@ const FIELD_ICON: Record<FieldType, typeof TypeIcon> = {
 interface Props {
   field: EditorField;
   recipientIndex: number;
+  recipientName?: string;
   style: CSSProperties;
   pageWidth: number;
   pageHeight: number;
+  /**
+   * Dim + disable pointer interactions when this chip's recipient is
+   * not the current visibility filter target. Keeps spatial context
+   * without letting the user accidentally select a hidden chip.
+   */
+  dimmed?: boolean;
 }
 
 /**
@@ -47,9 +54,11 @@ interface Props {
 export function FieldChip({
   field,
   recipientIndex,
+  recipientName,
   style,
   pageWidth,
   pageHeight,
+  dimmed = false,
 }: Props) {
   const select = useEnvelopeEditorStore((s) => s.select);
   const update = useEnvelopeEditorStore((s) => s.updateField);
@@ -119,18 +128,35 @@ export function FieldChip({
     dragRef.current = null;
   };
 
+  const tooltip = recipientName
+    ? `${recipientName} \u00b7 ${field.label ?? FIELD_LABEL[field.fieldType]}`
+    : (field.label ?? FIELD_LABEL[field.fieldType]);
+
   return (
     <div
       style={style}
-      onPointerDown={(e) => onPointerDown(e, 'move')}
-      onPointerMove={onPointerMove}
+      title={tooltip}
+      onPointerDown={(e) => {
+        if (dimmed) return;
+        onPointerDown(e, 'move');
+      }}
+      onPointerMove={(e) => {
+        if (dimmed) return;
+        onPointerMove(e);
+      }}
       onPointerUp={onPointerUp}
       className={cn(
-        'absolute cursor-move select-none group',
+        'absolute select-none group',
         'rounded-md flex items-center justify-center',
-        'transition-shadow duration-100',
+        'transition-all duration-150 animate-fade-up',
+        // Solid recipient-tinted left bar + tinted background so each
+        // signer is visually distinct even when multiple chips overlap.
         color.bg,
         color.fg,
+        `border-l-4 ${color.bar}`,
+        dimmed
+          ? 'opacity-25 pointer-events-none cursor-default'
+          : 'cursor-move',
         selected
           ? 'border-2 border-solid border-accent ring-2 ring-accent/30 shadow-lg z-20'
           : 'border border-dashed border-current/60 hover:shadow-md z-10',
@@ -139,12 +165,9 @@ export function FieldChip({
       {(() => {
         // TEXT fields: display the user-entered Add Text value when present.
         // Other types + empty TEXT: render the icon + label badge.
-        const textValue =
-          field.fieldType === 'TEXT' &&
-          field.options &&
-          'placeholder' in field.options
-            ? ((field.options as { placeholder?: string }).placeholder ?? '')
-            : '';
+        const textValue = isTextOptions(field.options)
+          ? (field.options.placeholder ?? '')
+          : '';
         if (textValue) {
           return (
             <div className="pointer-events-none w-full h-full px-1.5 py-1 flex items-center overflow-hidden">

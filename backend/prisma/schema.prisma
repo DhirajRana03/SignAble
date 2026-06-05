@@ -154,8 +154,15 @@ model SignatureField {
   heightPct   Float
   fieldType   FieldType
   required    Boolean   @default(true)
+  /// Tile label from the palette (e.g. "Name", "Email"). Stays metadata —
+  /// backend doesn't act on it but the editor needs it to round-trip
+  /// the user's choice when reloading a draft.
+  label       String?
+  /// Disables signer interaction. The chip still renders + the value
+  /// (pre-filled by sender) is preserved on submit.
+  readOnly    Boolean   @default(false)
   value       String?
-  options     Json?     // For DROPDOWN: { choices: string[] }; for CHECKBOX: { label?: string }; null otherwise
+  options     Json?     // DROPDOWN: { choices: string[] }; CHECKBOX: { label?: string }; TEXT: { placeholder?: string }; null otherwise
   signedAt    DateTime?
 
   envelope  Envelope  @relation(fields: [envelopeId], references: [id], onDelete: Cascade)

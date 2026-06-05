@@ -37,11 +37,17 @@ export function FieldOverlay({
     [allFields, pageIndex],
   );
   const select = useEnvelopeEditorStore((s) => s.select);
+  const filterRecipientId = useEnvelopeEditorStore(
+    (s) => s.filterRecipientId,
+  );
   const { width, height } = useElementSize(pageRef);
   const [dragOver, setDragOver] = useState(false);
 
   const recipientIndex = (id: string) =>
     recipients.findIndex((r) => r.id === id);
+
+  const recipientName = (id: string) =>
+    recipients.find((r) => r.id === id)?.name ?? '';
 
   return (
     <div
@@ -89,21 +95,27 @@ export function FieldOverlay({
         />
       ) : null}
 
-      {fields.map((f) => (
-        <FieldChip
-          key={f.tempId}
-          field={f}
-          recipientIndex={Math.max(0, recipientIndex(f.recipientId))}
-          pageWidth={width || 1}
-          pageHeight={height || 1}
-          style={{
-            left: f.xPct * (width || 0),
-            top: f.yPct * (height || 0),
-            width: f.widthPct * (width || 0),
-            height: f.heightPct * (height || 0),
-          }}
-        />
-      ))}
+      {fields.map((f) => {
+        const dimmed =
+          !!filterRecipientId && filterRecipientId !== f.recipientId;
+        return (
+          <FieldChip
+            key={f.tempId}
+            field={f}
+            recipientIndex={Math.max(0, recipientIndex(f.recipientId))}
+            recipientName={recipientName(f.recipientId)}
+            pageWidth={width || 1}
+            pageHeight={height || 1}
+            dimmed={dimmed}
+            style={{
+              left: f.xPct * (width || 0),
+              top: f.yPct * (height || 0),
+              width: f.widthPct * (width || 0),
+              height: f.heightPct * (height || 0),
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
