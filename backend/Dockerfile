@@ -39,5 +39,8 @@ RUN mkdir -p /app/storage
 
 EXPOSE 8000
 
-# Apply pending migrations then start the API
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Apply pending migrations then start API.
+# `migrate resolve --rolled-back` clears stuck failed-migration row from
+# `_prisma_migrations`. No-op if migration already applied/resolved.
+# Safe to keep — survives Neon pooled-connection rollback edge cases.
+CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back 20260603122159_initial_schema || true; npx prisma migrate deploy && node dist/main.js"]
