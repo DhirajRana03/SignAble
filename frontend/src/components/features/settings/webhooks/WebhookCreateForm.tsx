@@ -29,6 +29,7 @@ type FormValues = z.infer<typeof schema>;
 const EVENT_LABEL: Record<WebhookEventType, string> = {
   ENVELOPE_CREATED: 'Envelope created',
   ENVELOPE_SENT: 'Envelope sent',
+  ENVELOPE_RESENT: 'Envelope resent',
   DOCUMENT_VIEWED: 'Document viewed',
   RECIPIENT_SIGNED: 'Recipient signed',
   RECIPIENT_DECLINED: 'Recipient declined',

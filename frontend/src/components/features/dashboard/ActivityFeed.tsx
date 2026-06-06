@@ -24,6 +24,7 @@ interface IconConfig {
 const EVENT_META: Record<AuditEventType, IconConfig> = {
   ENVELOPE_CREATED: { icon: FilePlus2, tone: 'bg-indigo-100 text-indigo-600' },
   ENVELOPE_SENT: { icon: Send, tone: 'bg-rose-100 text-rose-600' },
+  ENVELOPE_RESENT: { icon: Send, tone: 'bg-rose-100 text-rose-600' },
   DOCUMENT_VIEWED: { icon: Eye, tone: 'bg-sky-100 text-sky-600' },
   RECIPIENT_SIGNED: { icon: UserCheck, tone: 'bg-emerald-100 text-emerald-600' },
   RECIPIENT_DECLINED: { icon: UserX, tone: 'bg-amber-100 text-amber-700' },
@@ -42,6 +43,8 @@ function describe(item: ActivityItem): string {
       return `You created ${title}`;
     case 'ENVELOPE_SENT':
       return `You sent ${title}`;
+    case 'ENVELOPE_RESENT':
+      return `You resent ${title}`;
     case 'DOCUMENT_VIEWED':
       return `${actor} viewed ${title}`;
     case 'RECIPIENT_SIGNED':
@@ -60,6 +63,7 @@ function describe(item: ActivityItem): string {
 const EVENT_LABEL: Record<AuditEventType, string> = {
   ENVELOPE_CREATED: 'Created',
   ENVELOPE_SENT: 'Sent',
+  ENVELOPE_RESENT: 'Resent',
   DOCUMENT_VIEWED: 'Viewed',
   RECIPIENT_SIGNED: 'Signed',
   RECIPIENT_DECLINED: 'Declined',

@@ -5,6 +5,7 @@ import {
   Copy,
   Download,
   Eye,
+  RefreshCw,
   Send,
   Trash2,
   X,
@@ -24,6 +25,7 @@ import {
   useDeleteEnvelope,
   useEnvelope,
   useEnvelopeAudit,
+  useResendEnvelope,
   useSendEnvelope,
   useVoidEnvelope,
 } from '@/hooks/useEnvelopes';
@@ -59,6 +61,7 @@ export default function EnvelopeDetailPage() {
   const router = useRouter();
   const envelope = useEnvelope(id);
   const send = useSendEnvelope();
+  const resend = useResendEnvelope();
   const voidIt = useVoidEnvelope();
   const del = useDeleteEnvelope();
   const [showDocument, setShowDocument] = useState(false);
@@ -89,6 +92,11 @@ export default function EnvelopeDetailPage() {
   const isVoided = env.status === 'VOIDED';
   const isDraft = env.status === 'DRAFT';
   const isCompleted = env.status === 'COMPLETED';
+  // Resend is meaningful only while at least one recipient is still
+  // expected to act. SENT = nothing happened yet; IN_PROGRESS = at
+  // least one signed but others remain. Terminal states (COMPLETED,
+  // VOIDED, EXPIRED) and DRAFT are excluded.
+  const canResend = env.status === 'SENT' || env.status === 'IN_PROGRESS';
 
   const triggerBlobDownload = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -176,6 +184,15 @@ export default function EnvelopeDetailPage() {
                 <Send className="h-3.5 w-3.5" /> Send
               </Button>
             </>
+          ) : null}
+          {canResend ? (
+            <Button
+              variant="secondary"
+              loading={resend.isPending}
+              onClick={() => resend.mutate(env.id)}
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Resend
+            </Button>
           ) : null}
           {isCompleted ? (
             <Button variant="accent" onClick={() => setDownloadOpen(true)}>

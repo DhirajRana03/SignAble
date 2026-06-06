@@ -14,6 +14,7 @@ import {
   ForbiddenError,
   InvalidStateTransitionError,
   NotFoundError,
+  TooManyRequestsError,
   ValidationError,
 } from '../common/exceptions/domain.exceptions';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -305,6 +306,82 @@ export class EnvelopesService {
 
     return updated;
   }
+
+  /**
+   * Resend signing invites to recipients still pending action. Used when
+   * the original notification was missed, lost, or filtered. Only emails
+   * recipients with status PENDING or VIEWED — signed/declined are
+   * intentionally skipped to avoid confusing completed signers.
+   *
+   * Rate-limited to once per 2 hours per envelope (tracked via the most
+   * recent ENVELOPE_RESENT audit event) so an impatient sender cannot
+   * spam recipients into marking the address as junk.
+   */
+  async resend(
+    userId: string,
+    userEmail: string,
+    envelopeId: string,
+  ): Promise<Envelope> {
+    const env = await this.get(userId, envelopeId);
+
+    if (
+      env.status !== EnvelopeStatus.SENT &&
+      env.status !== EnvelopeStatus.IN_PROGRESS
+    ) {
+      throw new InvalidStateTransitionError(env.status, 'resend');
+    }
+
+    const lastResend = await this.prisma.auditEvent.findFirst({
+      where: { envelopeId, eventType: AuditEventType.ENVELOPE_RESENT },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    if (lastResend) {
+      const ageMs = Date.now() - lastResend.createdAt.getTime();
+      const cooldownMs = EnvelopesService.RESEND_COOLDOWN_MS;
+      if (ageMs < cooldownMs) {
+        const minsLeft = Math.ceil((cooldownMs - ageMs) / 60_000);
+        throw new TooManyRequestsError(
+          `Reminders were already sent. Try again in ${minsLeft} minutes.`,
+        );
+      }
+    }
+
+    const pending = await this.prisma.recipient.findMany({
+      where: {
+        envelopeId,
+        status: {
+          in: [RecipientStatus.PENDING, RecipientStatus.VIEWED],
+        },
+      },
+      orderBy: { orderIndex: 'asc' },
+      select: { id: true },
+    });
+
+    if (pending.length === 0) {
+      throw new ValidationError(
+        'No pending recipients — all have signed or declined.',
+      );
+    }
+
+    for (const r of pending) {
+      await this.queue.enqueue<SendSigningRequestJob>(
+        QUEUE_NAMES.NOTIFICATIONS,
+        JOB_NAMES.SEND_SIGNING_REQUEST,
+        { recipientId: r.id },
+      );
+    }
+
+    await this.log(envelopeId, AuditEventType.ENVELOPE_RESENT, userEmail, {
+      recipientCount: pending.length,
+    });
+
+    return env;
+  }
+
+  /** Cooldown between resends per envelope. 2h chosen to balance
+   *  sender impatience against recipient-side spam complaints. */
+  private static readonly RESEND_COOLDOWN_MS = 2 * 60 * 60 * 1000;
 
   /**
    * Hard-delete draft envelope. Cascades through recipients, fields,

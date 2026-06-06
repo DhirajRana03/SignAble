@@ -85,6 +85,15 @@ export class EnvelopesController {
     return this.envelopesService.send(user.id, user.email, id);
   }
 
+  @Post(':id/resend')
+  @HttpCode(200)
+  resend(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.envelopesService.resend(user.id, user.email, id);
+  }
+
   @Post(':id/void')
   void(
     @Param('id', new ParseUUIDPipe()) id: string,

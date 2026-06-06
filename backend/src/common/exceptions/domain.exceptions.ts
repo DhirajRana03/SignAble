@@ -47,3 +47,10 @@ export class UnsupportedFormatError extends Error {
     this.name = 'UnsupportedFormatError';
   }
 }
+
+export class TooManyRequestsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TooManyRequestsError';
+  }
+}

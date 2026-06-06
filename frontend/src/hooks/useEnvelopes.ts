@@ -85,6 +85,23 @@ export function useSendEnvelope() {
   });
 }
 
+export function useResendEnvelope() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => envelopeService.resend(id),
+    onSuccess: (_, id) => {
+      toast.success('Invite resent');
+      // Audit feed picks up the new ENVELOPE_RESENT row; invalidate
+      // both envelope detail and the list cache so the timestamp + 2h
+      // cooldown surface immediately.
+      qc.invalidateQueries({ queryKey: ['envelopes'] });
+      qc.invalidateQueries({ queryKey: ['envelopes', id] });
+      qc.invalidateQueries({ queryKey: ['envelopes', id, 'audit'] });
+    },
+    onError: (err) => toast.error(extractErrorMessage(err)),
+  });
+}
+
 export function useDeleteEnvelope() {
   const qc = useQueryClient();
   return useMutation({
