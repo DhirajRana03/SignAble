@@ -18,8 +18,10 @@ import { toast } from 'sonner';
 import { AuditTrail } from '@/components/features/envelopes/AuditTrail';
 import { DownloadDialog } from '@/components/features/envelopes/DownloadDialog';
 import { EnvelopeDocumentPreview } from '@/components/features/envelopes/EnvelopeDocumentPreview';
+import { VoidEnvelopeDialog } from '@/components/features/envelopes/VoidEnvelopeDialog';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import {
   useDeleteEnvelope,
@@ -67,6 +69,8 @@ export default function EnvelopeDetailPage() {
   const [showDocument, setShowDocument] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Drafts finalize via prepare workspace. Redirect on load.
   useEffect(() => {
@@ -318,12 +322,7 @@ export default function EnvelopeDetailPage() {
                   variant="danger"
                   className="w-full"
                   loading={del.isPending}
-                  onClick={() => {
-                    if (!confirm('Delete this draft permanently?')) return;
-                    del.mutate(env.id, {
-                      onSuccess: () => router.push('/envelopes'),
-                    });
-                  }}
+                  onClick={() => setDeleteOpen(true)}
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Delete draft
                 </Button>
@@ -332,10 +331,7 @@ export default function EnvelopeDetailPage() {
                   variant="danger"
                   className="w-full"
                   loading={voidIt.isPending}
-                  onClick={() => {
-                    const reason = prompt('Reason for voiding?');
-                    if (reason) voidIt.mutate({ id: env.id, reason });
-                  }}
+                  onClick={() => setVoidOpen(true)}
                 >
                   <XCircle className="h-3.5 w-3.5" /> Void envelope
                 </Button>
@@ -378,6 +374,43 @@ export default function EnvelopeDetailPage() {
           onDownload={handleDownloadSelection}
         />
       ) : null}
+
+      <VoidEnvelopeDialog
+        open={voidOpen}
+        busy={voidIt.isPending}
+        onClose={() => {
+          if (!voidIt.isPending) setVoidOpen(false);
+        }}
+        onConfirm={(reason) =>
+          voidIt.mutate(
+            { id: env.id, reason },
+            { onSuccess: () => setVoidOpen(false) },
+          )
+        }
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete draft permanently?"
+        confirmLabel="Delete draft"
+        busy={del.isPending}
+        onClose={() => {
+          if (!del.isPending) setDeleteOpen(false);
+        }}
+        onConfirm={() =>
+          del.mutate(env.id, {
+            onSuccess: () => {
+              setDeleteOpen(false);
+              router.push('/envelopes');
+            },
+          })
+        }
+      >
+        <p>
+          The draft, its recipients, fields, and uploaded files will be
+          removed. This cannot be undone.
+        </p>
+      </ConfirmDialog>
     </DashboardShell>
   );
 }

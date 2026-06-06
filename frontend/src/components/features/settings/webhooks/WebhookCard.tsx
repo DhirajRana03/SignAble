@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDeleteWebhook, useUpdateWebhook } from '@/hooks/useWebhooks';
 import { cn, formatRelative } from '@/lib/utils';
 import type { WebhookSubscription } from '@/types/webhook.types';
@@ -25,6 +26,7 @@ interface Props {
 export function WebhookCard({ hook, onViewDeliveries }: Props) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const update = useUpdateWebhook();
   const del = useDeleteWebhook();
 
@@ -39,11 +41,6 @@ export function WebhookCard({ hook, onViewDeliveries }: Props) {
 
   const toggleActive = () => {
     update.mutate({ id: hook.id, input: { isActive: !hook.isActive } });
-  };
-
-  const confirmDelete = () => {
-    if (!window.confirm(`Delete webhook for ${hook.url}?`)) return;
-    del.mutate(hook.id);
   };
 
   return (
@@ -176,7 +173,7 @@ export function WebhookCard({ hook, onViewDeliveries }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={confirmDelete}
+            onClick={() => setDeleteOpen(true)}
             loading={del.isPending}
             className="text-danger hover:bg-danger/5"
             title="Delete webhook"
@@ -185,6 +182,27 @@ export function WebhookCard({ hook, onViewDeliveries }: Props) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete webhook?"
+        confirmLabel="Delete"
+        busy={del.isPending}
+        onClose={() => {
+          if (!del.isPending) setDeleteOpen(false);
+        }}
+        onConfirm={() =>
+          del.mutate(hook.id, {
+            onSuccess: () => setDeleteOpen(false),
+          })
+        }
+      >
+        <p>
+          Stops all future deliveries to{' '}
+          <code className="font-mono text-ink">{hook.url}</code>. The
+          signing secret is destroyed and cannot be recovered.
+        </p>
+      </ConfirmDialog>
     </article>
   );
 }

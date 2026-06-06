@@ -45,3 +45,7 @@ yarn-debug.log*
 # Coverage
 coverage/
 .nyc_output/
+-e 
+# QA test artifacts
+test-reports/
+landing.png
