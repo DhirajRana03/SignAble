@@ -33,16 +33,21 @@ export default () => ({
   },
 
   storage: {
-    // `local` writes to filesystem under `root` — used for dev + when no
-    // object store configured. `r2` uses Cloudflare R2 (S3-compatible).
-    backend: (process.env.STORAGE_BACKEND ?? 'local') as 'local' | 'r2',
+    // `local` writes to filesystem under `root` — dev + when no object
+    // store configured. `s3` covers any S3-compatible backend
+    // (Supabase Storage, Cloudflare R2, AWS S3, Backblaze B2…).
+    backend: (process.env.STORAGE_BACKEND ?? 'local') as 'local' | 's3',
     root: process.env.STORAGE_ROOT ?? 'storage',
     urlBase: process.env.STORAGE_URL_BASE ?? 'http://localhost:8000/api/v1/files',
-    r2: {
-      accountId: process.env.R2_ACCOUNT_ID ?? '',
-      accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
-      bucket: process.env.R2_BUCKET ?? '',
+    s3: {
+      endpoint: process.env.S3_ENDPOINT ?? '',
+      region: process.env.S3_REGION ?? 'auto',
+      accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+      bucket: process.env.S3_BUCKET ?? '',
+      // Path-style addressing. Supabase requires. R2 + AWS S3 also
+      // accept. Default true keeps compat across providers.
+      forcePathStyle: (process.env.S3_FORCE_PATH_STYLE ?? 'true') === 'true',
     },
   },
 

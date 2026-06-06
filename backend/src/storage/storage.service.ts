@@ -14,18 +14,19 @@ import {
 
 /**
  * Sole file I/O service. Every byte read from or written to disk goes
- * through here. Swap backend by setting `STORAGE_BACKEND=r2` — callers
+ * through here. Swap backend by setting `STORAGE_BACKEND=s3` — callers
  * unchanged.
  *
- * `local` writes to filesystem under `root`. Used for dev + when no
- * object store configured.
+ * `local` writes to filesystem under `root`. Dev + when no object store
+ * configured.
  *
- * `r2` uses Cloudflare R2 (S3-compatible). Required for any deploy
- * without persistent disk — files survive container restarts.
+ * `s3` uses any S3-compatible store (Supabase Storage, Cloudflare R2,
+ * AWS S3, Backblaze B2). Required for deploys without persistent disk
+ * — files survive container restarts.
  */
 @Injectable()
 export class StorageService implements OnModuleInit {
-  private readonly backendKind: 'local' | 'r2';
+  private readonly backendKind: 'local' | 's3';
   private readonly root: string;
   private readonly urlBase: string;
   private readonly bucket: string;
@@ -33,32 +34,36 @@ export class StorageService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {
     this.backendKind =
-      (config.get<'local' | 'r2'>('storage.backend') as 'local' | 'r2') ??
+      (config.get<'local' | 's3'>('storage.backend') as 'local' | 's3') ??
       'local';
     this.root = config.get<string>('storage.root') ?? 'storage';
     this.urlBase =
       config.get<string>('storage.urlBase') ??
       'http://localhost:8000/api/v1/files';
-    this.bucket = config.get<string>('storage.r2.bucket') ?? '';
+    this.bucket = config.get<string>('storage.s3.bucket') ?? '';
   }
 
   onModuleInit(): void {
-    if (this.backendKind !== 'r2') return;
-    const accountId = this.config.get<string>('storage.r2.accountId');
-    const accessKeyId = this.config.get<string>('storage.r2.accessKeyId');
+    if (this.backendKind !== 's3') return;
+    const endpoint = this.config.get<string>('storage.s3.endpoint');
+    const region = this.config.get<string>('storage.s3.region') ?? 'auto';
+    const accessKeyId = this.config.get<string>('storage.s3.accessKeyId');
     const secretAccessKey = this.config.get<string>(
-      'storage.r2.secretAccessKey',
+      'storage.s3.secretAccessKey',
     );
-    if (!accountId || !accessKeyId || !secretAccessKey || !this.bucket) {
+    const forcePathStyle = this.config.get<boolean>(
+      'storage.s3.forcePathStyle',
+    );
+    if (!endpoint || !accessKeyId || !secretAccessKey || !this.bucket) {
       throw new Error(
-        'STORAGE_BACKEND=r2 requires R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET',
+        'STORAGE_BACKEND=s3 requires S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET',
       );
     }
     this.s3 = new S3Client({
-      // R2 ignores region but SDK requires one. `auto` works.
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      region,
+      endpoint,
       credentials: { accessKeyId, secretAccessKey },
+      forcePathStyle: forcePathStyle ?? true,
     });
   }
 
@@ -92,12 +97,12 @@ export class StorageService implements OnModuleInit {
   }
 
   async load(key: string): Promise<Buffer> {
-    if (this.backendKind === 'r2') return this.loadR2(key);
+    if (this.backendKind === 's3') return this.loadS3(key);
     return this.loadLocal(key);
   }
 
   async delete(key: string): Promise<void> {
-    if (this.backendKind === 'r2') {
+    if (this.backendKind === 's3') {
       await this.s3!.send(
         new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
       ).catch(() => undefined);
@@ -124,7 +129,7 @@ export class StorageService implements OnModuleInit {
     data: Buffer,
     contentType?: string,
   ): Promise<string> {
-    if (this.backendKind === 'r2') {
+    if (this.backendKind === 's3') {
       await this.s3!.send(
         new PutObjectCommand({
           Bucket: this.bucket,
@@ -150,7 +155,7 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  private async loadR2(key: string): Promise<Buffer> {
+  private async loadS3(key: string): Promise<Buffer> {
     try {
       const res = await this.s3!.send(
         new GetObjectCommand({ Bucket: this.bucket, Key: key }),
