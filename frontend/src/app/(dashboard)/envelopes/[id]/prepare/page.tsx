@@ -102,7 +102,11 @@ export default function PreparePage() {
 
     const dispatchSend = () =>
       send.mutate(env.id, {
-        onSuccess: () => router.push(`/envelopes/${env.id}`),
+        // `replace` so the post-send detail page's back button doesn't
+        // walk back into the now-stale prepare workspace. Combined with
+        // the detail page's status-aware back button, users land in
+        // /sent which is where the just-sent envelope now lives.
+        onSuccess: () => router.replace(`/envelopes/${env.id}`),
       });
     if (!dirty) {
       dispatchSend();

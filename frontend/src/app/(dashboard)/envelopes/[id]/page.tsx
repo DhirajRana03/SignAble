@@ -29,6 +29,30 @@ import {
 } from '@/hooks/useEnvelopes';
 import { cn, formatDate, recipientColor } from '@/lib/utils';
 import { envelopeService } from '@/services/envelope.service';
+import type { EnvelopeStatus } from '@/types/envelope.types';
+
+/**
+ * Map envelope status to the listing route that owns it. Used by the
+ * detail-page back button so users always land on a real list page —
+ * never on a router.back() dead-end (e.g. when arriving from prepare
+ * after sending, where history has no sibling page).
+ */
+function listingRouteForStatus(status: EnvelopeStatus): string {
+  switch (status) {
+    case 'DRAFT':
+      return '/drafts';
+    case 'SENT':
+    case 'IN_PROGRESS':
+      return '/sent';
+    case 'COMPLETED':
+      return '/completed';
+    case 'VOIDED':
+    case 'EXPIRED':
+      return '/archive';
+    default:
+      return '/envelopes';
+  }
+}
 
 export default function EnvelopeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -123,7 +147,9 @@ export default function EnvelopeDetailPage() {
       eyebrow={
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() =>
+            router.push(listingRouteForStatus(envelope.data!.status))
+          }
           className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-accent-deep shadow-sm hover:bg-accent hover:text-accent-fg hover:border-accent hover:shadow-glow active:scale-[0.97] transition-all duration-150"
           aria-label="Back"
         >
