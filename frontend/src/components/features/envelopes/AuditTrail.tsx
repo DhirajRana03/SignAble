@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils';
 const EVENT_LABEL: Record<string, string> = {
   ENVELOPE_CREATED: 'Envelope created',
   ENVELOPE_SENT: 'Envelope sent',
+  ENVELOPE_RESENT: 'Reminder sent',
   DOCUMENT_VIEWED: 'Document viewed',
   RECIPIENT_SIGNED: 'Recipient signed',
   RECIPIENT_DECLINED: 'Recipient declined',

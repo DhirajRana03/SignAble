@@ -111,6 +111,7 @@ export interface Envelope {
 export type AuditEventType =
   | 'ENVELOPE_CREATED'
   | 'ENVELOPE_SENT'
+  | 'ENVELOPE_RESENT'
   | 'DOCUMENT_VIEWED'
   | 'RECIPIENT_SIGNED'
   | 'RECIPIENT_DECLINED'

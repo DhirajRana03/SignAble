@@ -6,6 +6,7 @@ import {
   ForbiddenError,
   InvalidStateTransitionError,
   NotFoundError,
+  TooManyRequestsError,
   UnsupportedFormatError,
   ValidationError,
 } from '../exceptions/domain.exceptions';
@@ -21,6 +22,7 @@ const STATUS_MAP: Record<string, number> = {
   InvalidStateTransitionError: 422,
   ValidationError: 400,
   UnsupportedFormatError: 415,
+  TooManyRequestsError: 429,
 };
 
 @Catch(
@@ -30,6 +32,7 @@ const STATUS_MAP: Record<string, number> = {
   InvalidStateTransitionError,
   ValidationError,
   UnsupportedFormatError,
+  TooManyRequestsError,
 )
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost): void {

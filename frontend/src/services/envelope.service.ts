@@ -90,6 +90,12 @@ export const envelopeService = {
     const { data } = await apiClient.post<Envelope>(`/envelopes/${id}/send`);
     return data;
   },
+  async resend(id: string): Promise<Envelope> {
+    const { data } = await apiClient.post<Envelope>(
+      `/envelopes/${id}/resend`,
+    );
+    return data;
+  },
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/envelopes/${id}`);
   },
