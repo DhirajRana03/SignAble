@@ -21,6 +21,7 @@ import { EnvelopeDocumentPreview } from '@/components/features/envelopes/Envelop
 import { VoidEnvelopeDialog } from '@/components/features/envelopes/VoidEnvelopeDialog';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import {
   useDeleteEnvelope,
@@ -388,8 +389,10 @@ export default function EnvelopeDetailPage() {
         }
       />
 
-      <ConfirmDeleteDraftDialog
+      <ConfirmDialog
         open={deleteOpen}
+        title="Delete draft permanently?"
+        confirmLabel="Delete draft"
         busy={del.isPending}
         onClose={() => {
           if (!del.isPending) setDeleteOpen(false);
@@ -402,80 +405,13 @@ export default function EnvelopeDetailPage() {
             },
           })
         }
-      />
+      >
+        <p>
+          The draft, its recipients, fields, and uploaded files will be
+          removed. This cannot be undone.
+        </p>
+      </ConfirmDialog>
     </DashboardShell>
-  );
-}
-
-/**
- * Minimal confirm modal for irreversible draft deletion. Replaces the
- * native window.confirm() call which blocks the renderer and breaks
- * automated browser sessions.
- */
-function ConfirmDeleteDraftDialog({
-  open,
-  busy = false,
-  onClose,
-  onConfirm,
-}: {
-  open: boolean;
-  busy?: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
-  if (!open) return null;
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-draft-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute inset-0 bg-ink/40 backdrop-blur-sm cursor-default"
-      />
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-[0_24px_60px_-20px_rgba(15,23,42,0.35)] border border-border overflow-hidden">
-        <header className="flex items-start justify-between px-7 pt-6 pb-2">
-          <h2
-            id="delete-draft-title"
-            className="text-[20px] font-semibold text-ink leading-tight"
-          >
-            Delete draft permanently?
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-            className="h-8 w-8 grid place-items-center rounded-md text-ink-3 hover:text-ink hover:bg-surface-sunken transition-colors -mr-2"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </header>
-        <div className="px-7 pb-2">
-          <p className="text-[13px] text-ink-2">
-            The draft, its recipients, fields, and uploaded files will
-            be removed. This cannot be undone.
-          </p>
-        </div>
-        <footer className="flex items-center justify-end gap-2 px-7 py-5 bg-surface-sunken/50 border-t border-border-soft">
-          <Button variant="secondary" size="md" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            size="md"
-            loading={busy}
-            onClick={onConfirm}
-          >
-            Delete draft
-          </Button>
-        </footer>
-      </div>
-    </div>
   );
 }
 
