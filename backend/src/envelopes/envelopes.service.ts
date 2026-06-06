@@ -98,11 +98,14 @@ export class EnvelopesService {
       where: { id: envelopeId },
       include: { recipients: true, fields: true },
     });
-    if (!env) {
+    // Return 404 (not 403) when envelope exists but belongs to another
+    // user. Masking ownership prevents an attacker from enumerating
+    // envelope IDs by inspecting the difference between a real
+    // envelope owned by someone else (403) and a non-existent ID (404).
+    // From the caller's perspective both states are identical:
+    // "no envelope by that id is available to you".
+    if (!env || env.userId !== userId) {
       throw new NotFoundError('Envelope', envelopeId);
-    }
-    if (env.userId !== userId) {
-      throw new ForbiddenError();
     }
     return env;
   }
