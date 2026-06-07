@@ -190,12 +190,26 @@ export default function EnvelopeDetailPage() {
             </>
           ) : null}
           {canResend ? (
+            // Emphasized resend CTA — accent border, soft halo pulse,
+            // periodic icon nudge. Animation suppressed while the
+            // mutation is in flight to avoid jitter on the spinner.
             <Button
               variant="secondary"
               loading={resend.isPending}
               onClick={() => resend.mutate(env.id)}
+              className={cn(
+                'border-2 border-accent/60 text-accent-deep bg-accent-soft/40 hover:bg-accent-soft hover:border-accent',
+                'transition-shadow duration-200',
+                !resend.isPending && 'animate-attention-ring',
+              )}
             >
-              <RefreshCw className="h-3.5 w-3.5" /> Resend
+              <RefreshCw
+                className={cn(
+                  'h-3.5 w-3.5 text-accent-deep',
+                  !resend.isPending && 'animate-spin-tease',
+                )}
+              />
+              Resend
             </Button>
           ) : null}
           {isCompleted ? (
