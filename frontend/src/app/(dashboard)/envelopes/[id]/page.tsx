@@ -189,15 +189,7 @@ export default function EnvelopeDetailPage() {
               </Button>
             </>
           ) : null}
-          {canResend ? (
-            <Button
-              variant="secondary"
-              loading={resend.isPending}
-              onClick={() => resend.mutate(env.id)}
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Resend
-            </Button>
-          ) : null}
+
           {isCompleted ? (
             <Button variant="accent" onClick={() => setDownloadOpen(true)}>
               <Download className="h-3.5 w-3.5" /> Download
@@ -313,6 +305,30 @@ export default function EnvelopeDetailPage() {
 
         <div className="space-y-6">
           <AuditTrail envelopeId={env.id} />
+
+          {canResend ? (
+            // Reminder card — mirrors the Danger zone card layout so
+            // the action lives in a discoverable, dedicated surface
+            // rather than buried in the topbar actions row.
+            <div className="glass p-5 space-y-3">
+              <div>
+                <p className="label-mono mb-1">Reminder</p>
+                <p className="text-[13px] text-ink-2 leading-relaxed">
+                  Resend the signing invite to recipients who have not
+                  signed yet. Reminders are limited to once every
+                  2&nbsp;hours.
+                </p>
+              </div>
+              <Button
+                variant="accent"
+                className="w-full"
+                loading={resend.isPending}
+                onClick={() => resend.mutate(env.id)}
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> Resend invite
+              </Button>
+            </div>
+          ) : null}
 
           {!isCompleted && env.status !== 'VOIDED' ? (
             <div className="glass p-5 space-y-2">
