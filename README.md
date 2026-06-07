@@ -4,7 +4,7 @@
 [![Frontend CI](https://github.com/DhirajRana03/SignAble/actions/workflows/frontend.yml/badge.svg)](https://github.com/DhirajRana03/SignAble/actions/workflows/frontend.yml)
 [![Processor CI](https://github.com/DhirajRana03/SignAble/actions/workflows/processor.yml/badge.svg)](https://github.com/DhirajRana03/SignAble/actions/workflows/processor.yml)
 
-DocuSign-style e-signature platform. Upload PDFs, place signature fields, route to recipients, finalize signed documents.
+e-signature platform. Upload PDFs, place signature fields, route to recipients, finalize signed documents.
 
 ## Architecture
 
