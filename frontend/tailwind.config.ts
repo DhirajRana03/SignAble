@@ -159,27 +159,6 @@ const config: Config = {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
-        // Attention ring — soft expanding halo. Draws the eye to the
-        // resend CTA without the aggressive flicker of a hard pulse.
-        'attention-ring': {
-          '0%': {
-            boxShadow:
-              '0 0 0 0 hsl(var(--accent) / 0.55), 0 0 0 0 hsl(var(--accent) / 0)',
-          },
-          '70%': {
-            boxShadow:
-              '0 0 0 8px hsl(var(--accent) / 0), 0 0 0 12px hsl(var(--accent) / 0)',
-          },
-          '100%': {
-            boxShadow:
-              '0 0 0 0 hsl(var(--accent) / 0), 0 0 0 0 hsl(var(--accent) / 0)',
-          },
-        },
-        // Slow icon nudge — implies "spin again, resend".
-        'spin-tease': {
-          '0%, 80%, 100%': { transform: 'rotate(0deg)' },
-          '90%': { transform: 'rotate(-180deg)' },
-        },
       },
       animation: {
         'fade-up': 'fade-up 0.28s cubic-bezier(0.32, 0.72, 0.16, 1)',
@@ -187,8 +166,6 @@ const config: Config = {
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
         'pulse-coral': 'pulse-soft 2s ease-in-out infinite',
         'shimmer': 'shimmer 2.4s linear infinite',
-        'attention-ring': 'attention-ring 2.2s ease-out infinite',
-        'spin-tease': 'spin-tease 3.4s ease-in-out infinite',
       },
     },
   },
